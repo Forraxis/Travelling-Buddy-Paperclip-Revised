@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+
+  /* TravellingBuddy design tokens */
+  --color-tb-primary: #1b3a5c;
+  --color-tb-primary-light: #2e75b6;
+  --color-tb-primary-lighter: #e8f0fe;
+  --color-tb-success: #16a34a;
+  --color-tb-success-light: #dcfce7;
+  --color-tb-warning: #d97706;
+  --color-tb-warning-light: #fef3c7;
+  --color-tb-danger: #dc2626;
+  --color-tb-danger-light: #fee2e2;
+  --color-tb-neutral-50: #f9fafb;
+  --color-tb-neutral-200: #e5e7eb;
+
+  /* Fonts */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
