@@ -1,0 +1,110 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: production
+  APP_DIR: /opt/travellingbuddy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Package artifact
+        run: |
+          tar czf deploy-package.tar.gz \
+            .next \
+            public \
+            package.json \
+            package-lock.json \
+            next.config.ts \
+            prisma \
+            ecosystem.config.cjs
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-package
+          path: deploy-package.tar.gz
+          retention-days: 3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deploy-package
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to VPS
+        run: |
+          rsync -azP --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new" \
+            deploy-package.tar.gz \
+            ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }}:/tmp/deploy-package.tar.gz
+
+      - name: Install and restart
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} << 'REMOTE'
+          set -euo pipefail
+
+          APP_DIR=/opt/travellingbuddy
+
+          sudo mkdir -p "$APP_DIR"
+          sudo chown "$(whoami):$(whoami)" "$APP_DIR"
+
+          cd "$APP_DIR"
+          tar xzf /tmp/deploy-package.tar.gz
+          rm /tmp/deploy-package.tar.gz
+
+          npm ci --omit=dev
+
+          npx prisma migrate deploy 2>/dev/null || echo "No migrations to run"
+
+          pm2 reload ecosystem.config.cjs --env production || \
+            pm2 start ecosystem.config.cjs --env production
+
+          pm2 save
+
+          echo "Deploy complete at $(date -u)"
+          REMOTE
+
+      - name: Health check
+        run: |
+          sleep 5
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.STAGING_USER }}@${{ secrets.STAGING_HOST }} \
+            "curl -sf http://localhost:3000 > /dev/null && echo 'Health check passed' || (echo 'Health check failed'; exit 1)"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
