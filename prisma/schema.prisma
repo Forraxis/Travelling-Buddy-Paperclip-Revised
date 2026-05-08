@@ -217,6 +217,7 @@ model AccessoryCategory {
   children     AccessoryCategory[] @relation("CategoryHierarchy")
   accessories          Accessory[]
   accessorySubmissions AccessorySubmission[]
+  sponsoredPlacements  SponsoredPlacement[]
 
   @@index([slug])
   @@index([parentId])
@@ -242,6 +243,7 @@ model Accessory {
   category     AccessoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   fitments              AccessoryFitment[]
   accessorySubmissions  AccessorySubmission[]
+  sponsoredPlacements   SponsoredPlacement[]
 
   @@unique([brandId, slug])
   @@index([slug])
@@ -296,6 +298,8 @@ model User {
   caravanSubmissionDecisions    CaravanSubmission[]     @relation("CaravanSubmissionDecisions")
   accessorySubmissions          AccessorySubmission[]   @relation("AccessorySubmissions")
   accessorySubmissionDecisions  AccessorySubmission[]   @relation("AccessorySubmissionDecisions")
+  auditLogs                     AuditLog[]
+  moderationActions             ModerationAction[]
 }
 
 model Account {
@@ -452,7 +456,7 @@ model AccessoryFitment {
   @@index([accessoryId])
 }
 
-enum RegulationSet {
+enum RegulationSetCode {
   AU_ADR
   NZ_VIRM
   US_FMVSS
@@ -473,7 +477,7 @@ model Setup {
   greyWaterPercent      Int             @default(0)
   calibrationOverrides  Json            @default("{}")
   shareToken            String          @unique @default(cuid())
-  regulationSetCode     RegulationSet   @default(AU_ADR)
+  regulationSetCode     RegulationSetCode @default(AU_ADR)
   deletedAt             DateTime?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
@@ -629,4 +633,123 @@ model AccessorySubmission {
   @@index([submitterId])
   @@index([brandId])
   @@index([categoryId])
+}
+
+enum SponsorStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum PlacementType {
+  ACCESSORY_FEATURED
+  CATEGORY_TOP
+  RECOMMENDATION_PINNED
+  VEHICLE_TYPE_FEATURED
+}
+
+enum PlacementTier {
+  FEATURED_FIT
+  CATEGORY_TOP
+  RECOMMENDATION_PINNED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum ModerationActionType {
+  APPROVE
+  REJECT
+  REQUEST_INFO
+}
+
+model Sponsor {
+  id               String        @id @default(cuid())
+  name             String        @unique
+  contactName      String?
+  contactEmail     String?
+  billingReference String?
+  status           SponsorStatus @default(ACTIVE)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  placements       SponsoredPlacement[]
+
+  @@index([status])
+}
+
+model SponsoredPlacement {
+  id              String          @id @default(cuid())
+  sponsorId       String
+  placementType   PlacementType
+  accessoryId     String?
+  categoryId      String?
+  vehicleBodyType VehicleBodyType?
+  stateFilter     AustralianState?
+  startsAt        DateTime
+  endsAt          DateTime
+  tier            PlacementTier
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  sponsor         Sponsor         @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  accessory       Accessory?      @relation(fields: [accessoryId], references: [id], onDelete: SetNull)
+  category        AccessoryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([sponsorId])
+  @@index([placementType])
+  @@index([startsAt, endsAt])
+  @@index([accessoryId])
+  @@index([categoryId])
+}
+
+model RegulationSet {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  parentSetCode String?
+  rules         Json     @default("{}")
+  market        Market   @default(AU)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  parent        RegulationSet?  @relation("RegulationSetHierarchy", fields: [parentSetCode], references: [code], onDelete: SetNull)
+  children      RegulationSet[] @relation("RegulationSetHierarchy")
+
+  @@index([parentSetCode])
+  @@index([market])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  entityType String
+  entityId   String
+  action     AuditAction
+  changedBy  String
+  changes    Json        @default("{}")
+  reason     String?
+  createdAt  DateTime    @default(now())
+  user       User        @relation(fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId])
+  @@index([changedBy])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ModerationAction {
+  id             String               @id @default(cuid())
+  submissionType String
+  submissionId   String
+  moderatorId    String
+  action         ModerationActionType
+  notes          String?
+  createdAt      DateTime             @default(now())
+  moderator      User                 @relation(fields: [moderatorId], references: [id], onDelete: Restrict)
+
+  @@index([submissionType, submissionId])
+  @@index([moderatorId])
+  @@index([action])
+  @@index([createdAt])
 }
