@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_DIR="/opt/travellingbuddy"
+APP_DIR="/opt/travelling-buddy"
 REPO_URL="git@github.com:Forraxis/Travelling-Buddy-Paperclip-Revised.git"
 BRANCH="${DEPLOY_BRANCH:-develop}"
-LOG_FILE="/var/log/travellingbuddy/deploy.log"
+LOG_FILE="/var/log/travelling-buddy/deploy.log"
 
 log() { echo "[$(date -u '+%Y-%m-%d %H:%M:%S UTC')] $*" | tee -a "$LOG_FILE"; }
 

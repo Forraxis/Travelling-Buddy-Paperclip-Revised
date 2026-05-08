@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Single-host pull-based deployment to AU VPS (172.16.60.113). The VPS is behind a firewall with no inbound SSH from the internet, so it pulls changes from GitHub on a 2-minute timer rather than receiving pushes from GitHub Actions.
+Single-host pull-based deployment to AU VPS (`tb-staging-1` / 172.16.60.110). The VPS is behind a firewall with no inbound access from the internet, so it pulls changes from GitHub on a 2-minute systemd timer.
 
 ```
 GitHub (source of truth)
@@ -14,72 +14,82 @@ Cloudflare → Users
 
 ## Environments
 
-| Environment | Branch         | Domain                     | Deploy method       |
-| ----------- | -------------- | -------------------------- | ------------------- |
-| Staging     | develop / main | staging.travellingbuddy.au | Pull-based (2 min)  |
+| Environment | Host          | Branch  | Deploy method      |
+| ----------- | ------------- | ------- | ------------------- |
+| Staging     | tb-staging-1  | develop | Pull-based (2 min)  |
+
+## VPS Details
+
+- **Host:** tb-staging-1 (172.16.60.110)
+- **User:** `travellingbuddy`
+- **App directory:** `/opt/travelling-buddy`
+- **Log directory:** `/var/log/travelling-buddy`
+- **Node.js:** 22.x LTS
+- **Process manager:** PM2
 
 ## VPS Setup (One-Time)
 
-### 1. Create deploy user
+### 1. Add GitHub deploy key
+
+Generate a key on the VPS and add it to the GitHub repo as a deploy key:
 
 ```bash
-sudo useradd -m -s /bin/bash deploy
-sudo mkdir -p /home/deploy/.ssh
-# Add GitHub deploy key (read-only) to deploy user
-sudo chown -R deploy:deploy /home/deploy/.ssh
-sudo chmod 700 /home/deploy/.ssh
+ssh-keygen -t ed25519 -C "tb-staging-deploy" -f ~/.ssh/tb_deploy_ed25519 -N ""
+# Add the public key to GitHub repo → Settings → Deploy keys (read-only)
 ```
 
-### 2. Install Node.js 22 LTS
+Configure `~/.ssh/config`:
 
-```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
+```
+Host github.com
+  HostName github.com
+  IdentityFile ~/.ssh/tb_deploy_ed25519
+  IdentitiesOnly yes
 ```
 
-### 3. Install PM2
+### 2. Clone the repo
 
 ```bash
-sudo npm install -g pm2
-pm2 startup  # follow the output to enable PM2 on boot
+cd /opt/travelling-buddy
+git clone --branch develop git@github.com:Forraxis/Travelling-Buddy-Paperclip-Revised.git .
 ```
 
-### 4. Create application and log directories
+### 3. Create log directory
 
 ```bash
-sudo mkdir -p /opt/travellingbuddy
-sudo chown deploy:deploy /opt/travellingbuddy
-sudo mkdir -p /var/log/travellingbuddy
-sudo chown deploy:deploy /var/log/travellingbuddy
+sudo mkdir -p /var/log/travelling-buddy
+sudo chown travellingbuddy:travellingbuddy /var/log/travelling-buddy
 ```
 
-### 5. Clone the repo
+### 4. Initial build
 
 ```bash
-sudo -u deploy git clone --branch develop \
-  git@github.com:Forraxis/Travelling-Buddy-Paperclip-Revised.git \
-  /opt/travellingbuddy
+npm ci --omit=dev
+npx next build
+pm2 start ecosystem.config.cjs --env production
+pm2 save
+pm2 startup  # follow output to enable on boot
 ```
 
-### 6. Install the deploy timer
+### 5. Install the deploy timer
 
 ```bash
-sudo cp /opt/travellingbuddy/scripts/travellingbuddy-deploy.service /etc/systemd/system/
-sudo cp /opt/travellingbuddy/scripts/travellingbuddy-deploy.timer /etc/systemd/system/
+sudo cp /opt/travelling-buddy/scripts/travellingbuddy-deploy.service /etc/systemd/system/
+sudo cp /opt/travelling-buddy/scripts/travellingbuddy-deploy.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now travellingbuddy-deploy.timer
 ```
 
-### 7. Verify
+### 6. Verify
 
 ```bash
-sudo systemctl list-timers travellingbuddy-deploy.timer
-sudo journalctl -u travellingbuddy-deploy.service -f
+systemctl list-timers travellingbuddy-deploy.timer
+journalctl -u travellingbuddy-deploy.service -f
 ```
 
 ## Deploy Process
 
-Deployment is pull-based — the VPS checks for new commits every 2 minutes:
+Automated pull-based — the VPS checks for new commits every 2 minutes:
 
 1. **Fetch** — `git fetch origin develop`
 2. **Compare** — if local HEAD matches remote, exit (no-op)
@@ -90,27 +100,21 @@ Deployment is pull-based — the VPS checks for new commits every 2 minutes:
 7. **Restart** — `pm2 reload` for zero-downtime restart
 8. **Health check** — curl localhost:3000
 
-Deploy logs: `/var/log/travellingbuddy/deploy.log`
+Deploy logs: `/var/log/travelling-buddy/deploy.log`
 
 ## Manual Deploy
 
-To trigger an immediate deploy without waiting for the timer:
-
 ```bash
+# Trigger immediately (on VPS)
 sudo systemctl start travellingbuddy-deploy.service
-```
 
-Or run the script directly:
-
-```bash
-sudo -u deploy /opt/travellingbuddy/scripts/deploy-pull.sh
+# Or run directly
+/opt/travelling-buddy/scripts/deploy-pull.sh
 ```
 
 ## Cloudflare Configuration
 
 ### DNS
-
-Add an A record pointing the staging subdomain to the VPS public IP:
 
 | Type | Name    | Content    | Proxy |
 | ---- | ------- | ---------- | ----- |
@@ -119,43 +123,37 @@ Add an A record pointing the staging subdomain to the VPS public IP:
 ### SSL/TLS
 
 - Mode: **Full (strict)**
-- Edge certificates: Cloudflare-managed (automatic)
-- Origin certificate: generate via Cloudflare dashboard and install on VPS at `/etc/ssl/cloudflare/`
-- Configure Nginx or Caddy as reverse proxy on port 443 → localhost:3000
+- Origin certificate from Cloudflare dashboard → install at `/etc/ssl/cloudflare/`
+- Reverse proxy (Nginx/Caddy) on port 443 → localhost:3000
 
 ### Cache Rules
 
-- Cache static assets (`/_next/static/*`): cache everything, edge TTL 1 year
-- Bypass cache for API routes and HTML pages
+- `/_next/static/*`: Cache Everything, edge TTL 1 month
+- `/api/*`: Bypass
 
 ## Viewing Logs
 
 ```bash
 # Deploy logs
-tail -f /var/log/travellingbuddy/deploy.log
+tail -f /var/log/travelling-buddy/deploy.log
 
 # Application logs (PM2)
 pm2 logs travellingbuddy
 pm2 logs travellingbuddy --lines 100
 
-# Error log only
-tail -f /var/log/travellingbuddy/error.log
+# Error log
+tail -f /var/log/travelling-buddy/error.log
 ```
 
 ## Manual Operations
 
 ```bash
-# Restart
-pm2 reload travellingbuddy
+pm2 reload travellingbuddy    # restart
+pm2 stop travellingbuddy      # stop
+pm2 status                    # check status
 
-# Stop
-pm2 stop travellingbuddy
-
-# Status
-pm2 status
-
-# Roll back to a specific commit
-cd /opt/travellingbuddy
+# Roll back
+cd /opt/travelling-buddy
 git reset --hard <commit-sha>
 npm ci --omit=dev && npx next build
 pm2 reload ecosystem.config.cjs --env production
@@ -167,7 +165,7 @@ pm2 reload ecosystem.config.cjs --env production
 | ------------------------------- | ------------------------------------------------------ |
 | Timer not running               | `systemctl status travellingbuddy-deploy.timer`        |
 | Deploy script fails             | `journalctl -u travellingbuddy-deploy.service -e`      |
-| Git fetch fails                 | Check deploy key: `ssh -T git@github.com` as deploy    |
-| App not responding after deploy | `pm2 logs travellingbuddy` for startup errors           |
-| 502 from Cloudflare             | Confirm app on port 3000, check reverse proxy config   |
-| Migration fails                 | Check `DATABASE_URL` env var in `/opt/travellingbuddy/.env` |
+| Git fetch fails                 | `ssh -T git@github.com` as travellingbuddy user        |
+| App not responding after deploy | `pm2 logs travellingbuddy`                              |
+| 502 from Cloudflare             | Confirm app on port 3000, check reverse proxy          |
+| Migration fails                 | Check `DATABASE_URL` in `/opt/travelling-buddy/.env`   |
