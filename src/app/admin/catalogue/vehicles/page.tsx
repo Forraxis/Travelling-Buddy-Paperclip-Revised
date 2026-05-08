@@ -1,15 +1,27 @@
-import { AdminPageHeader } from '@/modules/admin/components';
+import { AdminPageHeader } from "@/modules/admin/components";
+import { listMakesAction } from "@/modules/catalogue/actions/vehicle.actions";
+import { VehicleMakesList } from "./VehicleMakesList";
 
-export default function VehiclesPage() {
+export default async function VehiclesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; cursor?: string }>;
+}) {
+  const params = await searchParams;
+  const search = params.q ?? "";
+  const cursor = params.cursor;
+  const result = await listMakesAction(cursor, search || undefined);
+
   return (
     <div>
       <AdminPageHeader
         title="Vehicles"
         description="Manage the vehicle catalogue — add, edit, and organise vehicle entries."
       />
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-8 text-center text-sm text-gray-500">
-        Vehicle catalogue CRUD will be implemented in Phase 2.4.
-      </div>
+      <VehicleMakesList
+        initialData={result}
+        initialSearch={search}
+      />
     </div>
   );
 }
