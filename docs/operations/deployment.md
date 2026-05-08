@@ -98,7 +98,7 @@ Automated pull-based — the VPS checks for new commits every 2 minutes:
 5. **Build** — `npx next build`
 6. **Migrate** — `npx prisma migrate deploy` (if migrations exist)
 7. **Restart** — `pm2 reload` for zero-downtime restart
-8. **Health check** — curl localhost:3000
+8. **Health check** — curl localhost:3070
 
 Deploy logs: `/var/log/travelling-buddy/deploy.log`
 
@@ -124,7 +124,7 @@ sudo systemctl start travellingbuddy-deploy.service
 
 - Mode: **Full (strict)**
 - Origin certificate from Cloudflare dashboard → install at `/etc/ssl/cloudflare/`
-- Reverse proxy (Nginx/Caddy) on port 443 → localhost:3000
+- Reverse proxy (Nginx/Caddy) on port 443 → localhost:3070
 
 ### Cache Rules
 
@@ -167,5 +167,5 @@ pm2 reload ecosystem.config.cjs --env production
 | Deploy script fails             | `journalctl -u travellingbuddy-deploy.service -e`      |
 | Git fetch fails                 | `ssh -T git@github.com` as travellingbuddy user        |
 | App not responding after deploy | `pm2 logs travellingbuddy`                              |
-| 502 from Cloudflare             | Confirm app on port 3000, check reverse proxy          |
+| 502 from Cloudflare             | Confirm app on port 3070, check reverse proxy          |
 | Migration fails                 | Check `DATABASE_URL` in `/opt/travelling-buddy/.env`   |

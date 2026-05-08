@@ -40,10 +40,10 @@ pm2 reload ecosystem.config.cjs --env production 2>/dev/null || \
 pm2 save --force 2>/dev/null
 
 sleep 3
-if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+if curl -sf http://localhost:3070 > /dev/null 2>&1; then
   log "Health check passed"
 else
-  log "WARNING: Health check failed — app may not be responding on port 3000"
+  log "WARNING: Health check failed — app may not be responding on port 3070"
 fi
 
 log "Deploy complete: $(git rev-parse --short HEAD)"
