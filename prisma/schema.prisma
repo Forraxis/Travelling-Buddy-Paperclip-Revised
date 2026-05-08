@@ -116,6 +116,8 @@ model VehicleVariant {
   model                 VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
   fitments              AccessoryFitment[]
   setups                Setup[]
+  vehicleSubmissions    VehicleSubmission[]
+  accessorySubmissions  AccessorySubmission[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -177,6 +179,8 @@ model CaravanVariant {
   model                 CaravanModel       @relation(fields: [modelId], references: [id], onDelete: Cascade)
   fitments              AccessoryFitment[]
   setups                Setup[]
+  caravanSubmissions    CaravanSubmission[]
+  accessorySubmissions  AccessorySubmission[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -193,7 +197,8 @@ model AccessoryBrand {
   isPartner   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  accessories Accessory[]
+  accessories          Accessory[]
+  accessorySubmissions AccessorySubmission[]
 
   @@index([slug])
 }
@@ -210,7 +215,8 @@ model AccessoryCategory {
   updatedAt    DateTime            @updatedAt
   parent       AccessoryCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children     AccessoryCategory[] @relation("CategoryHierarchy")
-  accessories  Accessory[]
+  accessories          Accessory[]
+  accessorySubmissions AccessorySubmission[]
 
   @@index([slug])
   @@index([parentId])
@@ -234,7 +240,8 @@ model Accessory {
   updatedAt    DateTime        @updatedAt
   brand        AccessoryBrand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
   category     AccessoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  fitments     AccessoryFitment[]
+  fitments              AccessoryFitment[]
+  accessorySubmissions  AccessorySubmission[]
 
   @@unique([brandId, slug])
   @@index([slug])
@@ -282,7 +289,13 @@ model User {
   accounts                Account[]
   sessions                Session[]
   setups                  Setup[]
-  verifiedFitments        AccessoryFitment[] @relation("FitmentVerifier")
+  verifiedFitments              AccessoryFitment[]      @relation("FitmentVerifier")
+  vehicleSubmissions            VehicleSubmission[]     @relation("VehicleSubmissions")
+  vehicleSubmissionDecisions    VehicleSubmission[]     @relation("VehicleSubmissionDecisions")
+  caravanSubmissions            CaravanSubmission[]     @relation("CaravanSubmissions")
+  caravanSubmissionDecisions    CaravanSubmission[]     @relation("CaravanSubmissionDecisions")
+  accessorySubmissions          AccessorySubmission[]   @relation("AccessorySubmissions")
+  accessorySubmissionDecisions  AccessorySubmission[]   @relation("AccessorySubmissionDecisions")
 }
 
 model Account {
@@ -430,8 +443,9 @@ model AccessoryFitment {
   caravanVariant           CaravanVariant?   @relation(fields: [caravanVariantId], references: [id], onDelete: Cascade)
   verifiedBy               User?             @relation("FitmentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
 
-  setupAccessories      SetupAccessory[]
+  setupAccessories        SetupAccessory[]
   setupCaravanAccessories SetupCaravanAccessory[]
+  accessorySubmissions    AccessorySubmission[]
 
   @@index([vehicleVariantId, mountingLocation])
   @@index([caravanVariantId, mountingLocation])
@@ -531,4 +545,88 @@ model SetupCustomLoad {
   setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
 
   @@index([setupId])
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model VehicleSubmission {
+  id                      String           @id @default(cuid())
+  submitterId             String
+  status                  SubmissionStatus @default(PENDING)
+  submittedData           Json
+  compliancePlatePhotoUrl String?
+  additionalPhotoUrls     String[]
+  notes                   String?
+  decidedById             String?
+  decidedAt               DateTime?
+  decisionNotes           String?
+  resultingVariantId      String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  submitter               User             @relation("VehicleSubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
+  decidedBy               User?            @relation("VehicleSubmissionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  resultingVariant        VehicleVariant?  @relation(fields: [resultingVariantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([submitterId])
+}
+
+model CaravanSubmission {
+  id                      String           @id @default(cuid())
+  submitterId             String
+  status                  SubmissionStatus @default(PENDING)
+  submittedData           Json
+  compliancePlatePhotoUrl String?
+  additionalPhotoUrls     String[]
+  notes                   String?
+  decidedById             String?
+  decidedAt               DateTime?
+  decisionNotes           String?
+  resultingVariantId      String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  submitter               User             @relation("CaravanSubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
+  decidedBy               User?            @relation("CaravanSubmissionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  resultingVariant        CaravanVariant?  @relation(fields: [resultingVariantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([submitterId])
+}
+
+model AccessorySubmission {
+  id                        String           @id @default(cuid())
+  submitterId               String
+  status                    SubmissionStatus @default(PENDING)
+  brandId                   String?
+  categoryId                String?
+  submittedData             Json
+  productPhotoUrl           String?
+  installationPhotoUrl      String?
+  appliesToVehicleVariantId String?
+  appliesToCaravanVariantId String?
+  notes                     String?
+  decidedById               String?
+  decidedAt                 DateTime?
+  decisionNotes             String?
+  resultingAccessoryId      String?
+  resultingFitmentId        String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  submitter                 User             @relation("AccessorySubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
+  decidedBy                 User?            @relation("AccessorySubmissionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  brand                     AccessoryBrand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category                  AccessoryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  appliesToVehicleVariant   VehicleVariant?  @relation(fields: [appliesToVehicleVariantId], references: [id], onDelete: SetNull)
+  appliesToCaravanVariant   CaravanVariant?  @relation(fields: [appliesToCaravanVariantId], references: [id], onDelete: SetNull)
+  resultingAccessory        Accessory?       @relation(fields: [resultingAccessoryId], references: [id], onDelete: SetNull)
+  resultingFitment          AccessoryFitment? @relation(fields: [resultingFitmentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([submitterId])
+  @@index([brandId])
+  @@index([categoryId])
 }
