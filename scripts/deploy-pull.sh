@@ -28,7 +28,7 @@ log "Deploying $BRANCH: ${LOCAL:0:7} → ${REMOTE:0:7}"
 
 git reset --hard "origin/$BRANCH"
 
-npm ci --omit=dev --ignore-scripts 2>&1 | tail -1 | tee -a "$LOG_FILE"
+npm ci 2>&1 | tail -1 | tee -a "$LOG_FILE"
 
 npx next build 2>&1 | tail -5 | tee -a "$LOG_FILE"
 
