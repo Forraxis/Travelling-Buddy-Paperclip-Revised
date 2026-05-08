@@ -114,6 +114,7 @@ model VehicleVariant {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   model                 VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  fitments              AccessoryFitment[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -173,6 +174,7 @@ model CaravanVariant {
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   model                 CaravanModel       @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  fitments              AccessoryFitment[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -230,9 +232,117 @@ model Accessory {
   updatedAt    DateTime        @updatedAt
   brand        AccessoryBrand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
   category     AccessoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  fitments     AccessoryFitment[]
 
   @@unique([brandId, slug])
   @@index([slug])
   @@index([brandId])
   @@index([categoryId])
+}
+
+enum MountingLocation {
+  CHASSIS_FRONT
+  CHASSIS_MID
+  CHASSIS_REAR
+  BULL_BAR
+  ROOF_RACK
+  ROOF_RAILS
+  TRAY_FLOOR
+  TRAY_SIDE_LEFT
+  TRAY_SIDE_RIGHT
+  TRAY_HEADBOARD
+  TRAY_TAILGATE
+  CANOPY_EXTERIOR
+  CANOPY_INTERIOR
+  CANOPY_ROOF
+  TUB_INTERIOR
+  TUB_EXTERIOR
+  BONNET
+  REAR_BAR
+  TOW_HITCH
+  WHEEL_ARCH_LEFT
+  WHEEL_ARCH_RIGHT
+  UNDERBODY_FRONT
+  UNDERBODY_MID
+  UNDERBODY_REAR
+  A_PILLAR_LEFT
+  A_PILLAR_RIGHT
+  WINDSCREEN
+  CABIN_INTERIOR
+  CABIN_ROOF
+  CABIN_DASH
+  DOOR_LEFT
+  DOOR_RIGHT
+  SNORKEL
+  FENDER_LEFT
+  FENDER_RIGHT
+  CARAVAN_DRAWBAR
+  CARAVAN_A_FRAME
+  CARAVAN_CHASSIS_FRONT
+  CARAVAN_CHASSIS_MID
+  CARAVAN_CHASSIS_REAR
+  CARAVAN_UNDERBODY
+  CARAVAN_ROOF
+  CARAVAN_WALL_LEFT
+  CARAVAN_WALL_RIGHT
+  CARAVAN_WALL_FRONT
+  CARAVAN_WALL_REAR
+  CARAVAN_BUMPER_BAR
+  CARAVAN_BOOT
+  CARAVAN_TUNNEL_BOOT
+  CARAVAN_TOOLBAR_EXTERNAL
+  CARAVAN_TOOLBAR_INTERNAL
+}
+
+enum PositionType {
+  FIXED
+  ADJUSTABLE
+  MODULAR
+  SLIDING
+}
+
+enum FitmentConfidence {
+  VERIFIED
+  MANUFACTURER_SPEC
+  COMMUNITY
+  ESTIMATED
+}
+
+enum FitmentSource {
+  OEM
+  AFTERMARKET_VERIFIED
+  USER_SUBMITTED
+  CALCULATED
+}
+
+model AccessoryFitment {
+  id                       String            @id @default(cuid())
+  accessoryId              String
+  vehicleVariantId         String?
+  caravanVariantId         String?
+  installedWeightKg        Decimal           @db.Decimal(8, 2)
+  positionType             PositionType
+  cogXMm                   Int?
+  cogYMm                   Int?
+  startXMm                 Int?
+  endXMm                   Int?
+  mountingLocation         MountingLocation
+  providesMountingLocations MountingLocation[]
+  mountOffsetXMm           Int?
+  mountOffsetYMm           Int?
+  mountOffsetZMm           Int?
+  tankCapacityL            Decimal?          @db.Decimal(8, 2)
+  tankContentsKgPerL       Decimal?          @db.Decimal(6, 3)
+  confidence               FitmentConfidence @default(ESTIMATED)
+  source                   FitmentSource     @default(USER_SUBMITTED)
+  notes                    String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  accessory                Accessory         @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+  vehicleVariant           VehicleVariant?   @relation(fields: [vehicleVariantId], references: [id], onDelete: Cascade)
+  caravanVariant           CaravanVariant?   @relation(fields: [caravanVariantId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleVariantId, mountingLocation])
+  @@index([caravanVariantId, mountingLocation])
+  @@index([accessoryId])
 }
