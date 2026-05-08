@@ -1,0 +1,755 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum VehicleBodyType {
+  DUAL_CAB_UTE
+  SINGLE_CAB_UTE
+  EXTRA_CAB_UTE
+  WAGON
+  SUV
+  VAN
+  TROOPCARRIER
+  OTHER
+}
+
+enum FuelType {
+  DIESEL
+  PETROL
+  HYBRID
+  ELECTRIC
+}
+
+enum Market {
+  AU
+  NZ
+  US
+  EU
+  GB
+}
+
+enum CaravanBodyType {
+  CARAVAN_POP_TOP
+  CARAVAN_FULL_HEIGHT
+  OFF_ROAD_CARAVAN
+  CAMPER_TRAILER
+  HYBRID
+  FIFTH_WHEELER
+  OTHER
+}
+
+enum AxleConfiguration {
+  SINGLE_AXLE
+  DUAL_AXLE_CLOSE_COUPLED
+  DUAL_AXLE_SPREAD
+  TRIPLE_AXLE
+}
+
+enum BrandStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AccessoryStatus {
+  ACTIVE
+  DISCONTINUED
+  PLACEHOLDER
+}
+
+model VehicleMake {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  slug            String         @unique
+  logoUrl         String?
+  countryOfOrigin String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  models          VehicleModel[]
+
+  @@index([slug])
+}
+
+model VehicleModel {
+  id        String          @id @default(cuid())
+  makeId    String
+  name      String
+  slug      String
+  bodyType  VehicleBodyType
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  make      VehicleMake     @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  variants  VehicleVariant[]
+
+  @@unique([makeId, slug])
+  @@index([slug])
+  @@index([makeId])
+}
+
+model VehicleVariant {
+  id                    String    @id @default(cuid())
+  modelId               String
+  yearFrom              Int
+  yearTo                Int
+  isCurrentProduction   Boolean   @default(false)
+  name                  String
+  slug                  String
+  gvmKg                 Int
+  gcmKg                 Int
+  kerbWeightKg          Int
+  maxTowingCapacityKg   Int
+  frontAxleLimitKg      Int
+  rearAxleLimitKg       Int
+  wheelbaseMm           Int
+  frontOverhangMm       Int?
+  rearOverhangMm        Int?
+  totalLengthMm         Int?
+  maxTowBallDownloadKg  Int
+  fuelTankCapacityL     Int
+  fuelType              FuelType
+  market                Market    @default(AU)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  model                 VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  fitments              AccessoryFitment[]
+  setups                Setup[]
+  vehicleSubmissions    VehicleSubmission[]
+  accessorySubmissions  AccessorySubmission[]
+
+  @@unique([modelId, slug])
+  @@index([slug])
+  @@index([modelId])
+}
+
+model CaravanMake {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  slug            String         @unique
+  logoUrl         String?
+  countryOfOrigin String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  models          CaravanModel[]
+
+  @@index([slug])
+}
+
+model CaravanModel {
+  id        String          @id @default(cuid())
+  makeId    String
+  name      String
+  slug      String
+  bodyType  CaravanBodyType
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  make      CaravanMake     @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  variants  CaravanVariant[]
+
+  @@unique([makeId, slug])
+  @@index([slug])
+  @@index([makeId])
+}
+
+model CaravanVariant {
+  id                    String             @id @default(cuid())
+  modelId               String
+  yearFrom              Int
+  yearTo                Int
+  isCurrentProduction   Boolean            @default(false)
+  name                  String
+  slug                  String
+  atmKg                 Int
+  gtmKg                 Int
+  tareKg                Int
+  tbmKg                 Int
+  axleConfiguration     AxleConfiguration
+  couplingToAxleMm      Int
+  axleSpacingMm         Int?
+  bodyLengthMm          Int
+  overallLengthMm       Int
+  freshWaterCapacityL   Int
+  greyWaterCapacityL    Int
+  gasBottleConfig       String?
+  market                Market             @default(AU)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  model                 CaravanModel       @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  fitments              AccessoryFitment[]
+  setups                Setup[]
+  caravanSubmissions    CaravanSubmission[]
+  accessorySubmissions  AccessorySubmission[]
+
+  @@unique([modelId, slug])
+  @@index([slug])
+  @@index([modelId])
+}
+
+model AccessoryBrand {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  slug        String      @unique
+  logoUrl     String?
+  websiteUrl  String?
+  status      BrandStatus @default(ACTIVE)
+  isPartner   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  accessories          Accessory[]
+  accessorySubmissions AccessorySubmission[]
+
+  @@index([slug])
+}
+
+model AccessoryCategory {
+  id           String              @id @default(cuid())
+  name         String              @unique
+  slug         String              @unique
+  description  String?
+  parentId     String?
+  displayOrder Int                 @default(0)
+  iconName     String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  parent       AccessoryCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     AccessoryCategory[] @relation("CategoryHierarchy")
+  accessories          Accessory[]
+  accessorySubmissions AccessorySubmission[]
+  sponsoredPlacements  SponsoredPlacement[]
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model Accessory {
+  id           String          @id @default(cuid())
+  brandId      String
+  categoryId   String
+  name         String
+  slug         String
+  description  String?
+  imageUrls    String[]
+  priceMin     Decimal?        @db.Decimal(10, 2)
+  priceMax     Decimal?        @db.Decimal(10, 2)
+  currencyCode String          @default("AUD")
+  affiliateUrl String?
+  status       AccessoryStatus @default(ACTIVE)
+  market       Market          @default(AU)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  brand        AccessoryBrand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  category     AccessoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  fitments              AccessoryFitment[]
+  accessorySubmissions  AccessorySubmission[]
+  sponsoredPlacements   SponsoredPlacement[]
+
+  @@unique([brandId, slug])
+  @@index([slug])
+  @@index([brandId])
+  @@index([categoryId])
+}
+
+enum UserRole {
+  ADMIN
+  MODERATOR
+  CONTRIBUTOR
+  VIEWER
+}
+
+enum AustralianState {
+  NSW
+  VIC
+  QLD
+  WA
+  SA
+  TAS
+  NT
+  ACT
+}
+
+enum TrustTier {
+  NEW
+  BASIC
+  TRUSTED
+  EXPERT
+}
+
+model User {
+  id                      String    @id @default(cuid())
+  name                    String?
+  email                   String    @unique
+  emailVerified           DateTime?
+  image                   String?
+  role                    UserRole  @default(VIEWER)
+  homeState               AustralianState?
+  trustTier               TrustTier @default(NEW)
+  notificationPreferences Json      @default("{}")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  accounts                Account[]
+  sessions                Session[]
+  setups                  Setup[]
+  verifiedFitments              AccessoryFitment[]      @relation("FitmentVerifier")
+  vehicleSubmissions            VehicleSubmission[]     @relation("VehicleSubmissions")
+  vehicleSubmissionDecisions    VehicleSubmission[]     @relation("VehicleSubmissionDecisions")
+  caravanSubmissions            CaravanSubmission[]     @relation("CaravanSubmissions")
+  caravanSubmissionDecisions    CaravanSubmission[]     @relation("CaravanSubmissionDecisions")
+  accessorySubmissions          AccessorySubmission[]   @relation("AccessorySubmissions")
+  accessorySubmissionDecisions  AccessorySubmission[]   @relation("AccessorySubmissionDecisions")
+  auditLogs                     AuditLog[]
+  moderationActions             ModerationAction[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum MountingLocation {
+  CHASSIS_FRONT
+  CHASSIS_MID
+  CHASSIS_REAR
+  BULL_BAR
+  ROOF_RACK
+  ROOF_RAILS
+  TRAY_FLOOR
+  TRAY_SIDE_LEFT
+  TRAY_SIDE_RIGHT
+  TRAY_HEADBOARD
+  TRAY_TAILGATE
+  CANOPY_EXTERIOR
+  CANOPY_INTERIOR
+  CANOPY_ROOF
+  TUB_INTERIOR
+  TUB_EXTERIOR
+  BONNET
+  REAR_BAR
+  TOW_HITCH
+  WHEEL_ARCH_LEFT
+  WHEEL_ARCH_RIGHT
+  UNDERBODY_FRONT
+  UNDERBODY_MID
+  UNDERBODY_REAR
+  A_PILLAR_LEFT
+  A_PILLAR_RIGHT
+  WINDSCREEN
+  CABIN_INTERIOR
+  CABIN_ROOF
+  CABIN_DASH
+  DOOR_LEFT
+  DOOR_RIGHT
+  SNORKEL
+  FENDER_LEFT
+  FENDER_RIGHT
+  CARAVAN_DRAWBAR
+  CARAVAN_A_FRAME
+  CARAVAN_CHASSIS_FRONT
+  CARAVAN_CHASSIS_MID
+  CARAVAN_CHASSIS_REAR
+  CARAVAN_UNDERBODY
+  CARAVAN_ROOF
+  CARAVAN_WALL_LEFT
+  CARAVAN_WALL_RIGHT
+  CARAVAN_WALL_FRONT
+  CARAVAN_WALL_REAR
+  CARAVAN_BUMPER_BAR
+  CARAVAN_BOOT
+  CARAVAN_TUNNEL_BOOT
+  CARAVAN_TOOLBAR_EXTERNAL
+  CARAVAN_TOOLBAR_INTERNAL
+}
+
+enum PositionType {
+  FIXED
+  ADJUSTABLE
+  MODULAR
+  SLIDING
+}
+
+enum FitmentConfidence {
+  VERIFIED
+  MANUFACTURER_SPEC
+  COMMUNITY
+  ESTIMATED
+}
+
+enum FitmentSource {
+  OEM
+  AFTERMARKET_VERIFIED
+  USER_SUBMITTED
+  CALCULATED
+}
+
+model AccessoryFitment {
+  id                       String            @id @default(cuid())
+  accessoryId              String
+  vehicleVariantId         String?
+  caravanVariantId         String?
+  installedWeightKg        Decimal           @db.Decimal(8, 2)
+  positionType             PositionType
+  cogXMm                   Int?
+  cogYMm                   Int?
+  startXMm                 Int?
+  endXMm                   Int?
+  mountingLocation         MountingLocation
+  providesMountingLocations MountingLocation[]
+  mountOffsetXMm           Int?
+  mountOffsetYMm           Int?
+  mountOffsetZMm           Int?
+  tankCapacityL            Decimal?          @db.Decimal(8, 2)
+  tankContentsKgPerL       Decimal?          @db.Decimal(6, 3)
+  confidence               FitmentConfidence @default(ESTIMATED)
+  source                   FitmentSource     @default(USER_SUBMITTED)
+  notes                    String?
+  verifiedById             String?
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  accessory                Accessory         @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
+  vehicleVariant           VehicleVariant?   @relation(fields: [vehicleVariantId], references: [id], onDelete: Cascade)
+  caravanVariant           CaravanVariant?   @relation(fields: [caravanVariantId], references: [id], onDelete: Cascade)
+  verifiedBy               User?             @relation("FitmentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  setupAccessories        SetupAccessory[]
+  setupCaravanAccessories SetupCaravanAccessory[]
+  accessorySubmissions    AccessorySubmission[]
+
+  @@index([vehicleVariantId, mountingLocation])
+  @@index([caravanVariantId, mountingLocation])
+  @@index([accessoryId])
+}
+
+enum RegulationSetCode {
+  AU_ADR
+  NZ_VIRM
+  US_FMVSS
+  EU_UNECE
+  GB_IVA
+}
+
+model Setup {
+  id                    String          @id @default(cuid())
+  userId                String
+  name                  String
+  vehicleVariantId      String?
+  caravanVariantId      String?
+  passengers            Int             @default(2)
+  cargoKg               Decimal         @default(0) @db.Decimal(8, 2)
+  fuelPercent           Int             @default(100)
+  freshWaterPercent     Int             @default(100)
+  greyWaterPercent      Int             @default(0)
+  calibrationOverrides  Json            @default("{}")
+  shareToken            String          @unique @default(cuid())
+  regulationSetCode     RegulationSetCode @default(AU_ADR)
+  deletedAt             DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleVariant        VehicleVariant? @relation(fields: [vehicleVariantId], references: [id], onDelete: SetNull)
+  caravanVariant        CaravanVariant? @relation(fields: [caravanVariantId], references: [id], onDelete: SetNull)
+  accessories           SetupAccessory[]
+  caravanAccessories    SetupCaravanAccessory[]
+  customLoads           SetupCustomLoad[]
+
+  @@index([userId])
+  @@index([vehicleVariantId])
+  @@index([caravanVariantId])
+  @@index([shareToken])
+  @@index([deletedAt])
+}
+
+model SetupAccessory {
+  id                String          @id @default(cuid())
+  setupId           String
+  fitmentId         String
+  parentId          String?
+  quantityOverride  Int             @default(1)
+  fillPercent       Int             @default(100)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
+  fitment           AccessoryFitment @relation(fields: [fitmentId], references: [id], onDelete: Cascade)
+  parent            SetupAccessory?  @relation("SetupAccessoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children          SetupAccessory[] @relation("SetupAccessoryHierarchy")
+
+  @@index([setupId])
+  @@index([fitmentId])
+  @@index([parentId])
+}
+
+model SetupCaravanAccessory {
+  id                String          @id @default(cuid())
+  setupId           String
+  fitmentId         String
+  parentId          String?
+  quantityOverride  Int             @default(1)
+  fillPercent       Int             @default(100)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
+  fitment           AccessoryFitment @relation(fields: [fitmentId], references: [id], onDelete: Cascade)
+  parent            SetupCaravanAccessory?  @relation("SetupCaravanAccessoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children          SetupCaravanAccessory[] @relation("SetupCaravanAccessoryHierarchy")
+
+  @@index([setupId])
+  @@index([fitmentId])
+  @@index([parentId])
+}
+
+model SetupCustomLoad {
+  id                String          @id @default(cuid())
+  setupId           String
+  label             String
+  weightKg          Decimal         @db.Decimal(8, 2)
+  mountingLocation  MountingLocation
+  cogXMm            Int?
+  cogYMm            Int?
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
+
+  @@index([setupId])
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model VehicleSubmission {
+  id                      String           @id @default(cuid())
+  submitterId             String
+  status                  SubmissionStatus @default(PENDING)
+  submittedData           Json
+  compliancePlatePhotoUrl String?
+  additionalPhotoUrls     String[]
+  notes                   String?
+  decidedById             String?
+  decidedAt               DateTime?
+  decisionNotes           String?
+  resultingVariantId      String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  submitter               User             @relation("VehicleSubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
+  decidedBy               User?            @relation("VehicleSubmissionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  resultingVariant        VehicleVariant?  @relation(fields: [resultingVariantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([submitterId])
+}
+
+model CaravanSubmission {
+  id                      String           @id @default(cuid())
+  submitterId             String
+  status                  SubmissionStatus @default(PENDING)
+  submittedData           Json
+  compliancePlatePhotoUrl String?
+  additionalPhotoUrls     String[]
+  notes                   String?
+  decidedById             String?
+  decidedAt               DateTime?
+  decisionNotes           String?
+  resultingVariantId      String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  submitter               User             @relation("CaravanSubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
+  decidedBy               User?            @relation("CaravanSubmissionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  resultingVariant        CaravanVariant?  @relation(fields: [resultingVariantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([submitterId])
+}
+
+model AccessorySubmission {
+  id                        String           @id @default(cuid())
+  submitterId               String
+  status                    SubmissionStatus @default(PENDING)
+  brandId                   String?
+  categoryId                String?
+  submittedData             Json
+  productPhotoUrl           String?
+  installationPhotoUrl      String?
+  appliesToVehicleVariantId String?
+  appliesToCaravanVariantId String?
+  notes                     String?
+  decidedById               String?
+  decidedAt                 DateTime?
+  decisionNotes             String?
+  resultingAccessoryId      String?
+  resultingFitmentId        String?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  submitter                 User             @relation("AccessorySubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
+  decidedBy                 User?            @relation("AccessorySubmissionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  brand                     AccessoryBrand?  @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category                  AccessoryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  appliesToVehicleVariant   VehicleVariant?  @relation(fields: [appliesToVehicleVariantId], references: [id], onDelete: SetNull)
+  appliesToCaravanVariant   CaravanVariant?  @relation(fields: [appliesToCaravanVariantId], references: [id], onDelete: SetNull)
+  resultingAccessory        Accessory?       @relation(fields: [resultingAccessoryId], references: [id], onDelete: SetNull)
+  resultingFitment          AccessoryFitment? @relation(fields: [resultingFitmentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([submitterId])
+  @@index([brandId])
+  @@index([categoryId])
+}
+
+enum SponsorStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum PlacementType {
+  ACCESSORY_FEATURED
+  CATEGORY_TOP
+  RECOMMENDATION_PINNED
+  VEHICLE_TYPE_FEATURED
+}
+
+enum PlacementTier {
+  FEATURED_FIT
+  CATEGORY_TOP
+  RECOMMENDATION_PINNED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum ModerationActionType {
+  APPROVE
+  REJECT
+  REQUEST_INFO
+}
+
+model Sponsor {
+  id               String        @id @default(cuid())
+  name             String        @unique
+  contactName      String?
+  contactEmail     String?
+  billingReference String?
+  status           SponsorStatus @default(ACTIVE)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  placements       SponsoredPlacement[]
+
+  @@index([status])
+}
+
+model SponsoredPlacement {
+  id              String          @id @default(cuid())
+  sponsorId       String
+  placementType   PlacementType
+  accessoryId     String?
+  categoryId      String?
+  vehicleBodyType VehicleBodyType?
+  stateFilter     AustralianState?
+  startsAt        DateTime
+  endsAt          DateTime
+  tier            PlacementTier
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  sponsor         Sponsor         @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  accessory       Accessory?      @relation(fields: [accessoryId], references: [id], onDelete: SetNull)
+  category        AccessoryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([sponsorId])
+  @@index([placementType])
+  @@index([startsAt, endsAt])
+  @@index([accessoryId])
+  @@index([categoryId])
+}
+
+model RegulationSet {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  name          String
+  parentSetCode String?
+  rules         Json     @default("{}")
+  market        Market   @default(AU)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  parent        RegulationSet?  @relation("RegulationSetHierarchy", fields: [parentSetCode], references: [code], onDelete: SetNull)
+  children      RegulationSet[] @relation("RegulationSetHierarchy")
+
+  @@index([parentSetCode])
+  @@index([market])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  entityType String
+  entityId   String
+  action     AuditAction
+  changedBy  String
+  changes    Json        @default("{}")
+  reason     String?
+  createdAt  DateTime    @default(now())
+  user       User        @relation(fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId])
+  @@index([changedBy])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ModerationAction {
+  id             String               @id @default(cuid())
+  submissionType String
+  submissionId   String
+  moderatorId    String
+  action         ModerationActionType
+  notes          String?
+  createdAt      DateTime             @default(now())
+  moderator      User                 @relation(fields: [moderatorId], references: [id], onDelete: Restrict)
+
+  @@index([submissionType, submissionId])
+  @@index([moderatorId])
+  @@index([action])
+  @@index([createdAt])
+}

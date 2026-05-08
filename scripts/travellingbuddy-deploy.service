@@ -1,0 +1,14 @@
+[Unit]
+Description=TravellingBuddy pull-based deploy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=travellingbuddy
+Group=travellingbuddy
+WorkingDirectory=/opt/travelling-buddy
+ExecStart=/opt/travelling-buddy/scripts/deploy-pull.sh
+Environment=DEPLOY_BRANCH=develop
+StandardOutput=append:/var/log/travelling-buddy/deploy.log
+StandardError=append:/var/log/travelling-buddy/deploy.log
