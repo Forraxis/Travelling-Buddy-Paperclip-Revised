@@ -240,6 +240,89 @@ model Accessory {
   @@index([categoryId])
 }
 
+enum UserRole {
+  ADMIN
+  MODERATOR
+  CONTRIBUTOR
+  VIEWER
+}
+
+enum AustralianState {
+  NSW
+  VIC
+  QLD
+  WA
+  SA
+  TAS
+  NT
+  ACT
+}
+
+enum TrustTier {
+  NEW
+  BASIC
+  TRUSTED
+  EXPERT
+}
+
+model User {
+  id                      String    @id @default(cuid())
+  name                    String?
+  email                   String    @unique
+  emailVerified           DateTime?
+  image                   String?
+  role                    UserRole  @default(VIEWER)
+  homeState               AustralianState?
+  trustTier               TrustTier @default(NEW)
+  notificationPreferences Json      @default("{}")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  accounts                Account[]
+  sessions                Session[]
+  verifiedFitments        AccessoryFitment[] @relation("FitmentVerifier")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
 enum MountingLocation {
   CHASSIS_FRONT
   CHASSIS_MID
@@ -336,11 +419,13 @@ model AccessoryFitment {
   confidence               FitmentConfidence @default(ESTIMATED)
   source                   FitmentSource     @default(USER_SUBMITTED)
   notes                    String?
+  verifiedById             String?
   createdAt                DateTime          @default(now())
   updatedAt                DateTime          @updatedAt
   accessory                Accessory         @relation(fields: [accessoryId], references: [id], onDelete: Cascade)
   vehicleVariant           VehicleVariant?   @relation(fields: [vehicleVariantId], references: [id], onDelete: Cascade)
   caravanVariant           CaravanVariant?   @relation(fields: [caravanVariantId], references: [id], onDelete: Cascade)
+  verifiedBy               User?             @relation("FitmentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
 
   @@index([vehicleVariantId, mountingLocation])
   @@index([caravanVariantId, mountingLocation])
