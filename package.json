@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port 3070",
+    "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . && prettier --check .",
