@@ -19,10 +19,9 @@ export const adminNavSections: NavSection[] = [
     items: [
       { label: 'Vehicles', href: '/admin/catalogue/vehicles', icon: 'vehicle' },
       { label: 'Caravans', href: '/admin/catalogue/caravans', icon: 'caravan' },
-      { label: 'Accessories', href: '/admin/catalogue/accessories', icon: 'accessory', disabled: true },
-      { label: 'Brands', href: '/admin/catalogue/brands', icon: 'brand', disabled: true },
-      { label: 'Categories', href: '/admin/catalogue/categories', icon: 'category', disabled: true },
-      { label: 'Mounting Locations', href: '/admin/catalogue/mounting-locations', icon: 'mount', disabled: true },
+      { label: 'Accessories', href: '/admin/catalogue/accessories', icon: 'accessory' },
+      { label: 'Brands', href: '/admin/catalogue/brands', icon: 'brand' },
+      { label: 'Categories', href: '/admin/catalogue/categories', icon: 'category' },
     ],
   },
   {
