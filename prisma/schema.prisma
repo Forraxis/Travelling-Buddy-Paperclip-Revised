@@ -115,6 +115,7 @@ model VehicleVariant {
   updatedAt             DateTime  @updatedAt
   model                 VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
   fitments              AccessoryFitment[]
+  setups                Setup[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -175,6 +176,7 @@ model CaravanVariant {
   updatedAt             DateTime           @updatedAt
   model                 CaravanModel       @relation(fields: [modelId], references: [id], onDelete: Cascade)
   fitments              AccessoryFitment[]
+  setups                Setup[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -279,6 +281,7 @@ model User {
   updatedAt               DateTime  @updatedAt
   accounts                Account[]
   sessions                Session[]
+  setups                  Setup[]
   verifiedFitments        AccessoryFitment[] @relation("FitmentVerifier")
 }
 
@@ -427,7 +430,105 @@ model AccessoryFitment {
   caravanVariant           CaravanVariant?   @relation(fields: [caravanVariantId], references: [id], onDelete: Cascade)
   verifiedBy               User?             @relation("FitmentVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
 
+  setupAccessories      SetupAccessory[]
+  setupCaravanAccessories SetupCaravanAccessory[]
+
   @@index([vehicleVariantId, mountingLocation])
   @@index([caravanVariantId, mountingLocation])
   @@index([accessoryId])
+}
+
+enum RegulationSet {
+  AU_ADR
+  NZ_VIRM
+  US_FMVSS
+  EU_UNECE
+  GB_IVA
+}
+
+model Setup {
+  id                    String          @id @default(cuid())
+  userId                String
+  name                  String
+  vehicleVariantId      String?
+  caravanVariantId      String?
+  passengers            Int             @default(2)
+  cargoKg               Decimal         @default(0) @db.Decimal(8, 2)
+  fuelPercent           Int             @default(100)
+  freshWaterPercent     Int             @default(100)
+  greyWaterPercent      Int             @default(0)
+  calibrationOverrides  Json            @default("{}")
+  shareToken            String          @unique @default(cuid())
+  regulationSetCode     RegulationSet   @default(AU_ADR)
+  deletedAt             DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleVariant        VehicleVariant? @relation(fields: [vehicleVariantId], references: [id], onDelete: SetNull)
+  caravanVariant        CaravanVariant? @relation(fields: [caravanVariantId], references: [id], onDelete: SetNull)
+  accessories           SetupAccessory[]
+  caravanAccessories    SetupCaravanAccessory[]
+  customLoads           SetupCustomLoad[]
+
+  @@index([userId])
+  @@index([vehicleVariantId])
+  @@index([caravanVariantId])
+  @@index([shareToken])
+  @@index([deletedAt])
+}
+
+model SetupAccessory {
+  id                String          @id @default(cuid())
+  setupId           String
+  fitmentId         String
+  parentId          String?
+  quantityOverride  Int             @default(1)
+  fillPercent       Int             @default(100)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
+  fitment           AccessoryFitment @relation(fields: [fitmentId], references: [id], onDelete: Cascade)
+  parent            SetupAccessory?  @relation("SetupAccessoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children          SetupAccessory[] @relation("SetupAccessoryHierarchy")
+
+  @@index([setupId])
+  @@index([fitmentId])
+  @@index([parentId])
+}
+
+model SetupCaravanAccessory {
+  id                String          @id @default(cuid())
+  setupId           String
+  fitmentId         String
+  parentId          String?
+  quantityOverride  Int             @default(1)
+  fillPercent       Int             @default(100)
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
+  fitment           AccessoryFitment @relation(fields: [fitmentId], references: [id], onDelete: Cascade)
+  parent            SetupCaravanAccessory?  @relation("SetupCaravanAccessoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children          SetupCaravanAccessory[] @relation("SetupCaravanAccessoryHierarchy")
+
+  @@index([setupId])
+  @@index([fitmentId])
+  @@index([parentId])
+}
+
+model SetupCustomLoad {
+  id                String          @id @default(cuid())
+  setupId           String
+  label             String
+  weightKg          Decimal         @db.Decimal(8, 2)
+  mountingLocation  MountingLocation
+  cogXMm            Int?
+  cogYMm            Int?
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
+
+  @@index([setupId])
 }
