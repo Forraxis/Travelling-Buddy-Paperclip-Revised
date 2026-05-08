@@ -1,1 +1,16 @@
-{}
+{
+  "common": {
+    "appName": "TravellingBuddy",
+    "tagline": "Australia's most comprehensive rig weight & compliance calculator.",
+    "comingSoon": "Coming soon — Phase 1"
+  },
+  "navbar": {
+    "home": "Home",
+    "calculator": "Calculator",
+    "about": "About"
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "generic": "Something went wrong. Please try again."
+  }
+}
