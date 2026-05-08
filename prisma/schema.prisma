@@ -1,1 +1,169 @@
-// Placeholder — Prisma schema will be defined here after Prisma is installed.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum VehicleBodyType {
+  DUAL_CAB_UTE
+  SINGLE_CAB_UTE
+  EXTRA_CAB_UTE
+  WAGON
+  SUV
+  VAN
+  TROOPCARRIER
+  OTHER
+}
+
+enum FuelType {
+  DIESEL
+  PETROL
+  HYBRID
+  ELECTRIC
+}
+
+enum Market {
+  AU
+  NZ
+  US
+  EU
+  GB
+}
+
+enum CaravanBodyType {
+  CARAVAN_POP_TOP
+  CARAVAN_FULL_HEIGHT
+  OFF_ROAD_CARAVAN
+  CAMPER_TRAILER
+  HYBRID
+  FIFTH_WHEELER
+  OTHER
+}
+
+enum AxleConfiguration {
+  SINGLE_AXLE
+  DUAL_AXLE_CLOSE_COUPLED
+  DUAL_AXLE_SPREAD
+  TRIPLE_AXLE
+}
+
+model VehicleMake {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  slug            String         @unique
+  logoUrl         String?
+  countryOfOrigin String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  models          VehicleModel[]
+
+  @@index([slug])
+}
+
+model VehicleModel {
+  id        String          @id @default(cuid())
+  makeId    String
+  name      String
+  slug      String
+  bodyType  VehicleBodyType
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  make      VehicleMake     @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  variants  VehicleVariant[]
+
+  @@unique([makeId, slug])
+  @@index([slug])
+  @@index([makeId])
+}
+
+model VehicleVariant {
+  id                    String    @id @default(cuid())
+  modelId               String
+  yearFrom              Int
+  yearTo                Int
+  isCurrentProduction   Boolean   @default(false)
+  name                  String
+  slug                  String
+  gvmKg                 Int
+  gcmKg                 Int
+  kerbWeightKg          Int
+  maxTowingCapacityKg   Int
+  frontAxleLimitKg      Int
+  rearAxleLimitKg       Int
+  wheelbaseMm           Int
+  frontOverhangMm       Int?
+  rearOverhangMm        Int?
+  totalLengthMm         Int?
+  maxTowBallDownloadKg  Int
+  fuelTankCapacityL     Int
+  fuelType              FuelType
+  market                Market    @default(AU)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  model                 VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([modelId, slug])
+  @@index([slug])
+  @@index([modelId])
+}
+
+model CaravanMake {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  slug            String         @unique
+  logoUrl         String?
+  countryOfOrigin String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  models          CaravanModel[]
+
+  @@index([slug])
+}
+
+model CaravanModel {
+  id        String          @id @default(cuid())
+  makeId    String
+  name      String
+  slug      String
+  bodyType  CaravanBodyType
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  make      CaravanMake     @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  variants  CaravanVariant[]
+
+  @@unique([makeId, slug])
+  @@index([slug])
+  @@index([makeId])
+}
+
+model CaravanVariant {
+  id                    String             @id @default(cuid())
+  modelId               String
+  yearFrom              Int
+  yearTo                Int
+  isCurrentProduction   Boolean            @default(false)
+  name                  String
+  slug                  String
+  atmKg                 Int
+  gtmKg                 Int
+  tareKg                Int
+  tbmKg                 Int
+  axleConfiguration     AxleConfiguration
+  couplingToAxleMm      Int
+  axleSpacingMm         Int?
+  bodyLengthMm          Int
+  overallLengthMm       Int
+  freshWaterCapacityL   Int
+  greyWaterCapacityL    Int
+  gasBottleConfig       String?
+  market                Market             @default(AU)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  model                 CaravanModel       @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@unique([modelId, slug])
+  @@index([slug])
+  @@index([modelId])
+}
