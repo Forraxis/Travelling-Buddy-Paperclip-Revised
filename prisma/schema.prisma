@@ -49,6 +49,17 @@ enum AxleConfiguration {
   TRIPLE_AXLE
 }
 
+enum BrandStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AccessoryStatus {
+  ACTIVE
+  DISCONTINUED
+  PLACEHOLDER
+}
+
 model VehicleMake {
   id              String         @id @default(cuid())
   name            String         @unique
@@ -166,4 +177,62 @@ model CaravanVariant {
   @@unique([modelId, slug])
   @@index([slug])
   @@index([modelId])
+}
+
+model AccessoryBrand {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  slug        String      @unique
+  logoUrl     String?
+  websiteUrl  String?
+  status      BrandStatus @default(ACTIVE)
+  isPartner   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  accessories Accessory[]
+
+  @@index([slug])
+}
+
+model AccessoryCategory {
+  id           String              @id @default(cuid())
+  name         String              @unique
+  slug         String              @unique
+  description  String?
+  parentId     String?
+  displayOrder Int                 @default(0)
+  iconName     String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  parent       AccessoryCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     AccessoryCategory[] @relation("CategoryHierarchy")
+  accessories  Accessory[]
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model Accessory {
+  id           String          @id @default(cuid())
+  brandId      String
+  categoryId   String
+  name         String
+  slug         String
+  description  String?
+  imageUrls    String[]
+  priceMin     Decimal?        @db.Decimal(10, 2)
+  priceMax     Decimal?        @db.Decimal(10, 2)
+  currencyCode String          @default("AUD")
+  affiliateUrl String?
+  status       AccessoryStatus @default(ACTIVE)
+  market       Market          @default(AU)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  brand        AccessoryBrand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  category     AccessoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([brandId, slug])
+  @@index([slug])
+  @@index([brandId])
+  @@index([categoryId])
 }
