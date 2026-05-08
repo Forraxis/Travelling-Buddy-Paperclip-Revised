@@ -32,6 +32,7 @@ CREATE TABLE "AccessoryFitment" (
     "confidence" "FitmentConfidence" NOT NULL DEFAULT 'ESTIMATED',
     "source" "FitmentSource" NOT NULL DEFAULT 'USER_SUBMITTED',
     "notes" TEXT,
+    "verifiedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -62,3 +63,6 @@ ALTER TABLE "AccessoryFitment" ADD CONSTRAINT "AccessoryFitment_vehicleVariantId
 
 -- AddForeignKey
 ALTER TABLE "AccessoryFitment" ADD CONSTRAINT "AccessoryFitment_caravanVariantId_fkey" FOREIGN KEY ("caravanVariantId") REFERENCES "CaravanVariant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AccessoryFitment" ADD CONSTRAINT "AccessoryFitment_verifiedById_fkey" FOREIGN KEY ("verifiedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

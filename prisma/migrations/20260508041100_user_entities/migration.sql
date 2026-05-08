@@ -7,9 +7,6 @@ CREATE TYPE "AustralianState" AS ENUM ('NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', '
 -- CreateEnum
 CREATE TYPE "TrustTier" AS ENUM ('NEW', 'BASIC', 'TRUSTED', 'EXPERT');
 
--- AlterTable
-ALTER TABLE "AccessoryFitment" ADD COLUMN     "verifiedById" TEXT;
-
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -90,5 +87,3 @@ ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId"
 -- AddForeignKey
 ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
-ALTER TABLE "AccessoryFitment" ADD CONSTRAINT "AccessoryFitment_verifiedById_fkey" FOREIGN KEY ("verifiedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
