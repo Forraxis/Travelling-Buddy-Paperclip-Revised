@@ -1,3 +1,5 @@
+import RightColumn from './_components/RightColumn';
+
 export default function CalculatorPage() {
   return (
     /*
@@ -30,35 +32,7 @@ export default function CalculatorPage() {
       </div>
 
       {/* Right results column — hidden on mobile per spec §7.7 */}
-      <div className="hidden md:flex md:w-[45%] lg:w-[40%] md:flex-none md:flex-col md:border-l md:border-tb-neutral-200 md:bg-white">
-        {/* Sticky inner wrapper */}
-        <div className="sticky top-0 flex h-[calc(100vh-3.5rem)] flex-col overflow-y-auto px-4 py-6">
-          {/* Verdict banner placeholder */}
-          <div className="mb-4 rounded-md bg-tb-neutral-200 px-4 py-3 text-sm text-gray-500">
-            Verdict — configure a vehicle to see results
-          </div>
-
-          {/* Schematic placeholder */}
-          <div className="mb-4 rounded-lg border border-tb-neutral-200 bg-tb-neutral-50 flex items-center justify-center h-40 text-sm text-gray-400">
-            Schematic
-          </div>
-
-          {/* Metric grid placeholder */}
-          <div className="mb-4 rounded-lg border border-tb-neutral-200 bg-tb-neutral-50 p-4 text-sm text-gray-400">
-            Metric grid
-          </div>
-
-          {/* Recommendations placeholder */}
-          <div className="mb-4 rounded-lg border border-tb-neutral-200 bg-tb-neutral-50 p-4 text-sm text-gray-400">
-            Recommendations
-          </div>
-
-          {/* Action bar placeholder */}
-          <div className="mt-auto rounded-lg border border-tb-neutral-200 bg-tb-neutral-50 p-4 text-sm text-gray-400">
-            Save · Share · Download PDF
-          </div>
-        </div>
-      </div>
+      <RightColumn vehicleSelected={false} />
     </div>
   );
 }
