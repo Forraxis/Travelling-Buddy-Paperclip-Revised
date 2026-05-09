@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { CalculatorShell } from './CalculatorShell';
 
 export const metadata: Metadata = {
   title: 'Rig Weight & Compliance Calculator | TravellingBuddy',
@@ -16,7 +17,7 @@ export default function CalculatorLayout({ children }: { children: React.ReactNo
         <div className="h-8 w-8 rounded-full bg-tb-neutral-200" aria-label="Account" />
       </header>
 
-      {children}
+      <CalculatorShell>{children}</CalculatorShell>
     </div>
   );
 }
