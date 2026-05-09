@@ -8,7 +8,7 @@ import {
   useReducer,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CalculatorState, CalculatorAction, JourneyAssumptions, SelectedAccessory } from "./types";
+import type { CalculatorState, CalculatorAction, JourneyAssumptions, CaravanAssumptions, SelectedAccessory } from "./types";
 import { calculatorReducer, INITIAL_STATE } from "./types";
 import { paramsToState, stateToParams } from "./url-params";
 
@@ -17,6 +17,7 @@ interface CalculatorContextValue {
   setVehicleVariant: (id: string | null) => void;
   setCaravanVariant: (id: string | null) => void;
   setJourney: (patch: Partial<JourneyAssumptions>) => void;
+  setCaravanAssumptions: (patch: Partial<CaravanAssumptions>) => void;
   addAccessory: (accessory: SelectedAccessory) => void;
   removeAccessory: (fitmentId: string) => void;
   updateAccessory: (fitmentId: string, patch: Partial<Omit<SelectedAccessory, "fitmentId">>) => void;
@@ -70,6 +71,10 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
     (patch: Partial<JourneyAssumptions>) => dispatch({ type: "SET_JOURNEY", patch }),
     [],
   );
+  const setCaravanAssumptions = useCallback(
+    (patch: Partial<CaravanAssumptions>) => dispatch({ type: "SET_CARAVAN_ASSUMPTIONS", patch }),
+    [],
+  );
   const addAccessory = useCallback(
     (accessory: SelectedAccessory) => dispatch({ type: "ADD_ACCESSORY", accessory }),
     [],
@@ -92,6 +97,7 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         setVehicleVariant,
         setCaravanVariant,
         setJourney,
+        setCaravanAssumptions,
         addAccessory,
         removeAccessory,
         updateAccessory,

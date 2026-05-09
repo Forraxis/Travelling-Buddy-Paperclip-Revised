@@ -1,5 +1,5 @@
-import type { CalculatorState, JourneyAssumptions } from "./types";
-import { DEFAULT_JOURNEY, INITIAL_STATE } from "./types";
+import type { CalculatorState, JourneyAssumptions, CaravanAssumptions } from "./types";
+import { DEFAULT_JOURNEY, DEFAULT_CARAVAN_ASSUMPTIONS, INITIAL_STATE } from "./types";
 
 const PARAM = {
   vehicleVariantId: "vehicleVariantId",
@@ -10,6 +10,9 @@ const PARAM = {
   freshWaterPercent: "freshWaterPercent",
   greyWaterPercent: "greyWaterPercent",
   gearKg: "gearKg",
+  cvFreshWaterL: "cvFreshWaterL",
+  cvGreyWaterL: "cvGreyWaterL",
+  cvGearKg: "cvGearKg",
 } as const;
 
 function clamp(value: number, min: number, max: number): number {
@@ -60,6 +63,17 @@ export function stateToParams(state: CalculatorState): URLSearchParams {
     params.set(PARAM.gearKg, String(j.gearKg));
   }
 
+  const ca = state.caravanAssumptions;
+  if (ca.freshWaterL !== DEFAULT_CARAVAN_ASSUMPTIONS.freshWaterL) {
+    params.set(PARAM.cvFreshWaterL, String(ca.freshWaterL));
+  }
+  if (ca.greyWaterL !== DEFAULT_CARAVAN_ASSUMPTIONS.greyWaterL) {
+    params.set(PARAM.cvGreyWaterL, String(ca.greyWaterL));
+  }
+  if (ca.gearKg !== DEFAULT_CARAVAN_ASSUMPTIONS.gearKg) {
+    params.set(PARAM.cvGearKg, String(ca.gearKg));
+  }
+
   return params;
 }
 
@@ -69,6 +83,7 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
 
   const journey: JourneyAssumptions = {
     passengers: clamp(parseIntParam(params, PARAM.passengers) ?? DEFAULT_JOURNEY.passengers, 1, 9),
+    passengerWeightKg: DEFAULT_JOURNEY.passengerWeightKg,
     cargoKg: clamp(parseFloatParam(params, PARAM.cargoKg) ?? DEFAULT_JOURNEY.cargoKg, 0, 5000),
     fuelPercent: clamp(parseIntParam(params, PARAM.fuelPercent) ?? DEFAULT_JOURNEY.fuelPercent, 0, 100),
     freshWaterPercent: clamp(
@@ -84,10 +99,29 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
     gearKg: clamp(parseFloatParam(params, PARAM.gearKg) ?? DEFAULT_JOURNEY.gearKg, 0, 5000),
   };
 
+  const caravanAssumptions: CaravanAssumptions = {
+    freshWaterL: clamp(
+      parseFloatParam(params, PARAM.cvFreshWaterL) ?? DEFAULT_CARAVAN_ASSUMPTIONS.freshWaterL,
+      0,
+      600,
+    ),
+    greyWaterL: clamp(
+      parseFloatParam(params, PARAM.cvGreyWaterL) ?? DEFAULT_CARAVAN_ASSUMPTIONS.greyWaterL,
+      0,
+      600,
+    ),
+    gearKg: clamp(
+      parseFloatParam(params, PARAM.cvGearKg) ?? DEFAULT_CARAVAN_ASSUMPTIONS.gearKg,
+      0,
+      2000,
+    ),
+  };
+
   return {
     ...INITIAL_STATE,
     vehicleVariantId,
     caravanVariantId,
     journey,
+    caravanAssumptions,
   };
 }
