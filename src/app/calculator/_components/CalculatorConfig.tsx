@@ -15,8 +15,8 @@ export function CalculatorConfig() {
       {/* Caravan panel */}
       <CaravanPanel />
 
-      {/* Mobile spacing */}
-      <div className="h-22 md:hidden" />
+      {/* Mobile bottom spacer — keeps last element above sticky results bar (~88pt) */}
+      <div className="h-[88px] md:hidden" />
     </div>
   );
 }
