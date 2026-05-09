@@ -9,6 +9,21 @@ describe("stateToParams", () => {
     expect(params.toString()).toBe("");
   });
 
+  it("encodes accessories as comma-separated IDs", () => {
+    const state: CalculatorState = {
+      ...INITIAL_STATE,
+      accessories: [
+        { accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" },
+        { accessoryId: "acc-2", massKg: 10, mountingLocation: "tow-bar" },
+      ],
+    };
+    expect(stateToParams(state).get("accessories")).toBe("acc-1,acc-2");
+  });
+
+  it("omits accessories param when empty", () => {
+    expect(stateToParams(INITIAL_STATE).has("accessories")).toBe(false);
+  });
+
   it("encodes vehicleVariantId", () => {
     const state: CalculatorState = { ...INITIAL_STATE, vehicleVariantId: "vv-abc" };
     expect(stateToParams(state).get("vehicleVariantId")).toBe("vv-abc");
@@ -82,16 +97,39 @@ describe("paramsToState", () => {
     expect(state.journey.passengers).toBe(DEFAULT_JOURNEY.passengers);
   });
 
-  it("round-trips through stateToParams → paramsToState", () => {
+  it("restores accessory IDs from comma-separated param", () => {
+    const params = new URLSearchParams("accessories=acc-1,acc-2,acc-3");
+    const state = paramsToState(params);
+    expect(state.accessories).toHaveLength(3);
+    expect(state.accessories[0].accessoryId).toBe("acc-1");
+    expect(state.accessories[2].accessoryId).toBe("acc-3");
+  });
+
+  it("returns empty accessories for empty params", () => {
+    expect(paramsToState(new URLSearchParams()).accessories).toEqual([]);
+  });
+
+  it("preserves order of accessory IDs", () => {
+    const params = new URLSearchParams("accessories=z,a,m");
+    const state = paramsToState(params);
+    expect(state.accessories.map((a) => a.accessoryId)).toEqual(["z", "a", "m"]);
+  });
+
+  it("round-trips through stateToParams → paramsToState (preserves IDs)", () => {
     const original: CalculatorState = {
       vehicleVariantId: "vv-abc",
       caravanVariantId: "cv-xyz",
-      journey: { passengers: 3, cargoKg: 50, fuelPercent: 75, freshWaterPercent: 80, greyWaterPercent: 20, gearKg: 10 },
-      accessories: [],
+      journey: { passengers: 3, passengerWeightKg: 80, cargoKg: 50, fuelPercent: 75, freshWaterPercent: 80, greyWaterPercent: 20, gearKg: 10 },
+      caravanAssumptions: { freshWaterL: 0, greyWaterL: 0, gearKg: 0 },
+      accessories: [
+        { accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" },
+        { accessoryId: "acc-2", massKg: 10, mountingLocation: "tow-bar" },
+      ],
     };
     const restored = paramsToState(stateToParams(original));
     expect(restored.vehicleVariantId).toBe("vv-abc");
     expect(restored.caravanVariantId).toBe("cv-xyz");
     expect(restored.journey).toEqual(original.journey);
+    expect(restored.accessories.map((a) => a.accessoryId)).toEqual(["acc-1", "acc-2"]);
   });
 });

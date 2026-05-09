@@ -14,10 +14,11 @@ export interface CaravanAssumptions {
   gearKg: number;
 }
 
-export interface SelectedAccessory {
-  fitmentId: string;
-  quantity: number;
-  fillPercent: number;
+export interface AccessorySelection {
+  accessoryId: string;
+  variantId?: string;
+  massKg: number;
+  mountingLocation: string;
 }
 
 export interface CalculatorState {
@@ -25,7 +26,7 @@ export interface CalculatorState {
   caravanVariantId: string | null;
   journey: JourneyAssumptions;
   caravanAssumptions: CaravanAssumptions;
-  accessories: SelectedAccessory[];
+  accessories: AccessorySelection[];
 }
 
 export type CalculatorAction =
@@ -33,9 +34,8 @@ export type CalculatorAction =
   | { type: "SET_CARAVAN_VARIANT"; id: string | null }
   | { type: "SET_JOURNEY"; patch: Partial<JourneyAssumptions> }
   | { type: "SET_CARAVAN_ASSUMPTIONS"; patch: Partial<CaravanAssumptions> }
-  | { type: "ADD_ACCESSORY"; accessory: SelectedAccessory }
-  | { type: "REMOVE_ACCESSORY"; fitmentId: string }
-  | { type: "UPDATE_ACCESSORY"; fitmentId: string; patch: Partial<Omit<SelectedAccessory, "fitmentId">> }
+  | { type: "ADD_ACCESSORY"; accessory: AccessorySelection }
+  | { type: "REMOVE_ACCESSORY"; accessoryId: string }
   | { type: "RESET" };
 
 export const DEFAULT_JOURNEY: JourneyAssumptions = {
@@ -68,6 +68,9 @@ export function calculatorReducer(
 ): CalculatorState {
   switch (action.type) {
     case "SET_VEHICLE_VARIANT":
+      if (action.id === null) {
+        return { ...state, vehicleVariantId: null, accessories: [] };
+      }
       return { ...state, vehicleVariantId: action.id };
     case "SET_CARAVAN_VARIANT":
       return { ...state, caravanVariantId: action.id };
@@ -76,21 +79,14 @@ export function calculatorReducer(
     case "SET_CARAVAN_ASSUMPTIONS":
       return { ...state, caravanAssumptions: { ...state.caravanAssumptions, ...action.patch } };
     case "ADD_ACCESSORY":
-      if (state.accessories.some((a) => a.fitmentId === action.accessory.fitmentId)) {
+      if (state.accessories.some((a) => a.accessoryId === action.accessory.accessoryId)) {
         return state;
       }
       return { ...state, accessories: [...state.accessories, action.accessory] };
     case "REMOVE_ACCESSORY":
       return {
         ...state,
-        accessories: state.accessories.filter((a) => a.fitmentId !== action.fitmentId),
-      };
-    case "UPDATE_ACCESSORY":
-      return {
-        ...state,
-        accessories: state.accessories.map((a) =>
-          a.fitmentId === action.fitmentId ? { ...a, ...action.patch } : a,
-        ),
+        accessories: state.accessories.filter((a) => a.accessoryId !== action.accessoryId),
       };
     case "RESET":
       return INITIAL_STATE;

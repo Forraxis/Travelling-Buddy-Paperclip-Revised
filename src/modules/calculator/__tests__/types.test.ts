@@ -36,39 +36,35 @@ describe("calculatorReducer", () => {
   });
 
   it("ADD_ACCESSORY adds an accessory", () => {
-    const acc = { fitmentId: "fit-1", quantity: 1, fillPercent: 100 };
+    const acc = { accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" };
     const next = calculatorReducer(INITIAL_STATE, { type: "ADD_ACCESSORY", accessory: acc });
     expect(next.accessories).toHaveLength(1);
     expect(next.accessories[0]).toEqual(acc);
   });
 
-  it("ADD_ACCESSORY is idempotent for same fitmentId", () => {
-    const acc = { fitmentId: "fit-1", quantity: 1, fillPercent: 100 };
+  it("ADD_ACCESSORY is idempotent for same accessoryId", () => {
+    const acc = { accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" };
     const withOne = calculatorReducer(INITIAL_STATE, { type: "ADD_ACCESSORY", accessory: acc });
     const withDup = calculatorReducer(withOne, { type: "ADD_ACCESSORY", accessory: acc });
     expect(withDup.accessories).toHaveLength(1);
   });
 
-  it("REMOVE_ACCESSORY removes by fitmentId", () => {
-    const acc1 = { fitmentId: "fit-1", quantity: 1, fillPercent: 100 };
-    const acc2 = { fitmentId: "fit-2", quantity: 2, fillPercent: 50 };
+  it("REMOVE_ACCESSORY removes by accessoryId", () => {
+    const acc1 = { accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" };
+    const acc2 = { accessoryId: "acc-2", massKg: 10, mountingLocation: "tow-bar" };
     let state = calculatorReducer(INITIAL_STATE, { type: "ADD_ACCESSORY", accessory: acc1 });
     state = calculatorReducer(state, { type: "ADD_ACCESSORY", accessory: acc2 });
-    const next = calculatorReducer(state, { type: "REMOVE_ACCESSORY", fitmentId: "fit-1" });
+    const next = calculatorReducer(state, { type: "REMOVE_ACCESSORY", accessoryId: "acc-1" });
     expect(next.accessories).toHaveLength(1);
-    expect(next.accessories[0].fitmentId).toBe("fit-2");
+    expect(next.accessories[0].accessoryId).toBe("acc-2");
   });
 
-  it("UPDATE_ACCESSORY patches matching accessory", () => {
-    const acc = { fitmentId: "fit-1", quantity: 1, fillPercent: 100 };
+  it("SET_VEHICLE_VARIANT with null clears accessories", () => {
+    const acc = { accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" };
     const withAcc = calculatorReducer(INITIAL_STATE, { type: "ADD_ACCESSORY", accessory: acc });
-    const next = calculatorReducer(withAcc, {
-      type: "UPDATE_ACCESSORY",
-      fitmentId: "fit-1",
-      patch: { quantity: 3 },
-    });
-    expect(next.accessories[0].quantity).toBe(3);
-    expect(next.accessories[0].fillPercent).toBe(100);
+    const next = calculatorReducer(withAcc, { type: "SET_VEHICLE_VARIANT", id: null });
+    expect(next.accessories).toHaveLength(0);
+    expect(next.vehicleVariantId).toBeNull();
   });
 
   it("RESET returns INITIAL_STATE", () => {
@@ -76,7 +72,8 @@ describe("calculatorReducer", () => {
       vehicleVariantId: "vv-1",
       caravanVariantId: "cv-1",
       journey: { ...DEFAULT_JOURNEY, passengers: 5 },
-      accessories: [{ fitmentId: "fit-1", quantity: 1, fillPercent: 100 }],
+      caravanAssumptions: { freshWaterL: 0, greyWaterL: 0, gearKg: 0 },
+      accessories: [{ accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" }],
     };
     const next = calculatorReducer(dirty, { type: "RESET" });
     expect(next).toEqual(INITIAL_STATE);

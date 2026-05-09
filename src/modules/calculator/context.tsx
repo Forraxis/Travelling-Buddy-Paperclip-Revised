@@ -8,7 +8,7 @@ import {
   useReducer,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { CalculatorState, CalculatorAction, JourneyAssumptions, CaravanAssumptions, SelectedAccessory } from "./types";
+import type { CalculatorState, CalculatorAction, JourneyAssumptions, CaravanAssumptions, AccessorySelection } from "./types";
 import { calculatorReducer, INITIAL_STATE } from "./types";
 import { paramsToState, stateToParams } from "./url-params";
 
@@ -18,9 +18,8 @@ interface CalculatorContextValue {
   setCaravanVariant: (id: string | null) => void;
   setJourney: (patch: Partial<JourneyAssumptions>) => void;
   setCaravanAssumptions: (patch: Partial<CaravanAssumptions>) => void;
-  addAccessory: (accessory: SelectedAccessory) => void;
-  removeAccessory: (fitmentId: string) => void;
-  updateAccessory: (fitmentId: string, patch: Partial<Omit<SelectedAccessory, "fitmentId">>) => void;
+  addAccessory: (accessory: AccessorySelection) => void;
+  removeAccessory: (accessoryId: string) => void;
   reset: () => void;
   dispatch: (action: CalculatorAction) => void;
 }
@@ -76,16 +75,11 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
     [],
   );
   const addAccessory = useCallback(
-    (accessory: SelectedAccessory) => dispatch({ type: "ADD_ACCESSORY", accessory }),
+    (accessory: AccessorySelection) => dispatch({ type: "ADD_ACCESSORY", accessory }),
     [],
   );
   const removeAccessory = useCallback(
-    (fitmentId: string) => dispatch({ type: "REMOVE_ACCESSORY", fitmentId }),
-    [],
-  );
-  const updateAccessory = useCallback(
-    (fitmentId: string, patch: Partial<Omit<SelectedAccessory, "fitmentId">>) =>
-      dispatch({ type: "UPDATE_ACCESSORY", fitmentId, patch }),
+    (accessoryId: string) => dispatch({ type: "REMOVE_ACCESSORY", accessoryId }),
     [],
   );
   const reset = useCallback(() => dispatch({ type: "RESET" }), []);
@@ -100,7 +94,6 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         setCaravanAssumptions,
         addAccessory,
         removeAccessory,
-        updateAccessory,
         reset,
         dispatch,
       }}

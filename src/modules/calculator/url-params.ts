@@ -13,6 +13,7 @@ const PARAM = {
   cvFreshWaterL: "cvFreshWaterL",
   cvGreyWaterL: "cvGreyWaterL",
   cvGearKg: "cvGearKg",
+  accessories: "accessories",
 } as const;
 
 function clamp(value: number, min: number, max: number): number {
@@ -74,6 +75,10 @@ export function stateToParams(state: CalculatorState): URLSearchParams {
     params.set(PARAM.cvGearKg, String(ca.gearKg));
   }
 
+  if (state.accessories.length > 0) {
+    params.set(PARAM.accessories, state.accessories.map((a) => a.accessoryId).join(","));
+  }
+
   return params;
 }
 
@@ -117,11 +122,21 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
     ),
   };
 
+  const accessoriesRaw = params.get(PARAM.accessories);
+  const accessories = accessoriesRaw
+    ? accessoriesRaw
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean)
+        .map((accessoryId) => ({ accessoryId, massKg: 0, mountingLocation: "" }))
+    : [];
+
   return {
     ...INITIAL_STATE,
     vehicleVariantId,
     caravanVariantId,
     journey,
     caravanAssumptions,
+    accessories,
   };
 }
