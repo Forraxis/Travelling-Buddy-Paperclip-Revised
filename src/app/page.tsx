@@ -14,8 +14,14 @@ export default async function Home() {
 
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Link
-            href="/catalogue/vehicles"
+            href="/calculator"
             className="rounded-lg bg-tb-primary px-6 py-3 text-sm font-semibold text-white hover:bg-tb-primary-light transition-colors"
+          >
+            Open Calculator
+          </Link>
+          <Link
+            href="/catalogue/vehicles"
+            className="rounded-lg border border-tb-primary px-6 py-3 text-sm font-semibold text-tb-primary hover:bg-tb-primary-lighter transition-colors"
           >
             Browse Vehicles
           </Link>
@@ -26,8 +32,6 @@ export default async function Home() {
             Browse Caravans
           </Link>
         </div>
-
-        <p className="mt-6 text-sm text-zinc-400">{t('comingSoon')}</p>
       </div>
     </main>
   );
