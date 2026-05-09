@@ -1,5 +1,11 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import type {
+  MountingLocation,
+  PositionType,
+  FitmentConfidence,
+  FitmentSource,
+} from "@prisma/client";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
@@ -1552,6 +1558,1146 @@ const caravanData: CaravanMakeSeed[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Accessory seed data
+// ---------------------------------------------------------------------------
+
+const accessoryBrandData = [
+  { name: "ARB", slug: "arb", websiteUrl: "https://www.arb.com.au" },
+  { name: "Rhino-Rack", slug: "rhino-rack", websiteUrl: "https://www.rhinorack.com.au" },
+  { name: "Engel", slug: "engel", websiteUrl: "https://www.engelcoolers.com.au" },
+  { name: "Dometic", slug: "dometic", websiteUrl: "https://www.dometic.com/en-au" },
+  { name: "Redarc", slug: "redarc", websiteUrl: "https://www.redarc.com.au" },
+  { name: "TJM", slug: "tjm", websiteUrl: "https://www.tjm.com.au" },
+  { name: "Ironman 4x4", slug: "ironman-4x4", websiteUrl: "https://www.ironman4x4.com" },
+  { name: "Kaymar", slug: "kaymar", websiteUrl: "https://www.kaymar.com.au" },
+  { name: "MSA 4x4", slug: "msa-4x4", websiteUrl: "https://www.msa4x4.com.au" },
+];
+
+const accessoryCategoryData = [
+  {
+    name: "Bullbar",
+    slug: "bullbar",
+    description: "Front bull bars and bumper bars for 4WD vehicles",
+    displayOrder: 1,
+    iconName: "shield",
+  },
+  {
+    name: "Winch",
+    slug: "winch",
+    description: "Electric recovery winches for off-road use",
+    displayOrder: 2,
+    iconName: "anchor",
+  },
+  {
+    name: "Roof Rack / Platform",
+    slug: "roof-rack-platform",
+    description: "Roof racks, platforms and roof bars for load carrying",
+    displayOrder: 3,
+    iconName: "grid",
+  },
+  {
+    name: "Rooftop Tent",
+    slug: "rooftop-tent",
+    description: "Rooftop tents for camping mounted on roof racks",
+    displayOrder: 4,
+    iconName: "home",
+  },
+  {
+    name: "Drawer System / Fridge Slide",
+    slug: "drawer-system-fridge-slide",
+    description: "In-tray drawer systems and fridge slides for load organisation",
+    displayOrder: 5,
+    iconName: "layers",
+  },
+  {
+    name: "Portable Fridge / Freezer",
+    slug: "portable-fridge-freezer",
+    description: "Portable 12V/240V fridges and freezers for camping",
+    displayOrder: 6,
+    iconName: "thermometer",
+  },
+  {
+    name: "Dual Battery System",
+    slug: "dual-battery-system",
+    description: "Dual battery systems, DC-DC chargers and battery management",
+    displayOrder: 7,
+    iconName: "battery",
+  },
+  {
+    name: "Canopy / Tray",
+    slug: "canopy-tray",
+    description: "Ute canopies, steel trays and tray-top accessories",
+    displayOrder: 8,
+    iconName: "box",
+  },
+  {
+    name: "Tow Bar",
+    slug: "tow-bar",
+    description: "Tow bars and towing hitches for towing caravans and trailers",
+    displayOrder: 9,
+    iconName: "truck",
+  },
+];
+
+// Fitment position helpers (coordinates: 0 = rear axle, positive = toward front)
+// HiLux (wb=3085, frontOH=935, rearOH=1280): front bumper=+4020, rear bumper=-1280
+// Ranger (wb=3270, frontOH=950, rearOH=1240): front bumper=+4220, rear bumper=-1240
+// Patrol (wb=2950, frontOH=890, rearOH=1025): front bumper=+3840, rear bumper=-1025
+
+type FitmentSeedData = {
+  vehicleKey: string; // "make-slug/model-slug/variant-slug"
+  installedWeightKg: number;
+  positionType: string;
+  cogXMm?: number;
+  cogYMm?: number;
+  startXMm?: number;
+  endXMm?: number;
+  mountingLocation: string;
+  providesMountingLocations?: string[];
+  confidence?: string;
+  source?: string;
+  notes?: string;
+};
+
+type AccessorySeedData = {
+  brandSlug: string;
+  categorySlug: string;
+  name: string;
+  slug: string;
+  description?: string;
+  priceMin?: number;
+  priceMax?: number;
+  fitments: FitmentSeedData[];
+};
+
+const accessoryData: AccessorySeedData[] = [
+  // ---- BULLBARS ----
+  {
+    brandSlug: "arb",
+    categorySlug: "bullbar",
+    name: "ARB Summit Bullbar – Toyota HiLux",
+    slug: "summit-bullbar-hilux",
+    description:
+      "Heavy-duty steel bull bar for Toyota HiLux featuring integrated winch cradle, dual recovery points, and provisions for driving lights and LED light bars.",
+    priceMin: 1899,
+    priceMax: 2299,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 42,
+        positionType: "FIXED",
+        cogXMm: 3600,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 42,
+        positionType: "FIXED",
+        cogXMm: 3600,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "arb",
+    categorySlug: "bullbar",
+    name: "ARB Summit Bullbar – Ford Ranger",
+    slug: "summit-bullbar-ranger",
+    description:
+      "Heavy-duty steel bull bar for Ford Ranger featuring integrated winch cradle, dual recovery points, and provisions for driving lights and LED light bars.",
+    priceMin: 1999,
+    priceMax: 2399,
+    fitments: [
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2015-2022",
+        installedWeightKg: 43,
+        positionType: "FIXED",
+        cogXMm: 3680,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 43,
+        positionType: "FIXED",
+        cogXMm: 3710,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "tjm",
+    categorySlug: "bullbar",
+    name: "TJM T13 Outback Bullbar – Toyota HiLux",
+    slug: "t13-outback-bullbar-hilux",
+    description:
+      "One-piece steel bull bar with integrated winch mount, side protection rails, and high-lift jack points for Toyota HiLux.",
+    priceMin: 1749,
+    priceMax: 2099,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 38,
+        positionType: "FIXED",
+        cogXMm: 3580,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 38,
+        positionType: "FIXED",
+        cogXMm: 3580,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "tjm",
+    categorySlug: "bullbar",
+    name: "TJM T13 Outback Bullbar – Nissan Patrol",
+    slug: "t13-outback-bullbar-patrol",
+    description:
+      "One-piece steel bull bar with integrated winch mount, side protection rails, and high-lift jack points for Nissan Patrol Y62.",
+    priceMin: 1849,
+    priceMax: 2199,
+    fitments: [
+      {
+        vehicleKey: "nissan/patrol/ti-diesel-4x4-2013-2025",
+        installedWeightKg: 40,
+        positionType: "FIXED",
+        cogXMm: 3350,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "nissan/patrol/ti-l-diesel-4x4-2013-2025",
+        installedWeightKg: 40,
+        positionType: "FIXED",
+        cogXMm: 3350,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "ironman-4x4",
+    categorySlug: "bullbar",
+    name: "Ironman 4x4 Predator Bullbar – Ford Ranger",
+    slug: "predator-bullbar-ranger",
+    description:
+      "Full-width steel bull bar with tube steel construction, integrated winch cradle, and factory fog light integration for Ford Ranger.",
+    priceMin: 1599,
+    priceMax: 1899,
+    fitments: [
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2015-2022",
+        installedWeightKg: 36,
+        positionType: "FIXED",
+        cogXMm: 3660,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 36,
+        positionType: "FIXED",
+        cogXMm: 3690,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_FRONT",
+        providesMountingLocations: ["BULL_BAR"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+
+  // ---- WINCHES ----
+  {
+    brandSlug: "arb",
+    categorySlug: "winch",
+    name: "ARB 10000lb Winch",
+    slug: "10000lb-winch",
+    description:
+      "Heavy-duty 10,000 lb electric winch with synthetic rope and wireless remote for 4WD self-recovery. IP68 rated motor and solenoid.",
+    priceMin: 1299,
+    priceMax: 1699,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 17,
+        positionType: "FIXED",
+        cogXMm: 3740,
+        cogYMm: 0,
+        mountingLocation: "BULL_BAR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires ARB Summit or compatible winch-rated bull bar.",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 17,
+        positionType: "FIXED",
+        cogXMm: 3840,
+        cogYMm: 0,
+        mountingLocation: "BULL_BAR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires ARB Summit or compatible winch-rated bull bar.",
+      },
+    ],
+  },
+  {
+    brandSlug: "tjm",
+    categorySlug: "winch",
+    name: "TJM Torq 9500lb Winch",
+    slug: "torq-9500-winch",
+    description:
+      "9,500 lb electric winch with steel cable and corded remote. Weatherproof construction rated to IP67 for all-conditions off-road recovery.",
+    priceMin: 899,
+    priceMax: 1199,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 15,
+        positionType: "FIXED",
+        cogXMm: 3720,
+        cogYMm: 0,
+        mountingLocation: "BULL_BAR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires winch-rated bull bar with standard Warn/Superwinch mount pattern.",
+      },
+      {
+        vehicleKey: "nissan/patrol/ti-diesel-4x4-2013-2025",
+        installedWeightKg: 15,
+        positionType: "FIXED",
+        cogXMm: 3470,
+        cogYMm: 0,
+        mountingLocation: "BULL_BAR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires winch-rated bull bar with standard Warn/Superwinch mount pattern.",
+      },
+    ],
+  },
+
+  // ---- ROOF RACKS / PLATFORMS ----
+  {
+    brandSlug: "rhino-rack",
+    categorySlug: "roof-rack-platform",
+    name: "Rhino-Rack Backbone Pioneer Platform – Toyota HiLux",
+    slug: "backbone-pioneer-platform-hilux",
+    description:
+      "Aluminium Pioneer Platform (1528mm × 1236mm) using the Backbone mounting system for Toyota HiLux dual cab. 100kg dynamic load rating.",
+    priceMin: 1199,
+    priceMax: 1499,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 18,
+        positionType: "FIXED",
+        startXMm: 500,
+        endXMm: 2650,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK", "CABIN_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 18,
+        positionType: "FIXED",
+        startXMm: 500,
+        endXMm: 2650,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK", "CABIN_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "rhino-rack",
+    categorySlug: "roof-rack-platform",
+    name: "Rhino-Rack Backbone Pioneer Platform – Ford Ranger",
+    slug: "backbone-pioneer-platform-ranger",
+    description:
+      "Aluminium Pioneer Platform (1528mm × 1236mm) using the Backbone mounting system for Ford Ranger dual cab. 100kg dynamic load rating.",
+    priceMin: 1249,
+    priceMax: 1549,
+    fitments: [
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2015-2022",
+        installedWeightKg: 18,
+        positionType: "FIXED",
+        startXMm: 600,
+        endXMm: 2850,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK", "CABIN_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 18,
+        positionType: "FIXED",
+        startXMm: 600,
+        endXMm: 2950,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK", "CABIN_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "arb",
+    categorySlug: "roof-rack-platform",
+    name: "ARB Flat Rack – Nissan Patrol",
+    slug: "flat-rack-patrol",
+    description:
+      "Heavy-duty steel flat roof rack for Nissan Patrol Y62 wagon with full-length roof coverage. 100kg dynamic load rating.",
+    priceMin: 899,
+    priceMax: 1199,
+    fitments: [
+      {
+        vehicleKey: "nissan/patrol/ti-diesel-4x4-2013-2025",
+        installedWeightKg: 14,
+        positionType: "FIXED",
+        startXMm: -550,
+        endXMm: 2700,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "nissan/patrol/ti-l-diesel-4x4-2013-2025",
+        installedWeightKg: 14,
+        positionType: "FIXED",
+        startXMm: -550,
+        endXMm: 2700,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "ironman-4x4",
+    categorySlug: "roof-rack-platform",
+    name: "Ironman 4x4 Roof Platform – Toyota HiLux",
+    slug: "roof-platform-hilux",
+    description:
+      "Heavy-duty steel roof platform for Toyota HiLux dual cab with integrated light bar mounts and side rails. 80kg dynamic load rating.",
+    priceMin: 799,
+    priceMax: 999,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 15,
+        positionType: "FIXED",
+        startXMm: 450,
+        endXMm: 2600,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK", "CABIN_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 15,
+        positionType: "FIXED",
+        startXMm: 450,
+        endXMm: 2600,
+        mountingLocation: "ROOF_RAILS",
+        providesMountingLocations: ["ROOF_RACK", "CABIN_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+
+  // ---- ROOFTOP TENTS ----
+  {
+    brandSlug: "arb",
+    categorySlug: "rooftop-tent",
+    name: "ARB Simpson III Rooftop Tent",
+    slug: "simpson-iii-rooftop-tent",
+    description:
+      "Hard-shell rooftop tent with built-in 60mm foam mattress, LED lighting, and 360° zip-down canvas walls. Opens via gas struts in under 60 seconds. 1400mm × 2100mm sleeping area.",
+    priceMin: 4499,
+    priceMax: 5299,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 68,
+        positionType: "FIXED",
+        startXMm: 550,
+        endXMm: 2550,
+        mountingLocation: "ROOF_RACK",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires minimum 80kg dynamic load-rated roof rack. T-slot or cross-bar compatible.",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 68,
+        positionType: "FIXED",
+        startXMm: 650,
+        endXMm: 2750,
+        mountingLocation: "ROOF_RACK",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires minimum 80kg dynamic load-rated roof rack. T-slot or cross-bar compatible.",
+      },
+    ],
+  },
+  {
+    brandSlug: "ironman-4x4",
+    categorySlug: "rooftop-tent",
+    name: "Ironman 4x4 Rooftop Tent",
+    slug: "rooftop-tent",
+    description:
+      "Soft-shell rooftop tent with 60mm foam mattress, annexe extension, and LED lighting. Universal T-slot aluminium base for cross-bar mounting.",
+    priceMin: 1899,
+    priceMax: 2399,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 65,
+        positionType: "FIXED",
+        startXMm: 500,
+        endXMm: 2550,
+        mountingLocation: "ROOF_RACK",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires minimum 80kg dynamic load-rated roof rack.",
+      },
+      {
+        vehicleKey: "nissan/patrol/ti-diesel-4x4-2013-2025",
+        installedWeightKg: 65,
+        positionType: "FIXED",
+        startXMm: -400,
+        endXMm: 2450,
+        mountingLocation: "ROOF_RACK",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Requires minimum 80kg dynamic load-rated roof rack.",
+      },
+    ],
+  },
+
+  // ---- DRAWER SYSTEMS / FRIDGE SLIDES ----
+  {
+    brandSlug: "arb",
+    categorySlug: "drawer-system-fridge-slide",
+    name: "ARB Roller Drawer with Fridge Slide",
+    slug: "roller-drawer-with-slide",
+    description:
+      "Full-width dual-drawer system with integrated 200mm fridge slide for Toyota HiLux. Powder-coated steel construction with 300kg static load rating per drawer.",
+    priceMin: 1499,
+    priceMax: 1899,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 28,
+        positionType: "SLIDING",
+        startXMm: -1100,
+        endXMm: 280,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 28,
+        positionType: "SLIDING",
+        startXMm: -1100,
+        endXMm: 280,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "ironman-4x4",
+    categorySlug: "drawer-system-fridge-slide",
+    name: "Ironman 4x4 Drawer System – Ford Ranger",
+    slug: "drawer-system-ranger",
+    description:
+      "Dual-drawer system with fridge slide for Ford Ranger. Lockable drawers with slam-shut latches, integrated LED strip lighting, and 300mm slide extension.",
+    priceMin: 1349,
+    priceMax: 1749,
+    fitments: [
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2015-2022",
+        installedWeightKg: 25,
+        positionType: "SLIDING",
+        startXMm: -1000,
+        endXMm: 340,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 25,
+        positionType: "SLIDING",
+        startXMm: -1000,
+        endXMm: 380,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+
+  // ---- PORTABLE FRIDGES / FREEZERS ----
+  {
+    brandSlug: "engel",
+    categorySlug: "portable-fridge-freezer",
+    name: "Engel MT60-G 60L Fridge-Freezer",
+    slug: "mt60-g-60l-fridge-freezer",
+    description:
+      "60-litre 12/24V DC and 240V AC fridge-freezer with Sawafuji swing motor compressor. Temperature range -18°C to +10°C. Weight 28kg dry.",
+    priceMin: 1199,
+    priceMax: 1399,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 28,
+        positionType: "SLIDING",
+        cogXMm: -600,
+        cogYMm: 0,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Typically paired with a fridge slide. Add ~24kg for fully loaded contents.",
+      },
+      {
+        vehicleKey: "nissan/patrol/ti-diesel-4x4-2013-2025",
+        installedWeightKg: 28,
+        positionType: "SLIDING",
+        cogXMm: -650,
+        cogYMm: 0,
+        mountingLocation: "TUB_INTERIOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Stored in rear cargo area on fridge slide. Use rear seat-delete kit for full floor access.",
+      },
+    ],
+  },
+  {
+    brandSlug: "dometic",
+    categorySlug: "portable-fridge-freezer",
+    name: "Dometic CFX3 55 Fridge-Freezer",
+    slug: "cfx3-55-fridge-freezer",
+    description:
+      "55-litre dual-zone fridge-freezer with VMSO3 variable speed compressor. WiFi and Bluetooth connectivity with app control. -22°C to +10°C. Weight 24kg dry.",
+    priceMin: 1099,
+    priceMax: 1299,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 24,
+        positionType: "SLIDING",
+        cogXMm: -600,
+        cogYMm: 0,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Dry weight 24kg. Use with a fridge slide for easy tray access.",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 24,
+        positionType: "SLIDING",
+        cogXMm: -550,
+        cogYMm: 0,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Dry weight 24kg. Use with a fridge slide for easy tray access.",
+      },
+    ],
+  },
+  {
+    brandSlug: "engel",
+    categorySlug: "portable-fridge-freezer",
+    name: "Engel MT45F 40L Fridge-Freezer",
+    slug: "mt45f-40l-fridge-freezer",
+    description:
+      "40-litre 12/24V DC and 240V AC fridge-freezer. Compact and lightweight for dual-cab or wagon use. -18°C to +10°C. Weight 19kg dry.",
+    priceMin: 899,
+    priceMax: 1099,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 19,
+        positionType: "SLIDING",
+        cogXMm: -500,
+        cogYMm: 0,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Dry weight 19kg. Suitable for cabin-side or tray-side placement.",
+      },
+      {
+        vehicleKey: "nissan/patrol/ti-l-diesel-4x4-2013-2025",
+        installedWeightKg: 19,
+        positionType: "SLIDING",
+        cogXMm: -700,
+        cogYMm: 0,
+        mountingLocation: "TUB_INTERIOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Fits in rear cargo area. Dry weight 19kg.",
+      },
+    ],
+  },
+
+  // ---- DUAL BATTERY SYSTEMS ----
+  {
+    brandSlug: "redarc",
+    categorySlug: "dual-battery-system",
+    name: "Redarc BCDC1240D DC-DC Charger",
+    slug: "bcdc1240d-dc-dc-charger",
+    description:
+      "40A DC-DC battery charger with integrated MPPT solar regulator. Charges AGM, gel, calcium, and LiFePO4 batteries. Ignition-sense controlled.",
+    priceMin: 499,
+    priceMax: 649,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 1.5,
+        positionType: "FIXED",
+        cogXMm: 2900,
+        cogYMm: 0,
+        mountingLocation: "CABIN_INTERIOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Typically installed in engine bay or under bonnet bracket near secondary battery.",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 1.5,
+        positionType: "FIXED",
+        cogXMm: 3050,
+        cogYMm: 0,
+        mountingLocation: "CABIN_INTERIOR",
+        providesMountingLocations: [],
+        confidence: "COMMUNITY",
+        source: "USER_SUBMITTED",
+        notes: "Typically installed in engine bay or under bonnet bracket near secondary battery.",
+      },
+    ],
+  },
+  {
+    brandSlug: "arb",
+    categorySlug: "dual-battery-system",
+    name: "ARB LINX Battery Management System",
+    slug: "linx-battery-management",
+    description:
+      "Smart dual-battery management system with 40A DC-DC charging, MPPT solar input up to 40A, and in-cab display for real-time battery status monitoring.",
+    priceMin: 699,
+    priceMax: 899,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 2.2,
+        positionType: "FIXED",
+        cogXMm: 2900,
+        cogYMm: 0,
+        mountingLocation: "CABIN_INTERIOR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Main unit installs in engine bay. In-cab display uses separate harness.",
+      },
+      {
+        vehicleKey: "nissan/patrol/ti-diesel-4x4-2013-2025",
+        installedWeightKg: 2.2,
+        positionType: "FIXED",
+        cogXMm: 2700,
+        cogYMm: 0,
+        mountingLocation: "CABIN_INTERIOR",
+        providesMountingLocations: [],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Main unit installs in engine bay. In-cab display uses separate harness.",
+      },
+    ],
+  },
+
+  // ---- CANOPY / TRAY ----
+  {
+    brandSlug: "msa-4x4",
+    categorySlug: "canopy-tray",
+    name: "MSA 4x4 Aluminium Canopy – Toyota HiLux",
+    slug: "aluminium-canopy-hilux",
+    description:
+      "Full-height aluminium canopy for Toyota HiLux dual cab. Side-hinged rear door, dual gull-wing side doors with gas struts, and full weatherproof sealing.",
+    priceMin: 4499,
+    priceMax: 5999,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 90,
+        positionType: "FIXED",
+        startXMm: -1150,
+        endXMm: 280,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: ["CANOPY_INTERIOR", "CANOPY_EXTERIOR", "CANOPY_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Installs on OEM or aftermarket tray. Requires side-rail mounting kit.",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 90,
+        positionType: "FIXED",
+        startXMm: -1150,
+        endXMm: 280,
+        mountingLocation: "TRAY_FLOOR",
+        providesMountingLocations: ["CANOPY_INTERIOR", "CANOPY_EXTERIOR", "CANOPY_ROOF"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Installs on OEM or aftermarket tray. Requires side-rail mounting kit.",
+      },
+    ],
+  },
+  {
+    brandSlug: "msa-4x4",
+    categorySlug: "canopy-tray",
+    name: "MSA 4x4 Steel Tray – Toyota HiLux",
+    slug: "steel-tray-hilux",
+    description:
+      "3mm steel replacement tray for Toyota HiLux dual cab with 100mm headboard, drop-side rails, and eight heavy-duty tie-down rings. 1780mm × 1520mm load area.",
+    priceMin: 2499,
+    priceMax: 3499,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 125,
+        positionType: "FIXED",
+        startXMm: -1250,
+        endXMm: 350,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: [
+          "TRAY_FLOOR",
+          "TRAY_SIDE_LEFT",
+          "TRAY_SIDE_RIGHT",
+          "TRAY_HEADBOARD",
+        ],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Replaces factory plastic tub. Requires removal of OEM tub and cargo barrier.",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 125,
+        positionType: "FIXED",
+        startXMm: -1250,
+        endXMm: 350,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: [
+          "TRAY_FLOOR",
+          "TRAY_SIDE_LEFT",
+          "TRAY_SIDE_RIGHT",
+          "TRAY_HEADBOARD",
+        ],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Replaces factory plastic tub. Requires removal of OEM tub and cargo barrier.",
+      },
+    ],
+  },
+
+  // ---- TOW BARS ----
+  {
+    brandSlug: "arb",
+    categorySlug: "tow-bar",
+    name: "ARB Heavy Duty Tow Bar – Toyota HiLux",
+    slug: "heavy-duty-tow-bar-hilux",
+    description:
+      "Heavy-duty bolt-on tow bar for Toyota HiLux with 50mm square receiver hitch. 3500kg braked towing capacity, 350kg ball download. Includes 7-pin flat wiring harness.",
+    priceMin: 799,
+    priceMax: 999,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 14,
+        positionType: "FIXED",
+        cogXMm: -1150,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: ["TOW_HITCH"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 14,
+        positionType: "FIXED",
+        cogXMm: -1150,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: ["TOW_HITCH"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "tjm",
+    categorySlug: "tow-bar",
+    name: "TJM Tow Bar – Ford Ranger",
+    slug: "tow-bar-ranger",
+    description:
+      "Bolt-on tow bar for Ford Ranger with 50mm square receiver hitch. Includes standard ball mount and 7-pin wiring harness. 3500kg braked towing capacity.",
+    priceMin: 699,
+    priceMax: 899,
+    fitments: [
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2015-2022",
+        installedWeightKg: 13,
+        positionType: "FIXED",
+        cogXMm: -1050,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: ["TOW_HITCH"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        vehicleKey: "ford/ranger/xlt-4x4-auto-2023-2026",
+        installedWeightKg: 13,
+        positionType: "FIXED",
+        cogXMm: -1060,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: ["TOW_HITCH"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "kaymar",
+    categorySlug: "tow-bar",
+    name: "Kaymar Steel Rear Bar – Toyota HiLux",
+    slug: "steel-rear-bar-hilux",
+    description:
+      "Heavy-duty steel rear bar for Toyota HiLux featuring integrated 50mm receiver hitch, dual spare wheel carriers, and jerry can holder. Replaces factory rear bumper.",
+    priceMin: 2299,
+    priceMax: 2899,
+    fitments: [
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2015-2022",
+        installedWeightKg: 35,
+        positionType: "FIXED",
+        cogXMm: -1200,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: ["REAR_BAR", "TOW_HITCH"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Replaces factory rear bumper. Includes provision for 7-pin trailer plug.",
+      },
+      {
+        vehicleKey: "toyota/hilux/sr5-auto-4x4-2023-2026",
+        installedWeightKg: 35,
+        positionType: "FIXED",
+        cogXMm: -1200,
+        cogYMm: 0,
+        mountingLocation: "CHASSIS_REAR",
+        providesMountingLocations: ["REAR_BAR", "TOW_HITCH"],
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Replaces factory rear bumper. Includes provision for 7-pin trailer plug.",
+      },
+    ],
+  },
+];
+
+async function seedAccessories() {
+  console.log("Seeding accessories...");
+
+  // 1. Brands
+  const brandMap = new Map<string, string>();
+  for (const b of accessoryBrandData) {
+    const brand = await prisma.accessoryBrand.upsert({
+      where: { slug: b.slug },
+      update: {},
+      create: { name: b.name, slug: b.slug, websiteUrl: b.websiteUrl },
+    });
+    brandMap.set(b.slug, brand.id);
+  }
+
+  // 2. Categories
+  const categoryMap = new Map<string, string>();
+  for (const c of accessoryCategoryData) {
+    const category = await prisma.accessoryCategory.upsert({
+      where: { slug: c.slug },
+      update: {},
+      create: {
+        name: c.name,
+        slug: c.slug,
+        description: c.description,
+        displayOrder: c.displayOrder,
+        iconName: c.iconName,
+      },
+    });
+    categoryMap.set(c.slug, category.id);
+  }
+
+  // 3. Build vehicle variant lookup map
+  const variantRows = await prisma.vehicleVariant.findMany({
+    select: {
+      id: true,
+      slug: true,
+      model: {
+        select: {
+          slug: true,
+          make: { select: { slug: true } },
+        },
+      },
+    },
+  });
+  const variantMap = new Map<string, string>();
+  for (const v of variantRows) {
+    variantMap.set(`${v.model.make.slug}/${v.model.slug}/${v.slug}`, v.id);
+  }
+
+  // 4. Accessories + fitments
+  let accessoryCount = 0;
+  let fitmentCount = 0;
+
+  for (const acc of accessoryData) {
+    const brandId = brandMap.get(acc.brandSlug);
+    const categoryId = categoryMap.get(acc.categorySlug);
+    if (!brandId || !categoryId) {
+      console.warn(`  Skipping ${acc.name}: missing brand or category`);
+      continue;
+    }
+
+    const accessory = await prisma.accessory.upsert({
+      where: { brandId_slug: { brandId, slug: acc.slug } },
+      update: {},
+      create: {
+        brandId,
+        categoryId,
+        name: acc.name,
+        slug: acc.slug,
+        description: acc.description,
+        priceMin: acc.priceMin,
+        priceMax: acc.priceMax,
+        status: "ACTIVE",
+        market: "AU",
+      },
+    });
+    accessoryCount++;
+
+    for (const f of acc.fitments) {
+      const vehicleVariantId = variantMap.get(f.vehicleKey);
+      if (!vehicleVariantId) {
+        console.warn(`  Skipping fitment: variant not found for key "${f.vehicleKey}"`);
+        continue;
+      }
+
+      const existing = await prisma.accessoryFitment.findFirst({
+        where: {
+          accessoryId: accessory.id,
+          vehicleVariantId,
+          mountingLocation: f.mountingLocation as MountingLocation,
+        },
+      });
+
+      if (!existing) {
+        await prisma.accessoryFitment.create({
+          data: {
+            accessoryId: accessory.id,
+            vehicleVariantId,
+            installedWeightKg: f.installedWeightKg,
+            positionType: f.positionType as PositionType,
+            cogXMm: f.cogXMm,
+            cogYMm: f.cogYMm,
+            startXMm: f.startXMm,
+            endXMm: f.endXMm,
+            mountingLocation: f.mountingLocation as MountingLocation,
+            providesMountingLocations: (f.providesMountingLocations ?? []) as MountingLocation[],
+            confidence: (f.confidence ?? "ESTIMATED") as FitmentConfidence,
+            source: (f.source ?? "USER_SUBMITTED") as FitmentSource,
+            notes: f.notes,
+          },
+        });
+        fitmentCount++;
+      }
+    }
+  }
+
+  const brandCount = await prisma.accessoryBrand.count();
+  const categoryCount = await prisma.accessoryCategory.count();
+  console.log(
+    `  Accessories: ${brandCount} brands, ${categoryCount} categories, ${accessoryCount} accessories, ${fitmentCount} fitments`
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Seed runner
 // ---------------------------------------------------------------------------
 
@@ -1688,6 +2834,7 @@ async function main() {
   console.log("Starting seed...");
   await seedVehicles();
   await seedCaravans();
+  await seedAccessories();
   console.log("Seed complete.");
 }
 
