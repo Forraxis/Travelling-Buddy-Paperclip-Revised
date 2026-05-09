@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import type {
   AccessoryDto,
+  AccessoryDetailDto,
   CreateAccessoryInput,
   UpdateAccessoryInput,
   AccessoryFilter,
@@ -142,12 +143,57 @@ export function createAccessoryService(prisma: PrismaClient) {
     return { accessories: accessories.map((r) => toDto(r as never)) };
   }
 
+  async function getDetailBySlug(
+    slug: string,
+    categorySlug?: string
+  ): Promise<AccessoryDetailDto | null> {
+    const raw = await prisma.accessory.findFirst({
+      where: {
+        slug,
+        status: "ACTIVE",
+        ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+      },
+      include: {
+        brand: { select: { id: true, name: true, slug: true, logoUrl: true } },
+        category: {
+          select: { id: true, name: true, slug: true, description: true },
+        },
+        fitments: { orderBy: { createdAt: "asc" } },
+      },
+    });
+    if (!raw) return null;
+
+    function fitmentToNumber(f: {
+      installedWeightKg: { toNumber(): number };
+      tankCapacityL: { toNumber(): number } | null;
+      tankContentsKgPerL: { toNumber(): number } | null;
+      [key: string]: unknown;
+    }) {
+      return {
+        ...(f as unknown as Record<string, unknown>),
+        installedWeightKg: f.installedWeightKg.toNumber(),
+        tankCapacityL: f.tankCapacityL ? f.tankCapacityL.toNumber() : null,
+        tankContentsKgPerL: f.tankContentsKgPerL
+          ? f.tankContentsKgPerL.toNumber()
+          : null,
+      };
+    }
+
+    return {
+      ...toDto(raw as never),
+      brand: raw.brand,
+      category: raw.category,
+      fitments: raw.fitments.map((f) => fitmentToNumber(f as never)) as never,
+    };
+  }
+
   return {
     create,
     update,
     remove,
     getById,
     getBySlug,
+    getDetailBySlug,
     list,
     search,
     searchByBrand,

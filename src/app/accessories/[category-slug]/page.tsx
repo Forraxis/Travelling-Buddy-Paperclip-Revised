@@ -1,0 +1,148 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import Link from "next/link";
+import { prisma } from "@/lib/db";
+import { createCategoryService } from "@/modules/catalogue/services/category.service";
+import { createAccessoryService } from "@/modules/catalogue/services/accessory.service";
+import { Breadcrumbs } from "@/components/catalogue/Breadcrumbs";
+import { SearchInput } from "@/components/catalogue/SearchInput";
+import { PaginationBar } from "@/components/catalogue/PaginationBar";
+import type { AccessoryDto } from "@/modules/catalogue/types/accessory.types";
+
+export const dynamic = "force-dynamic";
+
+const categoryService = createCategoryService(prisma);
+const accessoryService = createAccessoryService(prisma);
+
+const PAGE_SIZE = 24;
+
+interface Props {
+  params: Promise<{ "category-slug": string }>;
+  searchParams: Promise<{ q?: string; cursor?: string; brand?: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { "category-slug": categorySlug } = await params;
+  const category = await categoryService.getBySlug(categorySlug);
+  if (!category) return { title: "Category Not Found" };
+  return {
+    title: category.name,
+    description: category.description ?? `Browse ${category.name} accessories.`,
+  };
+}
+
+function AccessoryCard({ accessory, categorySlug }: { accessory: AccessoryDto; categorySlug: string }) {
+  return (
+    <Link
+      href={`/accessories/${categorySlug}/${accessory.slug}`}
+      className="group flex flex-col gap-2 rounded-xl border border-tb-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
+    >
+      {accessory.imageUrls[0] && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={accessory.imageUrls[0]}
+          alt={accessory.name}
+          className="h-36 w-full rounded-lg object-cover"
+        />
+      )}
+      <span className="text-sm font-semibold text-tb-primary group-hover:text-tb-primary-light">
+        {accessory.name}
+      </span>
+      {accessory.priceMin !== null && (
+        <span className="text-xs text-gray-500">
+          From {accessory.currencyCode} {accessory.priceMin.toFixed(2)}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+export default async function CategoryAccessoriesPage({ params, searchParams }: Props) {
+  const { "category-slug": categorySlug } = await params;
+  const sp = await searchParams;
+  const q = sp.q?.trim() ?? "";
+  const cursor = sp.cursor;
+
+  const category = await categoryService.getBySlug(categorySlug);
+  if (!category) notFound();
+
+  let items: AccessoryDto[] = [];
+  let nextCursor: string | null = null;
+  let hasMore = false;
+
+  if (q) {
+    const results = await accessoryService.searchByCategory(category.id, q, 50);
+    items = results.accessories;
+  } else {
+    const result = await accessoryService.list(
+      { categoryId: category.id, status: "ACTIVE" },
+      { cursor, limit: PAGE_SIZE }
+    );
+    items = result.items;
+    nextCursor = result.nextCursor;
+    hasMore = result.hasMore;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Breadcrumbs
+        crumbs={[
+          { label: "Accessories", href: "/accessories" },
+          { label: category.name },
+        ]}
+      />
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-tb-primary">{category.name}</h1>
+          {category.description && (
+            <p className="mt-1 text-sm text-gray-500">{category.description}</p>
+          )}
+        </div>
+        <div className="w-full sm:max-w-xs">
+          <Suspense>
+            <SearchInput placeholder={`Search ${category.name}...`} />
+          </Suspense>
+        </div>
+      </div>
+
+      {category.children.length > 0 && !q && (
+        <div className="flex flex-wrap gap-2">
+          {category.children.map((child) => (
+            <Link
+              key={child.id}
+              href={`/accessories/${child.slug}`}
+              className="rounded-full border border-tb-neutral-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:border-tb-primary-light hover:text-tb-primary"
+            >
+              {child.name}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-tb-neutral-200 py-16 text-center text-gray-400">
+          {q
+            ? `No accessories match "${q}".`
+            : `No accessories in ${category.name} yet.`}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {items.map((acc) => (
+            <AccessoryCard key={acc.id} accessory={acc} categorySlug={categorySlug} />
+          ))}
+        </div>
+      )}
+
+      {!q && (
+        <PaginationBar
+          basePath={`/accessories/${categorySlug}`}
+          searchParams={sp as Record<string, string | undefined>}
+          nextCursor={nextCursor}
+          hasMore={hasMore}
+        />
+      )}
+    </div>
+  );
+}

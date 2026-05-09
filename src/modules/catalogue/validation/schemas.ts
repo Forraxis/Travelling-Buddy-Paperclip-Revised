@@ -63,3 +63,16 @@ export const modelIdSchema = z.object({
 export const variantIdSchema = z.object({
   variantId: z.string().uuid(),
 });
+
+export const accessoryPublicFilterSchema = paginationSchema.extend({
+  brand: z.string().max(120).optional(),
+  category: z.string().max(120).optional(),
+  vehicleVariantId: z.string().optional(),
+  caravanVariantId: z.string().optional(),
+  q: z.string().max(200).optional(),
+});
+
+export const mountingLocationsQuerySchema = z.object({
+  vehicleVariantId: z.string(),
+  fittedFitmentIds: z.string().optional(),
+});
