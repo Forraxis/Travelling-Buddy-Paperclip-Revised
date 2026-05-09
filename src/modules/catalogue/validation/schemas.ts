@@ -72,6 +72,17 @@ export const accessoryPublicFilterSchema = paginationSchema.extend({
   q: z.string().max(200).optional(),
 });
 
+export const accessoryPickerFilterSchema = paginationSchema.extend({
+  categoryId: z.string().optional(),
+  brandId: z.string().optional(),
+  mountingLocation: z.string().max(80).optional(),
+});
+
+export const accessorySearchPickerSchema = z.object({
+  q: z.string().min(1).max(200),
+  limit: z.coerce.number().int().min(1).max(50).optional(),
+});
+
 export const mountingLocationsQuerySchema = z.object({
   vehicleVariantId: z.string(),
   fittedFitmentIds: z.string().optional(),

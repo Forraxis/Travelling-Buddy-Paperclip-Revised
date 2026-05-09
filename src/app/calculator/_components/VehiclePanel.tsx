@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useCalculatorState } from '@/modules/calculator/context';
 import { EntityPicker, VEHICLE_CONFIG } from '@/components/calculator/picker';
 import type { PickerVariant } from '@/components/calculator/picker';
-import { AccessoryPickerSheet, formatMountingLocation } from './AccessoryPickerSheet';
-import type { PickedAccessoryData } from './AccessoryPickerSheet';
+import { AccessoryPicker } from '@/components/calculator/accessory-picker';
+import type { AccessoryItem } from '@/components/calculator/accessory-picker';
 
 // Placeholder tank capacity — real value would come from vehicle variant data
 const DEFAULT_TANK_L = 80;
@@ -160,10 +160,6 @@ function CargoSection() {
 export function VehiclePanel() {
   const { state, setVehicleVariant, addAccessory, removeAccessory } = useCalculatorState();
   const [selectedVariant, setSelectedVariant] = useState<PickerVariant | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  // Local map of accessoryId → display name (massKg & mountingLocation live in state)
-  const [nameMap, setNameMap] = useState<Map<string, string>>(new Map());
-  const resolveInflight = useRef(false);
 
   const handleSelect = useCallback(
     (variant: PickerVariant) => {
@@ -173,62 +169,28 @@ export function VehiclePanel() {
     [setVehicleVariant],
   );
 
-  // Fetch names for accessories already in state (e.g. restored from URL params)
-  useEffect(() => {
-    const missing = state.accessories
-      .map((a) => a.accessoryId)
-      .filter((id) => !nameMap.has(id));
-    if (missing.length === 0 || resolveInflight.current) return;
-    resolveInflight.current = true;
-    fetch('/api/calculator/fitments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accessoryIds: missing }),
-    })
-      .then((r) => r.json())
-      .then((items: { accessoryId: string; name: string }[]) => {
-        setNameMap((prev) => {
-          const next = new Map(prev);
-          for (const item of items) next.set(item.accessoryId, item.name);
-          return next;
-        });
-      })
-      .catch(() => {/* silently fail — chips show placeholder */})
-      .finally(() => { resolveInflight.current = false; });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.accessories]);
-
-  const handlePickerSelect = useCallback(
-    (data: PickedAccessoryData) => {
+  // AccessoryPicker uses fitmentId; we store it as accessoryId in calculator state
+  const handleAdd = useCallback(
+    (item: AccessoryItem) => {
       addAccessory({
-        accessoryId: data.accessoryId,
-        massKg: data.massKg,
-        mountingLocation: data.mountingLocation,
+        accessoryId: item.fitmentId,
+        massKg: item.installedWeightKg,
+        mountingLocation: item.mountingLocation,
       });
-      setNameMap((prev) => {
-        const next = new Map(prev);
-        next.set(data.accessoryId, data.accessoryName);
-        return next;
-      });
-      setPickerOpen(false);
     },
     [addAccessory],
   );
 
   const handleRemove = useCallback(
-    (accessoryId: string) => {
-      removeAccessory(accessoryId);
-      setNameMap((prev) => {
-        const next = new Map(prev);
-        next.delete(accessoryId);
-        return next;
-      });
+    (fitmentId: string) => {
+      removeAccessory(fitmentId);
     },
     [removeAccessory],
   );
 
-  const existingAccessoryIds = new Set(state.accessories.map((a) => a.accessoryId));
   const totalAccessoryKg = state.accessories.reduce((sum, a) => sum + a.massKg, 0);
+  // addedFitmentIds: the state uses accessoryId field to store what is actually a fitmentId
+  const addedFitmentIds = state.accessories.map((a) => a.accessoryId);
 
   return (
     <section>
@@ -259,77 +221,19 @@ export function VehiclePanel() {
               Accessories
             </p>
 
-            {state.accessories.length === 0 ? (
-              /* Empty state CTA */
-              <button
-                type="button"
-                onClick={() => setPickerOpen(true)}
-                className="w-full rounded-md border border-dashed border-[#e5e7eb] px-3 py-3 text-sm text-gray-400 transition-colors hover:border-[#2e75b6] hover:text-[#2e75b6]"
-              >
-                + Add accessory
-              </button>
-            ) : (
-              <>
-                {/* Chip list — wraps on desktop, horizontal scroll on mobile */}
-                <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-x-visible">
-                  {state.accessories.map((a) => {
-                    const name = nameMap.get(a.accessoryId);
-                    if (!name) {
-                      return (
-                        <div
-                          key={a.accessoryId}
-                          className="h-7 w-36 shrink-0 animate-pulse rounded-full bg-gray-100"
-                        />
-                      );
-                    }
-                    return (
-                      <span
-                        key={a.accessoryId}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-[#f9fafb] px-3 py-1 text-xs text-gray-700"
-                      >
-                        <span className="font-medium">{name}</span>
-                        <span className="text-gray-400">·</span>
-                        <span className="tabular-nums">{a.massKg} kg</span>
-                        <span className="text-gray-400">·</span>
-                        <span>{formatMountingLocation(a.mountingLocation)}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(a.accessoryId)}
-                          aria-label={`Remove ${name}`}
-                          className="ml-0.5 text-gray-400 hover:text-red-500"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    );
-                  })}
-                </div>
+            <AccessoryPicker
+              onAdd={handleAdd}
+              onRemove={handleRemove}
+              addedFitmentIds={addedFitmentIds}
+            />
 
-                {/* Mass summary */}
-                <p className="mt-3 text-xs tabular-nums text-gray-500">
-                  Accessories: {Math.round(totalAccessoryKg)} kg
-                </p>
-
-                {/* Add more */}
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen(true)}
-                  className="mt-2 text-xs text-[#2e75b6] hover:underline"
-                >
-                  + Add accessory
-                </button>
-              </>
+            {/* Mass summary — only shown when accessories are present */}
+            {state.accessories.length > 0 && (
+              <p className="mt-3 text-xs tabular-nums text-gray-500">
+                Accessories: {Math.round(totalAccessoryKg)} kg
+              </p>
             )}
           </div>
-
-          {pickerOpen && (
-            <AccessoryPickerSheet
-              vehicleVariantId={selectedVariant.id}
-              existingAccessoryIds={existingAccessoryIds}
-              onSelect={handlePickerSelect}
-              onClose={() => setPickerOpen(false)}
-            />
-          )}
         </>
       )}
     </section>

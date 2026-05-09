@@ -1,4 +1,4 @@
-import RightColumn from './_components/RightColumn';
+import { RightColumnWrapper } from './_components/RightColumnWrapper';
 import { CalculatorConfig } from './_components/CalculatorConfig';
 import { MobileResultsBarWrapper } from './_components/MobileResultsBarWrapper';
 
@@ -13,7 +13,7 @@ export default function CalculatorPage() {
     <div className="flex flex-1 overflow-hidden">
       <CalculatorConfig />
       {/* Right results column — hidden on mobile per spec §7.7 */}
-      <RightColumn vehicleSelected={false} />
+      <RightColumnWrapper />
       {/* Mobile sticky bar + sheet — rendered outside the scroll container */}
       <MobileResultsBarWrapper />
     </div>

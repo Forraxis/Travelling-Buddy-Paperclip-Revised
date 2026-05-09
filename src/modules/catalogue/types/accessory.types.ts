@@ -78,3 +78,18 @@ export interface AccessoryDetailDto extends AccessoryDto {
   category: { id: string; name: string; slug: string; description: string | null };
   fitments: AccessoryFitmentDto[];
 }
+
+export interface AccessoryPickerDto {
+  id: string;
+  name: string;
+  brand: string;
+  massKg: number | null;
+  mountingLocation: string | null;
+  categoryName: string;
+}
+
+export interface AccessoryPickerFilter {
+  categoryId?: string;
+  brandId?: string;
+  mountingLocation?: string;
+}

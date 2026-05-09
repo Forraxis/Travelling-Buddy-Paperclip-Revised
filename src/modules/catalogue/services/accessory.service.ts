@@ -2,6 +2,8 @@ import type { PrismaClient } from "@prisma/client";
 import type {
   AccessoryDto,
   AccessoryDetailDto,
+  AccessoryPickerDto,
+  AccessoryPickerFilter,
   CreateAccessoryInput,
   UpdateAccessoryInput,
   AccessoryFilter,
@@ -143,6 +145,123 @@ export function createAccessoryService(prisma: PrismaClient) {
     return { accessories: accessories.map((r) => toDto(r as never)) };
   }
 
+  async function searchForPicker(
+    query: string,
+    limit = 15
+  ): Promise<AccessoryPickerDto[]> {
+    const accessories = await prisma.accessory.findMany({
+      where: {
+        status: "ACTIVE",
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { brand: { name: { contains: query, mode: "insensitive" } } },
+        ],
+      },
+      take: limit,
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        brand: { select: { name: true } },
+        category: { select: { name: true } },
+        fitments: {
+          take: 1,
+          orderBy: { createdAt: "asc" },
+          select: { installedWeightKg: true, mountingLocation: true },
+        },
+      },
+    });
+
+    return accessories.map((a) => ({
+      id: a.id,
+      name: a.name,
+      brand: a.brand.name,
+      massKg: a.fitments[0]
+        ? (a.fitments[0].installedWeightKg as unknown as { toNumber(): number }).toNumber()
+        : null,
+      mountingLocation: a.fitments[0]?.mountingLocation ?? null,
+      categoryName: a.category.name,
+    }));
+  }
+
+  async function listForPicker(
+    filter: AccessoryPickerFilter = {},
+    opts: PaginationOptions = {}
+  ): Promise<PaginatedResult<AccessoryPickerDto>> {
+    const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
+    const where: Record<string, unknown> = { status: "ACTIVE" };
+
+    if (filter.categoryId) where.categoryId = filter.categoryId;
+    if (filter.brandId) where.brandId = filter.brandId;
+    if (filter.mountingLocation) {
+      where.fitments = { some: { mountingLocation: filter.mountingLocation } };
+    }
+
+    const items = await prisma.accessory.findMany({
+      where,
+      take: limit + 1,
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        brand: { select: { name: true } },
+        category: { select: { name: true } },
+        fitments: {
+          take: 1,
+          orderBy: { createdAt: "asc" },
+          select: { installedWeightKg: true, mountingLocation: true },
+        },
+      },
+    });
+
+    const hasMore = items.length > limit;
+    if (hasMore) items.pop();
+
+    return {
+      items: items.map((a) => ({
+        id: a.id,
+        name: a.name,
+        brand: a.brand.name,
+        massKg: a.fitments[0]
+          ? (a.fitments[0].installedWeightKg as unknown as { toNumber(): number }).toNumber()
+          : null,
+        mountingLocation: a.fitments[0]?.mountingLocation ?? null,
+        categoryName: a.category.name,
+      })),
+      nextCursor: hasMore ? items[items.length - 1].id : null,
+      hasMore,
+    };
+  }
+
+  async function getPickerDtoById(id: string): Promise<AccessoryPickerDto | null> {
+    const a = await prisma.accessory.findUnique({
+      where: { id, status: "ACTIVE" },
+      select: {
+        id: true,
+        name: true,
+        brand: { select: { name: true } },
+        category: { select: { name: true } },
+        fitments: {
+          take: 1,
+          orderBy: { createdAt: "asc" },
+          select: { installedWeightKg: true, mountingLocation: true },
+        },
+      },
+    });
+    if (!a) return null;
+    return {
+      id: a.id,
+      name: a.name,
+      brand: a.brand.name,
+      massKg: a.fitments[0]
+        ? (a.fitments[0].installedWeightKg as unknown as { toNumber(): number }).toNumber()
+        : null,
+      mountingLocation: a.fitments[0]?.mountingLocation ?? null,
+      categoryName: a.category.name,
+    };
+  }
+
   async function getDetailBySlug(
     slug: string,
     categorySlug?: string
@@ -198,6 +317,9 @@ export function createAccessoryService(prisma: PrismaClient) {
     search,
     searchByBrand,
     searchByCategory,
+    searchForPicker,
+    listForPicker,
+    getPickerDtoById,
   };
 }
 
