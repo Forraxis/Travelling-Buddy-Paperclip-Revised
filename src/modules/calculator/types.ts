@@ -27,6 +27,7 @@ export interface CalculatorState {
   journey: JourneyAssumptions;
   caravanAssumptions: CaravanAssumptions;
   accessories: AccessorySelection[];
+  caravanAccessories: AccessorySelection[];
 }
 
 export type CalculatorAction =
@@ -36,6 +37,8 @@ export type CalculatorAction =
   | { type: "SET_CARAVAN_ASSUMPTIONS"; patch: Partial<CaravanAssumptions> }
   | { type: "ADD_ACCESSORY"; accessory: AccessorySelection }
   | { type: "REMOVE_ACCESSORY"; accessoryId: string }
+  | { type: "ADD_CARAVAN_ACCESSORY"; accessory: AccessorySelection }
+  | { type: "REMOVE_CARAVAN_ACCESSORY"; accessoryId: string }
   | { type: "RESET" };
 
 export const DEFAULT_JOURNEY: JourneyAssumptions = {
@@ -60,6 +63,7 @@ export const INITIAL_STATE: CalculatorState = {
   journey: DEFAULT_JOURNEY,
   caravanAssumptions: DEFAULT_CARAVAN_ASSUMPTIONS,
   accessories: [],
+  caravanAccessories: [],
 };
 
 export function calculatorReducer(
@@ -73,6 +77,9 @@ export function calculatorReducer(
       }
       return { ...state, vehicleVariantId: action.id };
     case "SET_CARAVAN_VARIANT":
+      if (action.id === null) {
+        return { ...state, caravanVariantId: null, caravanAccessories: [] };
+      }
       return { ...state, caravanVariantId: action.id };
     case "SET_JOURNEY":
       return { ...state, journey: { ...state.journey, ...action.patch } };
@@ -87,6 +94,16 @@ export function calculatorReducer(
       return {
         ...state,
         accessories: state.accessories.filter((a) => a.accessoryId !== action.accessoryId),
+      };
+    case "ADD_CARAVAN_ACCESSORY":
+      if (state.caravanAccessories.some((a) => a.accessoryId === action.accessory.accessoryId)) {
+        return state;
+      }
+      return { ...state, caravanAccessories: [...state.caravanAccessories, action.accessory] };
+    case "REMOVE_CARAVAN_ACCESSORY":
+      return {
+        ...state,
+        caravanAccessories: state.caravanAccessories.filter((a) => a.accessoryId !== action.accessoryId),
       };
     case "RESET":
       return INITIAL_STATE;

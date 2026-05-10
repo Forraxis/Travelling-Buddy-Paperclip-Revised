@@ -125,11 +125,42 @@ describe("paramsToState", () => {
         { accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" },
         { accessoryId: "acc-2", massKg: 10, mountingLocation: "tow-bar" },
       ],
+      caravanAccessories: [
+        { accessoryId: "cv-acc-1", massKg: 3, mountingLocation: "front" },
+      ],
     };
     const restored = paramsToState(stateToParams(original));
     expect(restored.vehicleVariantId).toBe("vv-abc");
     expect(restored.caravanVariantId).toBe("cv-xyz");
     expect(restored.journey).toEqual(original.journey);
     expect(restored.accessories.map((a) => a.accessoryId)).toEqual(["acc-1", "acc-2"]);
+    expect(restored.caravanAccessories.map((a) => a.accessoryId)).toEqual(["cv-acc-1"]);
+  });
+
+  it("encodes caravanAccessories as comma-separated IDs", () => {
+    const state: CalculatorState = {
+      ...INITIAL_STATE,
+      caravanAccessories: [
+        { accessoryId: "cv-1", massKg: 2, mountingLocation: "front" },
+        { accessoryId: "cv-2", massKg: 4, mountingLocation: "rear" },
+      ],
+    };
+    expect(stateToParams(state).get("caravanAccessories")).toBe("cv-1,cv-2");
+  });
+
+  it("omits caravanAccessories param when empty", () => {
+    expect(stateToParams(INITIAL_STATE).has("caravanAccessories")).toBe(false);
+  });
+
+  it("restores caravanAccessory IDs from comma-separated param", () => {
+    const params = new URLSearchParams("caravanAccessories=cv-1,cv-2,cv-3");
+    const state = paramsToState(params);
+    expect(state.caravanAccessories).toHaveLength(3);
+    expect(state.caravanAccessories[0].accessoryId).toBe("cv-1");
+    expect(state.caravanAccessories[2].accessoryId).toBe("cv-3");
+  });
+
+  it("returns empty caravanAccessories for empty params", () => {
+    expect(paramsToState(new URLSearchParams()).caravanAccessories).toEqual([]);
   });
 });

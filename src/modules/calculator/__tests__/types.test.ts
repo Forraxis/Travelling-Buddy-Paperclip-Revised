@@ -74,6 +74,7 @@ describe("calculatorReducer", () => {
       journey: { ...DEFAULT_JOURNEY, passengers: 5 },
       caravanAssumptions: { freshWaterL: 0, greyWaterL: 0, gearKg: 0 },
       accessories: [{ accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" }],
+      caravanAccessories: [],
     };
     const next = calculatorReducer(dirty, { type: "RESET" });
     expect(next).toEqual(INITIAL_STATE);
