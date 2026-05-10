@@ -7,6 +7,7 @@ import type { AccessoryItem } from '../types';
 export function useAccessorySearch(limit = 15) {
   const { state } = useCalculatorState();
   const vehicleVariantId = state.vehicleVariantId;
+  const caravanVariantId = state.caravanVariantId;
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<AccessoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +36,7 @@ export function useAccessorySearch(limit = 15) {
       try {
         const params = new URLSearchParams({ q: query.trim(), limit: String(limit) });
         if (vehicleVariantId) params.set('vehicleVariantId', vehicleVariantId);
+        if (caravanVariantId) params.set('caravanVariantId', caravanVariantId);
         const url = `/api/accessories/search?${params}`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Search failed: ${res.status}`);
@@ -51,7 +53,7 @@ export function useAccessorySearch(limit = 15) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, limit, vehicleVariantId]);
+  }, [query, limit, vehicleVariantId, caravanVariantId]);
 
   return { query, setQuery, items, isLoading, error };
 }

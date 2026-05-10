@@ -81,6 +81,8 @@ export const accessoryPickerFilterSchema = paginationSchema.extend({
 export const accessorySearchPickerSchema = z.object({
   q: z.string().min(1).max(200),
   limit: z.coerce.number().int().min(1).max(50).optional(),
+  vehicleVariantId: z.string().optional(),
+  caravanVariantId: z.string().optional(),
 });
 
 export const mountingLocationsQuerySchema = z.object({

@@ -13,10 +13,13 @@ export async function GET(request: Request) {
   const parsed = parseSearchParams(request, accessorySearchPickerSchema);
   if ("error" in parsed) return parsed.error;
 
-  const { q, limit } = parsed.data;
+  const { q, limit, vehicleVariantId, caravanVariantId } = parsed.data;
 
   try {
-    const results = await service.searchForPicker(q, limit ?? 15);
+    const results = await service.searchForPicker(q, limit ?? 15, {
+      vehicleVariantId,
+      caravanVariantId,
+    });
     return NextResponse.json({ items: results });
   } catch (err) {
     return serverError(err);

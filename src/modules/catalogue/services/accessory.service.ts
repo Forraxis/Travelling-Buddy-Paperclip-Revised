@@ -147,8 +147,15 @@ export function createAccessoryService(prisma: PrismaClient) {
 
   async function searchForPicker(
     query: string,
-    limit = 15
+    limit = 15,
+    filter: { vehicleVariantId?: string; caravanVariantId?: string } = {}
   ): Promise<AccessoryPickerDto[]> {
+    const fitmentVariantFilter = filter.vehicleVariantId
+      ? { vehicleVariantId: filter.vehicleVariantId }
+      : filter.caravanVariantId
+        ? { caravanVariantId: filter.caravanVariantId }
+        : null;
+
     const accessories = await prisma.accessory.findMany({
       where: {
         status: "ACTIVE",
@@ -156,6 +163,9 @@ export function createAccessoryService(prisma: PrismaClient) {
           { name: { contains: query, mode: "insensitive" } },
           { brand: { name: { contains: query, mode: "insensitive" } } },
         ],
+        ...(fitmentVariantFilter
+          ? { fitments: { some: fitmentVariantFilter } }
+          : {}),
       },
       take: limit,
       orderBy: { name: "asc" },
@@ -165,6 +175,7 @@ export function createAccessoryService(prisma: PrismaClient) {
         brand: { select: { name: true } },
         category: { select: { name: true } },
         fitments: {
+          where: fitmentVariantFilter ?? {},
           take: 1,
           orderBy: { createdAt: "asc" },
           select: { installedWeightKg: true, mountingLocation: true },

@@ -11,8 +11,15 @@ export async function GET(request: Request) {
     const q = searchParams.get("q")?.trim() ?? "";
     const limit = Math.min(parseInt(searchParams.get("limit") ?? "15", 10), 50);
     const vehicleVariantId = searchParams.get("vehicleVariantId");
+    const caravanVariantId = searchParams.get("caravanVariantId");
 
     if (!q) return NextResponse.json({ items: [] });
+
+    const fitmentVariantFilter = vehicleVariantId
+      ? { vehicleVariantId }
+      : caravanVariantId
+        ? { caravanVariantId }
+        : null;
 
     const accessories = await prisma.accessory.findMany({
       where: {
@@ -21,15 +28,15 @@ export async function GET(request: Request) {
           { name: { contains: q, mode: "insensitive" } },
           { brand: { name: { contains: q, mode: "insensitive" } } },
         ],
-        ...(vehicleVariantId
-          ? { fitments: { some: { vehicleVariantId } } }
+        ...(fitmentVariantFilter
+          ? { fitments: { some: fitmentVariantFilter } }
           : {}),
       },
       include: {
         brand: { select: { id: true, name: true, logoUrl: true } },
         category: { select: { id: true, name: true } },
         fitments: {
-          where: vehicleVariantId ? { vehicleVariantId } : {},
+          where: fitmentVariantFilter ?? {},
           select: {
             id: true,
             installedWeightKg: true,
