@@ -14,6 +14,7 @@ const PARAM = {
   cvGreyWaterL: "cvGreyWaterL",
   cvGearKg: "cvGearKg",
   accessories: "accessories",
+  caravanAccessories: "caravanAccessories",
 } as const;
 
 function clamp(value: number, min: number, max: number): number {
@@ -79,6 +80,10 @@ export function stateToParams(state: CalculatorState): URLSearchParams {
     params.set(PARAM.accessories, state.accessories.map((a) => a.accessoryId).join(","));
   }
 
+  if (state.caravanAccessories.length > 0) {
+    params.set(PARAM.caravanAccessories, state.caravanAccessories.map((a) => a.accessoryId).join(","));
+  }
+
   return params;
 }
 
@@ -131,6 +136,15 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
         .map((accessoryId) => ({ accessoryId, massKg: 0, mountingLocation: "" }))
     : [];
 
+  const caravanAccessoriesRaw = params.get(PARAM.caravanAccessories);
+  const caravanAccessories = caravanAccessoriesRaw
+    ? caravanAccessoriesRaw
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean)
+        .map((accessoryId) => ({ accessoryId, massKg: 0, mountingLocation: "" }))
+    : [];
+
   return {
     ...INITIAL_STATE,
     vehicleVariantId,
@@ -138,5 +152,6 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
     journey,
     caravanAssumptions,
     accessories,
+    caravanAccessories,
   };
 }

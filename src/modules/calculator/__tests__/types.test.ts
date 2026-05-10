@@ -67,6 +67,38 @@ describe("calculatorReducer", () => {
     expect(next.vehicleVariantId).toBeNull();
   });
 
+  it("ADD_CARAVAN_ACCESSORY adds a caravan accessory", () => {
+    const acc = { accessoryId: "cv-acc-1", massKg: 3, mountingLocation: "front" };
+    const next = calculatorReducer(INITIAL_STATE, { type: "ADD_CARAVAN_ACCESSORY", accessory: acc });
+    expect(next.caravanAccessories).toHaveLength(1);
+    expect(next.caravanAccessories[0]).toEqual(acc);
+  });
+
+  it("ADD_CARAVAN_ACCESSORY is idempotent for same accessoryId", () => {
+    const acc = { accessoryId: "cv-acc-1", massKg: 3, mountingLocation: "front" };
+    const withOne = calculatorReducer(INITIAL_STATE, { type: "ADD_CARAVAN_ACCESSORY", accessory: acc });
+    const withDup = calculatorReducer(withOne, { type: "ADD_CARAVAN_ACCESSORY", accessory: acc });
+    expect(withDup.caravanAccessories).toHaveLength(1);
+  });
+
+  it("REMOVE_CARAVAN_ACCESSORY removes by accessoryId", () => {
+    const acc1 = { accessoryId: "cv-acc-1", massKg: 3, mountingLocation: "front" };
+    const acc2 = { accessoryId: "cv-acc-2", massKg: 5, mountingLocation: "rear" };
+    let state = calculatorReducer(INITIAL_STATE, { type: "ADD_CARAVAN_ACCESSORY", accessory: acc1 });
+    state = calculatorReducer(state, { type: "ADD_CARAVAN_ACCESSORY", accessory: acc2 });
+    const next = calculatorReducer(state, { type: "REMOVE_CARAVAN_ACCESSORY", accessoryId: "cv-acc-1" });
+    expect(next.caravanAccessories).toHaveLength(1);
+    expect(next.caravanAccessories[0].accessoryId).toBe("cv-acc-2");
+  });
+
+  it("SET_CARAVAN_VARIANT with null clears caravanAccessories", () => {
+    const acc = { accessoryId: "cv-acc-1", massKg: 3, mountingLocation: "front" };
+    const withAcc = calculatorReducer(INITIAL_STATE, { type: "ADD_CARAVAN_ACCESSORY", accessory: acc });
+    const next = calculatorReducer(withAcc, { type: "SET_CARAVAN_VARIANT", id: null });
+    expect(next.caravanAccessories).toHaveLength(0);
+    expect(next.caravanVariantId).toBeNull();
+  });
+
   it("RESET returns INITIAL_STATE", () => {
     const dirty: CalculatorState = {
       vehicleVariantId: "vv-1",
@@ -74,7 +106,7 @@ describe("calculatorReducer", () => {
       journey: { ...DEFAULT_JOURNEY, passengers: 5 },
       caravanAssumptions: { freshWaterL: 0, greyWaterL: 0, gearKg: 0 },
       accessories: [{ accessoryId: "acc-1", massKg: 5, mountingLocation: "roof" }],
-      caravanAccessories: [],
+      caravanAccessories: [{ accessoryId: "cv-acc-1", massKg: 3, mountingLocation: "front" }],
     };
     const next = calculatorReducer(dirty, { type: "RESET" });
     expect(next).toEqual(INITIAL_STATE);
