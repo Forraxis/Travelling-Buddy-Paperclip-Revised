@@ -40,6 +40,8 @@ export interface PickerVariant {
   gtmKg?: number;
   tbmKg?: number;
   axleConfiguration?: string;
+  freshWaterCapacityL?: number;
+  greyWaterCapacityL?: number;
 }
 
 export type BrowseStep = 'makes' | 'models' | 'variants';

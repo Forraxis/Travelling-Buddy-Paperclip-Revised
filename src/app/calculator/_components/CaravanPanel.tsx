@@ -9,52 +9,71 @@ import { SearchTab } from '@/components/calculator/picker/SearchTab';
 import { BrowseTab } from '@/components/calculator/picker/BrowseTab';
 import { useRecent } from '@/components/calculator/picker/hooks/useRecent';
 
-interface NumberRowProps {
+const WATER_ACCENT = '#2563eb';
+
+interface WaterTankSectionProps {
   label: string;
-  value: number;
-  unit: string;
-  max: number;
+  capacityL: number;
+  percent: number;
   onChange: (v: number) => void;
-  kgConversion?: boolean;
 }
 
-function NumberRow({ label, value, unit, max, onChange, kgConversion }: NumberRowProps) {
+function WaterTankSection({ label, capacityL, percent, onChange }: WaterTankSectionProps) {
+  const massKg = Math.round((percent / 100) * capacityL);
+
+  const presets = [
+    { label: 'Full', value: 100 },
+    { label: 'Half', value: 50 },
+    { label: 'Quarter', value: 25 },
+  ] as const;
+
   return (
-    <div className="flex items-center gap-2 py-1">
-      <span className="min-w-0 flex-1 text-xs text-gray-500">{label}</span>
-      <div className="flex items-center gap-1.5">
-        <input
-          type="number"
-          min={0}
-          max={max}
-          step={1}
-          value={value === 0 ? '' : value}
-          placeholder="0"
-          onChange={(e) => {
-            const raw = parseFloat(e.target.value);
-            onChange(isNaN(raw) ? 0 : Math.max(0, Math.min(max, raw)));
-          }}
-          className="w-20 rounded border border-tb-neutral-200 bg-white px-2 py-1 text-right text-xs text-gray-900 focus:border-tb-primary-light focus:outline-none focus:ring-1 focus:ring-tb-primary-light"
-          aria-label={label}
-        />
-        <span className="w-5 text-right text-[11px] text-gray-400">{unit}</span>
-        {kgConversion && (
-          <span className="w-14 text-right text-[10px] text-gray-300">
-            = {value} kg
-          </span>
-        )}
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <span className="text-sm tabular-nums text-gray-500">{massKg} kg</span>
+      </div>
+      <p className="mb-1.5 text-[11px] text-gray-400">
+        Tank: {capacityL} L &nbsp;·&nbsp; {percent}% full
+      </p>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        value={percent}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full"
+        style={{ accentColor: WATER_ACCENT }}
+        aria-label={`${label} fill level`}
+      />
+      <div className="mt-2 flex gap-1.5">
+        {presets.map(({ label: pLabel, value }) => (
+          <button
+            key={pLabel}
+            type="button"
+            onClick={() => onChange(value)}
+            className={[
+              'flex-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+              percent === value
+                ? 'border-[#2563eb] bg-[#2563eb] text-white'
+                : 'border-[#e5e7eb] bg-white text-gray-600 hover:border-[#2563eb] hover:text-[#2563eb]',
+            ].join(' ')}
+          >
+            {pLabel}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
 export function CaravanPanel() {
-  const { state, setCaravanVariant, setCaravanAssumptions } = useCalculatorState();
+  const { state, setCaravanVariant, setCaravanAssumptions, setJourney } = useCalculatorState();
   const [selectedVariant, setSelectedVariant] = useState<PickerVariant | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const { recent, addRecent } = useRecent('caravan');
-  const { caravanAssumptions } = state;
+  const { caravanAssumptions, journey } = state;
 
   const openPicker = useCallback(() => setIsOpen(true), []);
   const closePicker = useCallback(() => setIsOpen(false), []);
@@ -142,33 +161,54 @@ export function CaravanPanel() {
 
         {/* Journey assumptions */}
         <div className="mt-4">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
             Journey assumptions
           </p>
-          <div className="divide-y divide-tb-neutral-100">
-            <NumberRow
-              label="Fresh water"
-              value={caravanAssumptions.freshWaterL}
-              unit="L"
-              max={600}
-              kgConversion
-              onChange={(v) => setCaravanAssumptions({ freshWaterL: v })}
-            />
-            <NumberRow
-              label="Grey water"
-              value={caravanAssumptions.greyWaterL}
-              unit="L"
-              max={600}
-              kgConversion
-              onChange={(v) => setCaravanAssumptions({ greyWaterL: v })}
-            />
-            <NumberRow
-              label="Gear inside"
-              value={caravanAssumptions.gearKg}
-              unit="kg"
-              max={2000}
-              onChange={(v) => setCaravanAssumptions({ gearKg: v })}
-            />
+          <div className="space-y-4 divide-y divide-tb-neutral-100">
+            {selectedVariant.freshWaterCapacityL != null && selectedVariant.freshWaterCapacityL > 0 ? (
+              <WaterTankSection
+                label="Fresh water"
+                capacityL={selectedVariant.freshWaterCapacityL}
+                percent={journey.freshWaterPercent}
+                onChange={(v) => setJourney({ freshWaterPercent: v })}
+              />
+            ) : null}
+            {selectedVariant.greyWaterCapacityL != null && selectedVariant.greyWaterCapacityL > 0 ? (
+              <div className={selectedVariant.freshWaterCapacityL != null && selectedVariant.freshWaterCapacityL > 0 ? 'pt-4' : ''}>
+                <WaterTankSection
+                  label="Grey water"
+                  capacityL={selectedVariant.greyWaterCapacityL}
+                  percent={journey.greyWaterPercent}
+                  onChange={(v) => setJourney({ greyWaterPercent: v })}
+                />
+              </div>
+            ) : null}
+            <div className={
+              (selectedVariant.freshWaterCapacityL ?? 0) > 0 || (selectedVariant.greyWaterCapacityL ?? 0) > 0
+                ? 'pt-4'
+                : ''
+            }>
+              <div className="flex items-center gap-2 py-1">
+                <span className="min-w-0 flex-1 text-xs text-gray-500">Gear inside</span>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={0}
+                    max={2000}
+                    step={1}
+                    value={caravanAssumptions.gearKg === 0 ? '' : caravanAssumptions.gearKg}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const raw = parseFloat(e.target.value);
+                      setCaravanAssumptions({ gearKg: isNaN(raw) ? 0 : Math.max(0, Math.min(2000, raw)) });
+                    }}
+                    className="w-20 rounded border border-tb-neutral-200 bg-white px-2 py-1 text-right text-xs text-gray-900 focus:border-tb-primary-light focus:outline-none focus:ring-1 focus:ring-tb-primary-light"
+                    aria-label="Gear inside caravan"
+                  />
+                  <span className="w-5 text-right text-[11px] text-gray-400">kg</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

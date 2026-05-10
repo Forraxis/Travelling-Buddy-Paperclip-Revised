@@ -23,6 +23,8 @@ interface PickerSearchItem {
     gtmKg?: number;
     tbmKg?: number;
     axleConfiguration?: string;
+    freshWaterCapacityL?: number;
+    greyWaterCapacityL?: number;
   };
   confidenceBadge: 'verified' | 'manufacturer_spec' | 'community' | 'estimated';
 }
@@ -55,6 +57,8 @@ function apiItemToPickerVariant(item: PickerSearchItem): PickerVariant {
     gtmKg: item.specs.gtmKg,
     tbmKg: item.specs.tbmKg,
     axleConfiguration: item.specs.axleConfiguration,
+    freshWaterCapacityL: item.specs.freshWaterCapacityL,
+    greyWaterCapacityL: item.specs.greyWaterCapacityL,
     confidenceBadge: item.confidenceBadge,
   };
 }

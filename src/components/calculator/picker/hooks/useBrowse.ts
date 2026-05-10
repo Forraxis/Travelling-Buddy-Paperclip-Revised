@@ -52,6 +52,8 @@ interface ApiPickerItem {
     tbmKg?: number;
     axleConfiguration?: string;
     bodyLengthMm?: number;
+    freshWaterCapacityL?: number;
+    greyWaterCapacityL?: number;
   };
 }
 
@@ -94,6 +96,8 @@ function apiItemToPickerVariant(item: ApiPickerItem): PickerVariant {
     gtmKg: item.specs.gtmKg,
     tbmKg: item.specs.tbmKg,
     axleConfiguration: item.specs.axleConfiguration,
+    freshWaterCapacityL: item.specs.freshWaterCapacityL,
+    greyWaterCapacityL: item.specs.greyWaterCapacityL,
   };
 }
 

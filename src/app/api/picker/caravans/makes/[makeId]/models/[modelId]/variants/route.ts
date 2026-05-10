@@ -92,6 +92,8 @@ export async function GET(
           bodyLengthMm: v.bodyLengthMm,
           axleConfiguration: v.axleConfiguration,
           bodyType: v.model.bodyType,
+          freshWaterCapacityL: v.freshWaterCapacityL,
+          greyWaterCapacityL: v.greyWaterCapacityL,
         },
         confidenceBadge: "manufacturer_spec" as const,
       };
