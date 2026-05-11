@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 const PREF_KEYS = [
   {
@@ -113,6 +115,47 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const { data: session } = useSession();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  function openDeleteModal() {
+    setDeleteStep(1);
+    setConfirmEmail("");
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  }
+
+  function closeDeleteModal() {
+    if (deleting) return;
+    setShowDeleteModal(false);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmEmail }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Deletion failed");
+      }
+      await signOut({ callbackUrl: "/?account_deleted=1" });
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete account"
+      );
+      setDeleting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="py-8 text-center text-sm text-gray-500">
@@ -201,6 +244,120 @@ export default function SettingsPage() {
           {exporting ? "Exporting…" : "Export my data"}
         </button>
       </section>
+
+      <section className="mt-16 border-t border-red-200 pt-8">
+        <h2 className="mb-1 text-base font-medium text-red-700">
+          Delete account
+        </h2>
+        <p className="mb-4 text-sm text-gray-500">
+          Permanently delete your account and all associated data. This action
+          cannot be undone after the 30-day grace period.
+        </p>
+        <button
+          type="button"
+          onClick={openDeleteModal}
+          className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+        >
+          Delete my account
+        </button>
+      </section>
+
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeDeleteModal();
+          }}
+        >
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            {deleteStep === 1 ? (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Delete your account?
+                </h3>
+                <p className="mt-3 text-sm text-gray-600">
+                  This will immediately sign you out. After 30 days, the
+                  following will be permanently deleted:
+                </p>
+                <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-600">
+                  <li>Your personal data and profile information</li>
+                  <li>All saved setups and configurations</li>
+                  <li>
+                    Submitted catalogue entities will be anonymised (kept for
+                    community use)
+                  </li>
+                  <li>Audit log entries will be anonymised</li>
+                </ul>
+                <p className="mt-3 text-sm text-gray-500">
+                  You can sign in within 30 days to cancel the deletion — but
+                  this feature is not yet available.
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={closeDeleteModal}
+                    className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteStep(2)}
+                    className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Confirm account deletion
+                </h3>
+                <p className="mt-3 text-sm text-gray-600">
+                  Type your account email to confirm:{" "}
+                  <strong className="font-medium">{session?.user?.email}</strong>
+                </p>
+                <input
+                  type="email"
+                  autoComplete="off"
+                  value={confirmEmail}
+                  onChange={(e) => setConfirmEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="mt-3 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+                {deleteError && (
+                  <p className="mt-2 text-sm text-red-600">{deleteError}</p>
+                )}
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteStep(1)}
+                    disabled={deleting}
+                    className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={
+                      deleting ||
+                      confirmEmail.toLowerCase() !==
+                        (session?.user?.email ?? "").toLowerCase()
+                    }
+                    className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deleting
+                      ? "Deleting…"
+                      : "Permanently delete account"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

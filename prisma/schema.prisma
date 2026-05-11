@@ -287,6 +287,8 @@ model User {
   homeState               AustralianState?
   trustTier               TrustTier @default(NEW)
   notificationPreferences Json      @default("{}")
+  deletedAt               DateTime?
+  scheduledHardDeleteAt   DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   accounts                Account[]
