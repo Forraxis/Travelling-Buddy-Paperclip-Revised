@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { InlineNameEdit } from "@/components/setups/InlineNameEdit";
 
 export interface SetupItem {
   id: string;
@@ -314,9 +315,17 @@ export function SetupsDashboard({
               className="rounded-lg border border-tb-neutral-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="mb-2 flex items-start justify-between">
-                <h3 className="truncate text-sm font-semibold text-gray-900">
-                  {setup.name}
-                </h3>
+                <InlineNameEdit
+                  setupId={setup.id}
+                  initialName={setup.name}
+                  onRename={(newName) =>
+                    setSetups((prev) =>
+                      prev.map((s) =>
+                        s.id === setup.id ? { ...s, name: newName } : s
+                      )
+                    )
+                  }
+                />
               </div>
 
               <p className="mb-2 truncate text-xs text-gray-500">
