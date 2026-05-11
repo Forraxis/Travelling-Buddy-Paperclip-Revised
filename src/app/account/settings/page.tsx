@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 const PREF_KEYS = [
   {
@@ -42,6 +42,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/account/notification-preferences")
@@ -79,6 +81,37 @@ export default function SettingsPage() {
       setSaving(false);
     }
   }
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const res = await fetch("/api/account/export", { method: "POST" });
+      if (res.status === 429) {
+        setExportError("Please wait a few minutes before exporting again.");
+        return;
+      }
+      if (!res.ok) throw new Error("Export failed");
+
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition");
+      const filenameMatch = disposition?.match(/filename=(.+)/);
+      const filename = filenameMatch?.[1] ?? "travellingbuddy-export.json";
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportError("Failed to export data. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -142,6 +175,31 @@ export default function SettingsPage() {
             </label>
           ))}
         </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="mb-1 text-base font-medium text-gray-900">
+          Data export
+        </h2>
+        <p className="mb-4 text-sm text-gray-500">
+          Download a JSON file containing your profile, saved setups, and
+          notification preferences.
+        </p>
+
+        {exportError && (
+          <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+            {exportError}
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting}
+          className="rounded-md bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary/90 disabled:opacity-60"
+        >
+          {exporting ? "Exporting…" : "Export my data"}
+        </button>
       </section>
     </div>
   );
