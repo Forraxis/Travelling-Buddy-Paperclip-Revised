@@ -7,7 +7,12 @@ import { useCalculatorState } from './context';
 
 type AnyVariant = Record<string, unknown>;
 
-export function usePhysicsResult(): PhysicsResult | null {
+export interface SnapshotOverrides {
+  vehicleSnapshot?: AnyVariant | null;
+  caravanSnapshot?: AnyVariant | null;
+}
+
+export function usePhysicsResult(snapshots?: SnapshotOverrides): PhysicsResult | null {
   const { state } = useCalculatorState();
   const [vehicleVariant, setVehicleVariant] = useState<AnyVariant | null>(null);
   const [caravanVariant, setCaravanVariant] = useState<AnyVariant | null>(null);
@@ -38,11 +43,14 @@ export function usePhysicsResult(): PhysicsResult | null {
     return () => { active = false; };
   }, [state.caravanVariantId]);
 
-  return useMemo(() => {
-    if (!vehicleVariant) return null;
+  const effectiveVehicle = vehicleVariant ?? snapshots?.vehicleSnapshot ?? null;
+  const effectiveCaravan = caravanVariant ?? snapshots?.caravanSnapshot ?? null;
 
-    const freshWaterCapL = Number(caravanVariant?.freshWaterCapacityL ?? 0);
-    const greyWaterCapL = Number(caravanVariant?.greyWaterCapacityL ?? 0);
+  return useMemo(() => {
+    if (!effectiveVehicle) return null;
+
+    const freshWaterCapL = Number(effectiveCaravan?.freshWaterCapacityL ?? 0);
+    const greyWaterCapL = Number(effectiveCaravan?.greyWaterCapacityL ?? 0);
     const freshWaterPercent = freshWaterCapL > 0
       ? Math.min(100, (state.caravanAssumptions.freshWaterL / freshWaterCapL) * 100)
       : 0;
@@ -52,27 +60,27 @@ export function usePhysicsResult(): PhysicsResult | null {
 
     const input: PhysicsInput = {
       vehicle: {
-        gvmKg: Number(vehicleVariant.gvmKg),
-        gcmKg: Number(vehicleVariant.gcmKg),
-        kerbWeightKg: Number(vehicleVariant.kerbWeightKg),
-        maxTowingCapacityKg: Number(vehicleVariant.maxTowingCapacityKg),
-        frontAxleLimitKg: Number(vehicleVariant.frontAxleLimitKg),
-        rearAxleLimitKg: Number(vehicleVariant.rearAxleLimitKg),
-        maxTowBallDownloadKg: Number(vehicleVariant.maxTowBallDownloadKg),
-        wheelbaseMm: Number(vehicleVariant.wheelbaseMm),
-        frontOverhangMm: vehicleVariant.frontOverhangMm != null ? Number(vehicleVariant.frontOverhangMm) : null,
-        rearOverhangMm: vehicleVariant.rearOverhangMm != null ? Number(vehicleVariant.rearOverhangMm) : null,
-        fuelTankCapacityL: Number(vehicleVariant.fuelTankCapacityL),
-        fuelType: vehicleVariant.fuelType as 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC',
+        gvmKg: Number(effectiveVehicle.gvmKg),
+        gcmKg: Number(effectiveVehicle.gcmKg),
+        kerbWeightKg: Number(effectiveVehicle.kerbWeightKg),
+        maxTowingCapacityKg: Number(effectiveVehicle.maxTowingCapacityKg),
+        frontAxleLimitKg: Number(effectiveVehicle.frontAxleLimitKg),
+        rearAxleLimitKg: Number(effectiveVehicle.rearAxleLimitKg),
+        maxTowBallDownloadKg: Number(effectiveVehicle.maxTowBallDownloadKg),
+        wheelbaseMm: Number(effectiveVehicle.wheelbaseMm),
+        frontOverhangMm: effectiveVehicle.frontOverhangMm != null ? Number(effectiveVehicle.frontOverhangMm) : null,
+        rearOverhangMm: effectiveVehicle.rearOverhangMm != null ? Number(effectiveVehicle.rearOverhangMm) : null,
+        fuelTankCapacityL: Number(effectiveVehicle.fuelTankCapacityL),
+        fuelType: effectiveVehicle.fuelType as 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC',
       },
-      caravan: caravanVariant ? {
-        atmKg: Number(caravanVariant.atmKg),
-        gtmKg: Number(caravanVariant.gtmKg),
-        tareKg: Number(caravanVariant.tareKg),
-        tbmKg: Number(caravanVariant.tbmKg),
-        axleConfiguration: caravanVariant.axleConfiguration as 'SINGLE_AXLE' | 'DUAL_AXLE_CLOSE_COUPLED' | 'DUAL_AXLE_SPREAD' | 'TRIPLE_AXLE',
-        couplingToAxleMm: Number(caravanVariant.couplingToAxleMm),
-        axleSpacingMm: caravanVariant.axleSpacingMm != null ? Number(caravanVariant.axleSpacingMm) : null,
+      caravan: effectiveCaravan ? {
+        atmKg: Number(effectiveCaravan.atmKg),
+        gtmKg: Number(effectiveCaravan.gtmKg),
+        tareKg: Number(effectiveCaravan.tareKg),
+        tbmKg: Number(effectiveCaravan.tbmKg),
+        axleConfiguration: effectiveCaravan.axleConfiguration as 'SINGLE_AXLE' | 'DUAL_AXLE_CLOSE_COUPLED' | 'DUAL_AXLE_SPREAD' | 'TRIPLE_AXLE',
+        couplingToAxleMm: Number(effectiveCaravan.couplingToAxleMm),
+        axleSpacingMm: effectiveCaravan.axleSpacingMm != null ? Number(effectiveCaravan.axleSpacingMm) : null,
         freshWaterCapacityL: freshWaterCapL,
         greyWaterCapacityL: greyWaterCapL,
       } : undefined,
@@ -82,7 +90,12 @@ export function usePhysicsResult(): PhysicsResult | null {
         fillPercent: 100,
         quantity: 1,
       })),
-      caravanAccessories: [],
+      caravanAccessories: state.caravanAccessories.map((a) => ({
+        installedWeightKg: a.massKg,
+        mountingLocation: a.mountingLocation as MountingLocation,
+        fillPercent: 100,
+        quantity: 1,
+      })),
       passengers: state.journey.passengers,
       cargoKg: state.journey.cargoKg,
       fuelPercent: state.journey.fuelPercent,
@@ -99,5 +112,5 @@ export function usePhysicsResult(): PhysicsResult | null {
     } catch {
       return null;
     }
-  }, [vehicleVariant, caravanVariant, state]);
+  }, [effectiveVehicle, effectiveCaravan, state]);
 }

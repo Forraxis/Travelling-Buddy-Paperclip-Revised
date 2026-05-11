@@ -282,6 +282,7 @@ model User {
   email                   String    @unique
   emailVerified           DateTime?
   image                   String?
+  password                String?
   role                    UserRole  @default(VIEWER)
   homeState               AustralianState?
   trustTier               TrustTier @default(NEW)
@@ -476,6 +477,10 @@ model Setup {
   freshWaterPercent     Int             @default(100)
   greyWaterPercent      Int             @default(0)
   calibrationOverrides  Json            @default("{}")
+  vehicleSnapshot       Json?
+  caravanSnapshot       Json?
+  accessorySnapshot     Json?
+  tags                  String[]
   shareToken            String          @unique @default(cuid())
   regulationSetCode     RegulationSetCode @default(AU_ADR)
   deletedAt             DateTime?
