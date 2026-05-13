@@ -27,7 +27,7 @@ export default async function SubmitCaravanPage() {
             Help build the catalogue for the Australian touring community. Compliance plate photos help but aren&apos;t required — caravan plates vary widely in format.
           </p>
         </div>
-        <CaravanSubmitForm />
+        <CaravanSubmitForm isAuthenticated={!!session?.user?.id} />
       </main>
     </div>
   );

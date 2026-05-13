@@ -1,5 +1,6 @@
 import type {
   CaravanBodyType,
+  CaravanVariantStatus,
   AxleConfiguration,
   Market,
 } from "@prisma/client";
@@ -44,22 +45,24 @@ export interface CaravanModelWithVariants extends CaravanModelDto {
 export interface CaravanVariantDto {
   id: string;
   modelId: string;
+  status: CaravanVariantStatus;
+  communitySubmitterId: string | null;
   yearFrom: number;
   yearTo: number;
   isCurrentProduction: boolean;
   name: string;
   slug: string;
-  atmKg: number;
-  gtmKg: number;
-  tareKg: number;
-  tbmKg: number;
+  atmKg: number | null;
+  gtmKg: number | null;
+  tareKg: number | null;
+  tbmKg: number | null;
   axleConfiguration: AxleConfiguration;
-  couplingToAxleMm: number;
+  couplingToAxleMm: number | null;
   axleSpacingMm: number | null;
-  bodyLengthMm: number;
-  overallLengthMm: number;
-  freshWaterCapacityL: number;
-  greyWaterCapacityL: number;
+  bodyLengthMm: number | null;
+  overallLengthMm: number | null;
+  freshWaterCapacityL: number | null;
+  greyWaterCapacityL: number | null;
   gasBottleConfig: string | null;
   market: Market;
   createdAt: Date;
@@ -106,17 +109,17 @@ export interface CreateCaravanVariantInput {
   isCurrentProduction?: boolean;
   name: string;
   slug: string;
-  atmKg: number;
-  gtmKg: number;
-  tareKg: number;
-  tbmKg: number;
+  atmKg?: number | null;
+  gtmKg?: number | null;
+  tareKg?: number | null;
+  tbmKg?: number | null;
   axleConfiguration: AxleConfiguration;
-  couplingToAxleMm: number;
+  couplingToAxleMm?: number | null;
   axleSpacingMm?: number | null;
-  bodyLengthMm: number;
-  overallLengthMm: number;
-  freshWaterCapacityL: number;
-  greyWaterCapacityL: number;
+  bodyLengthMm?: number | null;
+  overallLengthMm?: number | null;
+  freshWaterCapacityL?: number | null;
+  greyWaterCapacityL?: number | null;
   gasBottleConfig?: string | null;
   market?: Market;
 }

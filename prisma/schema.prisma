@@ -54,6 +54,11 @@ enum AxleConfiguration {
   TRIPLE_AXLE
 }
 
+enum CaravanVariantStatus {
+  CATALOGUE
+  COMMUNITY
+}
+
 enum BrandStatus {
   ACTIVE
   INACTIVE
@@ -166,29 +171,32 @@ model CaravanModel {
 }
 
 model CaravanVariant {
-  id                    String             @id @default(cuid())
+  id                    String               @id @default(cuid())
   modelId               String
+  status                CaravanVariantStatus @default(CATALOGUE)
+  communitySubmitterId  String?
   yearFrom              Int
   yearTo                Int
-  isCurrentProduction   Boolean            @default(false)
+  isCurrentProduction   Boolean              @default(false)
   name                  String
   slug                  String
-  atmKg                 Int
-  gtmKg                 Int
-  tareKg                Int
-  tbmKg                 Int
+  atmKg                 Int?
+  gtmKg                 Int?
+  tareKg                Int?
+  tbmKg                 Int?
   axleConfiguration     AxleConfiguration
-  couplingToAxleMm      Int
+  couplingToAxleMm      Int?
   axleSpacingMm         Int?
-  bodyLengthMm          Int
-  overallLengthMm       Int
-  freshWaterCapacityL   Int
-  greyWaterCapacityL    Int
+  bodyLengthMm          Int?
+  overallLengthMm       Int?
+  freshWaterCapacityL   Int?
+  greyWaterCapacityL    Int?
   gasBottleConfig       String?
-  market                Market             @default(AU)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  model                 CaravanModel       @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  market                Market               @default(AU)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  model                 CaravanModel         @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  communitySubmitter    User?                @relation("CommunityCaravanVariants", fields: [communitySubmitterId], references: [id], onDelete: SetNull)
   fitments              AccessoryFitment[]
   setups                Setup[]
   caravanSubmissions    CaravanSubmission[]
@@ -197,6 +205,7 @@ model CaravanVariant {
   @@unique([modelId, slug])
   @@index([slug])
   @@index([modelId])
+  @@index([status, communitySubmitterId])
 }
 
 model AccessoryBrand {
@@ -314,6 +323,7 @@ model User {
   accessorySubmissions          AccessorySubmission[]   @relation("AccessorySubmissions")
   accessorySubmissionDecisions  AccessorySubmission[]   @relation("AccessorySubmissionDecisions")
   communityVehicleVariants      VehicleVariant[]        @relation("CommunityVehicleVariants")
+  communityCaravanVariants      CaravanVariant[]        @relation("CommunityCaravanVariants")
   auditLogs                     AuditLog[]
   moderationActions             ModerationAction[]
 }

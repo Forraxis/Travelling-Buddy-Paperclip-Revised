@@ -58,23 +58,23 @@ export function VariantCard({ variant, href }: Props) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 sm:grid-cols-3">
           <div>
             <span className="text-gray-400">ATM</span>{" "}
-            <span className="font-medium">{(variant as CaravanVariantDto).atmKg.toLocaleString()} kg</span>
+            <span className="font-medium">{(variant as CaravanVariantDto).atmKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">GTM</span>{" "}
-            <span className="font-medium">{(variant as CaravanVariantDto).gtmKg.toLocaleString()} kg</span>
+            <span className="font-medium">{(variant as CaravanVariantDto).gtmKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">Tare</span>{" "}
-            <span className="font-medium">{(variant as CaravanVariantDto).tareKg.toLocaleString()} kg</span>
+            <span className="font-medium">{(variant as CaravanVariantDto).tareKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">TBM</span>{" "}
-            <span className="font-medium">{(variant as CaravanVariantDto).tbmKg.toLocaleString()} kg</span>
+            <span className="font-medium">{(variant as CaravanVariantDto).tbmKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">Body</span>{" "}
-            <span className="font-medium">{Math.round((variant as CaravanVariantDto).bodyLengthMm / 1000 * 10) / 10} m</span>
+            <span className="font-medium">{(variant as CaravanVariantDto).bodyLengthMm != null ? Math.round((variant as CaravanVariantDto).bodyLengthMm! / 1000 * 10) / 10 + " m" : "—"}</span>
           </div>
           <div>
             <span className="text-gray-400">Axle</span>{" "}

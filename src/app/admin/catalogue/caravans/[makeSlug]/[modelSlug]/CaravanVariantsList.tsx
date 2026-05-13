@@ -109,13 +109,13 @@ export function CaravanVariantsList({
                     {AXLE_LABELS[variant.axleConfiguration] ?? variant.axleConfiguration}
                   </td>
                   <td className="px-4 py-3 text-gray-500 tabular-nums">
-                    {variant.atmKg.toLocaleString()}
+                    {variant.atmKg?.toLocaleString() ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-500 tabular-nums">
-                    {variant.tareKg.toLocaleString()}
+                    {variant.tareKg?.toLocaleString() ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-500 tabular-nums">
-                    {variant.tbmKg.toLocaleString()}
+                    {variant.tbmKg?.toLocaleString() ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">

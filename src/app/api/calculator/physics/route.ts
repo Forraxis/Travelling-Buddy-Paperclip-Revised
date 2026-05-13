@@ -111,19 +111,19 @@ export async function POST(request: Request) {
       },
       caravan: caravan
         ? {
-            atmKg: caravan.atmKg,
-            gtmKg: caravan.gtmKg,
-            tareKg: caravan.tareKg,
-            tbmKg: caravan.tbmKg,
+            atmKg: caravan.atmKg ?? 0,
+            gtmKg: caravan.gtmKg ?? 0,
+            tareKg: caravan.tareKg ?? 0,
+            tbmKg: caravan.tbmKg ?? 0,
             axleConfiguration: caravan.axleConfiguration as
               | "SINGLE_AXLE"
               | "DUAL_AXLE_CLOSE_COUPLED"
               | "DUAL_AXLE_SPREAD"
               | "TRIPLE_AXLE",
-            couplingToAxleMm: caravan.couplingToAxleMm,
+            couplingToAxleMm: caravan.couplingToAxleMm ?? 0,
             axleSpacingMm: caravan.axleSpacingMm,
-            freshWaterCapacityL: caravan.freshWaterCapacityL,
-            greyWaterCapacityL: caravan.greyWaterCapacityL,
+            freshWaterCapacityL: caravan.freshWaterCapacityL ?? 0,
+            greyWaterCapacityL: caravan.greyWaterCapacityL ?? 0,
           }
         : undefined,
       vehicleAccessories,

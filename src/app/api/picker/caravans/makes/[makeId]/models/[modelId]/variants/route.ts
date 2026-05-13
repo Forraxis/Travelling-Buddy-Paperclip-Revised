@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parseSearchParams, withRateLimit, notFound, serverError } from "@/lib/api-helpers";
 
@@ -26,6 +27,17 @@ export async function GET(
   const parsed = parseSearchParams(request, filterSchema);
   if ("error" in parsed) return parsed.error;
 
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+
+  // Community filter — same as vehicle picker pattern
+  const communityFilter = {
+    OR: [
+      { status: "CATALOGUE" as const },
+      { status: "COMMUNITY" as const, communitySubmitterId: userId ?? "__no_match__" },
+    ],
+  };
+
   try {
     const model = await prisma.caravanModel.findFirst({
       where: { id: modelId, makeId },
@@ -33,9 +45,9 @@ export async function GET(
     });
     if (!model) return notFound("Caravan model");
 
-    // Fetch all variants for facet computation
+    // Fetch all visible variants for facet computation
     const allVariants = await prisma.caravanVariant.findMany({
-      where: { modelId },
+      where: { modelId, ...communityFilter },
       select: {
         yearFrom: true,
         yearTo: true,
@@ -55,7 +67,7 @@ export async function GET(
 
     // Apply filters
     const { year, axleConfiguration } = parsed.data;
-    const whereFilter: Record<string, unknown> = { modelId };
+    const whereFilter: Record<string, unknown> = { modelId, ...communityFilter };
     if (axleConfiguration) whereFilter.axleConfiguration = axleConfiguration;
     if (year) {
       whereFilter.yearFrom = { lte: year };
@@ -95,7 +107,7 @@ export async function GET(
           freshWaterCapacityL: v.freshWaterCapacityL,
           greyWaterCapacityL: v.greyWaterCapacityL,
         },
-        confidenceBadge: "manufacturer_spec" as const,
+        confidenceBadge: (v.status === "COMMUNITY" ? "community" : "manufacturer_spec") as "community" | "manufacturer_spec",
       };
     });
 
