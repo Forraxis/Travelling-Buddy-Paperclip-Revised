@@ -4,6 +4,13 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { processPhoto, uploadPhoto } from "@/lib/client/photo-processing";
 
+interface DuplicateMatch {
+  id: string;
+  name: string;
+  kind: "canonical" | "community";
+  url: string;
+}
+
 type Step = "photo" | "form" | "confirm" | "success" | "duplicate" | "signup";
 
 interface FormValues {
@@ -94,6 +101,10 @@ export function VehicleSubmitForm({ isAuthenticated }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<{ existingId: string } | null>(null);
+  // Mid-flow duplicate detection state
+  const [dupWarning, setDupWarning] = useState<DuplicateMatch[] | null>(null);
+  const [dupSuspected, setDupSuspected] = useState(false);
+  const dupCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormValues>(EMPTY_FORM);
@@ -112,6 +123,41 @@ export function VehicleSubmitForm({ isAuthenticated }: Props) {
       saveDraft(form);
     }
   }, [form, isAuthenticated]);
+
+  // Mid-flow duplicate check: fires 600ms after user stops typing make/model/year
+  useEffect(() => {
+    const makeName = form.newMakeName.trim();
+    const modelName = form.newModelName.trim();
+    const year = parseInt(form.year, 10);
+
+    if (!makeName || !modelName || !year || year < 1950) {
+      setDupWarning(null);
+      return;
+    }
+
+    if (dupCheckTimerRef.current) clearTimeout(dupCheckTimerRef.current);
+    dupCheckTimerRef.current = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          type: "vehicle",
+          makeName,
+          modelName,
+          year: String(year),
+        });
+        const res = await fetch(`/api/submissions/check-duplicate?${params}`);
+        if (!res.ok) return;
+        const data = await res.json() as { hasDuplicate: boolean; matches: DuplicateMatch[] };
+        setDupWarning(data.hasDuplicate ? data.matches : null);
+        if (!data.hasDuplicate) setDupSuspected(false);
+      } catch {
+        // Non-fatal — advisory check only
+      }
+    }, 600);
+
+    return () => {
+      if (dupCheckTimerRef.current) clearTimeout(dupCheckTimerRef.current);
+    };
+  }, [form.newMakeName, form.newModelName, form.year]);
 
   const field = (key: keyof FormValues) => ({
     value: form[key],
@@ -217,6 +263,7 @@ export function VehicleSubmitForm({ isAuthenticated }: Props) {
             compliancePlatePhotoUrl: platePhotoUrl || undefined,
             compliancePlatePhotoKey: platePhotoKey || undefined,
             duplicateOverride,
+            dupSuspected,
           }),
         });
 
@@ -521,6 +568,43 @@ export function VehicleSubmitForm({ isAuthenticated }: Props) {
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
               />
             </div>
+
+            {/* Mid-flow duplicate warning */}
+            {dupWarning && dupWarning.length > 0 && !dupSuspected && (
+              <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
+                <p className="font-medium text-amber-800">We may already have this vehicle</p>
+                <ul className="mt-1 space-y-0.5">
+                  {dupWarning.slice(0, 3).map((m) => (
+                    <li key={m.id}>
+                      <a
+                        href={m.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amber-700 underline underline-offset-2"
+                      >
+                        {m.name}
+                      </a>
+                      {m.kind === "canonical" && (
+                        <span className="ml-1 text-amber-600">(catalogue)</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => setDupSuspected(true)}
+                  className="mt-2 text-amber-700 underline underline-offset-2"
+                >
+                  Mine is different
+                </button>
+              </div>
+            )}
+            {dupSuspected && (
+              <div className="col-span-2 rounded-lg border border-green-200 bg-green-50 p-2 text-xs text-green-700">
+                Got it — your submission will be flagged for moderator review.
+              </div>
+            )}
+
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">Variant name *</label>
               <input

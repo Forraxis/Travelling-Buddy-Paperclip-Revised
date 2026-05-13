@@ -5,6 +5,14 @@ function normalise(val: unknown): string {
   return String(val ?? "").toLowerCase().trim().replace(/\s+/g, " ");
 }
 
+// More aggressive normalisation: strips all non-alphanumeric characters.
+// Catches "LandCruiser" vs "Land Cruiser", "Jayco Journey" vs "jayco journey", etc.
+function normaliseStrict(val: unknown): string {
+  return String(val ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
 export function vehicleFingerprint(data: {
   makeId: string;
   modelId: string;
@@ -58,6 +66,18 @@ export interface DuplicateCheckResult {
   existingName: string | null;
 }
 
+export interface DuplicateMatch {
+  id: string;
+  name: string;
+  kind: "canonical" | "community";
+  url: string;
+}
+
+export interface DuplicateCheckResponse {
+  hasDuplicate: boolean;
+  matches: DuplicateMatch[];
+}
+
 export async function checkVehicleDuplicate(
   fingerprint: string
 ): Promise<DuplicateCheckResult> {
@@ -106,4 +126,214 @@ export async function checkAccessoryDuplicate(
     return { hasDuplicate: true, existingId: existing.id, existingName: "existing submission" };
   }
   return { hasDuplicate: false, existingId: null, existingName: null };
+}
+
+// Text-based mid-flow duplicate checks for the check-duplicate API endpoint.
+// These run before submission using normalised name matching so the user
+// sees a warning while still filling in the form.
+
+export async function checkVehicleDuplicateByText(params: {
+  makeName: string;
+  modelName: string;
+  year: number;
+}): Promise<DuplicateCheckResponse> {
+  const makeNorm = normaliseStrict(params.makeName);
+  const modelNorm = normaliseStrict(params.modelName);
+
+  const matches: DuplicateMatch[] = [];
+
+  // Canonical: find VehicleVariants where make+model name matches and year is in range
+  const variants = await prisma.vehicleVariant.findMany({
+    where: {
+      yearFrom: { lte: params.year },
+      yearTo: { gte: params.year },
+      status: "CATALOGUE",
+    },
+    select: {
+      id: true,
+      name: true,
+      model: {
+        select: {
+          name: true,
+          slug: true,
+          make: { select: { name: true, slug: true } },
+        },
+      },
+    },
+  });
+
+  for (const v of variants) {
+    if (
+      normaliseStrict(v.model.make.name) === makeNorm &&
+      normaliseStrict(v.model.name) === modelNorm
+    ) {
+      matches.push({
+        id: v.id,
+        name: `${v.model.make.name} ${v.model.name} ${params.year} — ${v.name}`,
+        kind: "canonical",
+        url: `/vehicles/${v.model.make.slug}/${v.model.slug}`,
+      });
+    }
+  }
+
+  // Community: pending/approved submissions with matching names
+  const communitySubmissions = await prisma.vehicleSubmission.findMany({
+    where: { status: { in: ["PENDING", "APPROVED"] } },
+    select: {
+      id: true,
+      submittedData: true,
+    },
+  });
+
+  for (const s of communitySubmissions) {
+    const data = s.submittedData as Record<string, unknown>;
+    const submittedMake = String(data.newMakeName ?? data.makeId ?? "");
+    const submittedModel = String(data.newModelName ?? data.modelId ?? "");
+    const submittedYear = Number(data.year ?? 0);
+    if (
+      normaliseStrict(submittedMake) === makeNorm &&
+      normaliseStrict(submittedModel) === modelNorm &&
+      submittedYear === params.year
+    ) {
+      matches.push({
+        id: s.id,
+        name: `${submittedMake} ${submittedModel} ${params.year} (community submission)`,
+        kind: "community",
+        url: `/account/submissions`,
+      });
+    }
+  }
+
+  return { hasDuplicate: matches.length > 0, matches };
+}
+
+export async function checkCaravanDuplicateByText(params: {
+  makeName: string;
+  modelName: string;
+  year: number;
+}): Promise<DuplicateCheckResponse> {
+  const makeNorm = normaliseStrict(params.makeName);
+  const modelNorm = normaliseStrict(params.modelName);
+
+  const matches: DuplicateMatch[] = [];
+
+  // Canonical: CaravanVariants
+  const variants = await prisma.caravanVariant.findMany({
+    where: {
+      yearFrom: { lte: params.year },
+      yearTo: { gte: params.year },
+      status: "CATALOGUE",
+    },
+    select: {
+      id: true,
+      name: true,
+      model: {
+        select: {
+          name: true,
+          slug: true,
+          make: { select: { name: true, slug: true } },
+        },
+      },
+    },
+  });
+
+  for (const v of variants) {
+    if (
+      normaliseStrict(v.model.make.name) === makeNorm &&
+      normaliseStrict(v.model.name) === modelNorm
+    ) {
+      matches.push({
+        id: v.id,
+        name: `${v.model.make.name} ${v.model.name} ${params.year} — ${v.name}`,
+        kind: "canonical",
+        url: `/caravans/${v.model.make.slug}/${v.model.slug}`,
+      });
+    }
+  }
+
+  // Community: pending caravan submissions
+  const communitySubmissions = await prisma.caravanSubmission.findMany({
+    where: { status: { in: ["PENDING", "APPROVED"] } },
+    select: { id: true, submittedData: true },
+  });
+
+  for (const s of communitySubmissions) {
+    const data = s.submittedData as Record<string, unknown>;
+    const submittedMake = String(data.newMakeName ?? data.makeId ?? "");
+    const submittedModel = String(data.newModelName ?? data.modelId ?? "");
+    const submittedYear = Number(data.year ?? 0);
+    if (
+      normaliseStrict(submittedMake) === makeNorm &&
+      normaliseStrict(submittedModel) === modelNorm &&
+      submittedYear === params.year
+    ) {
+      matches.push({
+        id: s.id,
+        name: `${submittedMake} ${submittedModel} ${params.year} (community submission)`,
+        kind: "community",
+        url: `/account/submissions`,
+      });
+    }
+  }
+
+  return { hasDuplicate: matches.length > 0, matches };
+}
+
+export async function checkAccessoryDuplicateByText(params: {
+  brandName: string;
+  modelName: string;
+}): Promise<DuplicateCheckResponse> {
+  const brandNorm = normaliseStrict(params.brandName);
+  const modelNorm = normaliseStrict(params.modelName);
+
+  const matches: DuplicateMatch[] = [];
+
+  // Canonical: Accessories in the catalogue
+  const accessories = await prisma.accessory.findMany({
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      brand: { select: { name: true, slug: true } },
+    },
+  });
+
+  for (const a of accessories) {
+    if (
+      normaliseStrict(a.brand?.name ?? "") === brandNorm &&
+      normaliseStrict(a.name) === modelNorm
+    ) {
+      matches.push({
+        id: a.id,
+        name: `${a.brand?.name} ${a.name}`,
+        kind: "canonical",
+        url: `/accessories/${a.brand?.slug}/${a.slug}`,
+      });
+    }
+  }
+
+  // Community: pending accessory submissions
+  const communitySubmissions = await prisma.accessorySubmission.findMany({
+    where: { status: { in: ["PENDING", "APPROVED"] } },
+    select: { id: true, submittedData: true },
+  });
+
+  for (const s of communitySubmissions) {
+    const data = s.submittedData as Record<string, unknown>;
+    const submittedBrand = String(data.brandName ?? "");
+    const submittedModel = String(data.modelName ?? "");
+    if (
+      normaliseStrict(submittedBrand) === brandNorm &&
+      normaliseStrict(submittedModel) === modelNorm
+    ) {
+      matches.push({
+        id: s.id,
+        name: `${submittedBrand} ${submittedModel} (community submission)`,
+        kind: "community",
+        url: `/account/submissions`,
+      });
+    }
+  }
+
+  return { hasDuplicate: matches.length > 0, matches };
 }

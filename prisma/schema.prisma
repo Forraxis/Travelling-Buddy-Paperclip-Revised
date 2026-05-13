@@ -608,6 +608,8 @@ model VehicleSubmission {
   duplicateFingerprint    String?
   // Set when submission is flagged as a potential duplicate of an existing entry
   suspectedDuplicateOfId  String?
+  // Set when the user explicitly asserts their entry is different from a flagged duplicate
+  dupSuspected            Boolean          @default(false)
   notes                   String?
   decidedById             String?
   decidedAt               DateTime?
@@ -639,6 +641,7 @@ model CaravanSubmission {
   vlmJobId                String?
   duplicateFingerprint    String?
   suspectedDuplicateOfId  String?
+  dupSuspected            Boolean          @default(false)
   notes                   String?
   decidedById             String?
   decidedAt               DateTime?
@@ -670,6 +673,7 @@ model AccessorySubmission {
   vlmJobId                  String?
   duplicateFingerprint      String?
   suspectedDuplicateOfId    String?
+  dupSuspected              Boolean          @default(false)
   appliesToVehicleVariantId String?
   appliesToCaravanVariantId String?
   // When false, submission is private to the submitter (sharing toggle off)

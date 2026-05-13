@@ -35,6 +35,7 @@ const VehicleSubmissionSchema = z.object({
   additionalPhotoKeys: z.array(z.string()).default([]),
   notes: z.string().optional(),
   duplicateOverride: z.boolean().default(false),
+  dupSuspected: z.boolean().default(false),
 });
 
 function toSlug(text: string): string {
@@ -223,6 +224,7 @@ export async function POST(request: Request) {
         additionalPhotoUrls: data.additionalPhotoUrls,
         notes: data.notes,
         duplicateFingerprint: fingerprint,
+        dupSuspected: data.dupSuspected,
         draftExpiresAt,
         resultingVariantId: newVariant.id,
       },

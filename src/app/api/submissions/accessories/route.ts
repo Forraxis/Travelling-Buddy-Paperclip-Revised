@@ -24,6 +24,7 @@ const AccessorySubmissionSchema = z.object({
   appliesToCaravanVariantId: z.string().optional(),
   // Client acknowledges duplicate warning
   duplicateOverride: z.boolean().default(false),
+  dupSuspected: z.boolean().default(false),
 });
 
 function toSlug(text: string): string {
@@ -154,6 +155,7 @@ export async function POST(request: Request) {
         appliesToCaravanVariantId: data.appliesToCaravanVariantId,
         isShared: data.isShared,
         duplicateFingerprint: fingerprint,
+        dupSuspected: data.dupSuspected,
         draftExpiresAt,
         resultingAccessoryId: newAccessory.id,
       },
