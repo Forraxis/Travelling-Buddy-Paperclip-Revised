@@ -326,6 +326,7 @@ model User {
   communityCaravanVariants      CaravanVariant[]        @relation("CommunityCaravanVariants")
   auditLogs                     AuditLog[]
   moderationActions             ModerationAction[]
+  regulationSetVersions         RegulationSetVersion[]
 }
 
 model Account {
@@ -782,11 +783,27 @@ model RegulationSet {
   market        Market   @default(AU)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  parent        RegulationSet?  @relation("RegulationSetHierarchy", fields: [parentSetCode], references: [code], onDelete: SetNull)
-  children      RegulationSet[] @relation("RegulationSetHierarchy")
+  parent        RegulationSet?        @relation("RegulationSetHierarchy", fields: [parentSetCode], references: [code], onDelete: SetNull)
+  children      RegulationSet[]       @relation("RegulationSetHierarchy")
+  versions      RegulationSetVersion[]
 
   @@index([parentSetCode])
   @@index([market])
+}
+
+model RegulationSetVersion {
+  id            String        @id @default(cuid())
+  setId         String
+  effectiveDate DateTime
+  changeSummary String
+  data          Json
+  createdById   String
+  createdAt     DateTime      @default(now())
+  set           RegulationSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  createdBy     User          @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([setId, effectiveDate])
+  @@index([createdById])
 }
 
 model AuditLog {
@@ -804,6 +821,19 @@ model AuditLog {
   @@index([changedBy])
   @@index([action])
   @@index([createdAt])
+}
+
+model VariantSlugRedirect {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  modelId    String
+  fromSlug   String
+  toSlug     String
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, modelId, fromSlug])
+  @@index([entityId])
 }
 
 model ModerationAction {

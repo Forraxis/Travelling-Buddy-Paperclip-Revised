@@ -4,6 +4,7 @@ import {
   getCaravanModelBySlugAction,
 } from "@/modules/catalogue/actions/caravan.actions";
 import { CaravanVariantForm } from "../CaravanVariantForm";
+import { CaravanVariantAdminActions } from "./CaravanVariantAdminActions";
 
 export default async function CaravanVariantDetailPage({
   params,
@@ -35,10 +36,15 @@ export default async function CaravanVariantDetailPage({
   if (!variant) notFound();
 
   return (
-    <div>
+    <div className="space-y-6">
       <AdminPageHeader
         title={`${model.make.name} ${model.name} — ${variant.name}`}
         description={`Edit caravan variant details and specifications`}
+      />
+      <CaravanVariantAdminActions
+        variant={variant}
+        makeSlug={makeSlug}
+        modelSlug={modelSlug}
       />
       <CaravanVariantForm
         modelId={model.id}

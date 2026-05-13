@@ -4,6 +4,7 @@ import {
   getModelBySlugAction,
 } from "@/modules/catalogue/actions/vehicle.actions";
 import { VariantForm } from "../VariantForm";
+import { VariantAdminActions } from "./VariantAdminActions";
 
 export default async function VariantDetailPage({
   params,
@@ -35,10 +36,15 @@ export default async function VariantDetailPage({
   if (!variant) notFound();
 
   return (
-    <div>
+    <div className="space-y-6">
       <AdminPageHeader
         title={`${model.make.name} ${model.name} — ${variant.name}`}
         description={`Edit variant details and specifications`}
+      />
+      <VariantAdminActions
+        variant={variant}
+        makeSlug={makeSlug}
+        modelSlug={modelSlug}
       />
       <VariantForm
         modelId={model.id}

@@ -299,3 +299,238 @@ export async function deleteCaravanVariantAction(id: string): Promise<ActionResu
     return { success: false, error: msg };
   }
 }
+
+// ── Admin range actions ─────────────────────────────
+
+function yearRangeSlug(nameSlug: string, yearFrom: number, yearTo: number): string {
+  return `${nameSlug}-${yearFrom}-${yearTo}`;
+}
+
+async function checkCaravanOverlap(
+  modelId: string,
+  yearFrom: number,
+  yearTo: number,
+  excludeId?: string
+): Promise<{ yearFrom: number; yearTo: number } | null> {
+  return prisma.caravanVariant.findFirst({
+    where: {
+      modelId,
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+      yearFrom: { lte: yearTo },
+      yearTo: { gte: yearFrom },
+    },
+    select: { yearFrom: true, yearTo: true },
+  });
+}
+
+export async function splitCaravanVariantRangeAction(
+  variantId: string,
+  anomalyYearFrom: number,
+  anomalyYearTo: number
+): Promise<ActionResult<{ created: number; variantIds: string[] }>> {
+  const user = await getAdminUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  try {
+    const source = await prisma.caravanVariant.findUniqueOrThrow({
+      where: { id: variantId },
+    });
+
+    if (anomalyYearFrom < source.yearFrom || anomalyYearTo > source.yearTo) {
+      return { success: false, error: "Anomaly range must be within the existing variant range" };
+    }
+    if (anomalyYearFrom > anomalyYearTo) {
+      return { success: false, error: "Anomaly year from must be ≤ year to" };
+    }
+
+    const nameSlug = slugify(source.name);
+    const segments: Array<{ yearFrom: number; yearTo: number }> = [];
+
+    if (anomalyYearFrom > source.yearFrom) {
+      segments.push({ yearFrom: source.yearFrom, yearTo: anomalyYearFrom - 1 });
+    }
+    segments.push({ yearFrom: anomalyYearFrom, yearTo: anomalyYearTo });
+    if (anomalyYearTo < source.yearTo) {
+      segments.push({ yearFrom: anomalyYearTo + 1, yearTo: source.yearTo });
+    }
+
+    const createdIds: string[] = [];
+
+    await prisma.$transaction(async (tx) => {
+      for (const seg of segments) {
+        const segSlug = yearRangeSlug(nameSlug, seg.yearFrom, seg.yearTo);
+        const created = await tx.caravanVariant.create({
+          data: {
+            modelId: source.modelId,
+            yearFrom: seg.yearFrom,
+            yearTo: seg.yearTo,
+            isCurrentProduction: false,
+            name: source.name,
+            slug: segSlug,
+            status: source.status,
+            atmKg: source.atmKg,
+            gtmKg: source.gtmKg,
+            tareKg: source.tareKg,
+            tbmKg: source.tbmKg,
+            axleConfiguration: source.axleConfiguration,
+            couplingToAxleMm: source.couplingToAxleMm,
+            axleSpacingMm: source.axleSpacingMm,
+            bodyLengthMm: source.bodyLengthMm,
+            overallLengthMm: source.overallLengthMm,
+            freshWaterCapacityL: source.freshWaterCapacityL,
+            greyWaterCapacityL: source.greyWaterCapacityL,
+            gasBottleConfig: source.gasBottleConfig,
+            market: source.market,
+          },
+        });
+        createdIds.push(created.id);
+        await tx.auditLog.create({
+          data: {
+            entityType: "CaravanVariant",
+            entityId: created.id,
+            action: "CREATE",
+            changedBy: user.id,
+            changes: { splitFrom: variantId, yearFrom: seg.yearFrom, yearTo: seg.yearTo },
+          },
+        });
+      }
+      await tx.caravanVariant.delete({ where: { id: variantId } });
+      await tx.auditLog.create({
+        data: {
+          entityType: "CaravanVariant",
+          entityId: variantId,
+          action: "DELETE",
+          changedBy: user.id,
+          changes: { reason: "split", anomalyYearFrom, anomalyYearTo, replacedBy: createdIds },
+        },
+      });
+    });
+
+    revalidatePath("/admin/catalogue/caravans");
+    return { success: true, data: { created: segments.length, variantIds: createdIds } };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Failed to split variant range";
+    return { success: false, error: msg };
+  }
+}
+
+export async function advanceCaravanYearToAction(
+  variantId: string,
+  newYearTo: number
+): Promise<ActionResult> {
+  const user = await getAdminUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  try {
+    const source = await prisma.caravanVariant.findUniqueOrThrow({ where: { id: variantId } });
+
+    if (newYearTo <= source.yearTo) {
+      return { success: false, error: "New year to must be greater than current year to" };
+    }
+
+    const overlap = await checkCaravanOverlap(source.modelId, source.yearFrom, newYearTo, variantId);
+    if (overlap) {
+      return {
+        success: false,
+        error: `This range overlaps with an existing variant covering ${overlap.yearFrom}–${overlap.yearTo}`,
+      };
+    }
+
+    const nameSlug = slugify(source.name);
+    const oldSlug = source.slug;
+    const newSlug = yearRangeSlug(nameSlug, source.yearFrom, newYearTo);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.caravanVariant.update({
+        where: { id: variantId },
+        data: { yearTo: newYearTo, isCurrentProduction: false, slug: newSlug },
+      });
+      if (oldSlug !== newSlug) {
+        await tx.variantSlugRedirect.create({
+          data: {
+            entityType: "CaravanVariant",
+            entityId: variantId,
+            modelId: source.modelId,
+            fromSlug: oldSlug,
+            toSlug: newSlug,
+          },
+        });
+      }
+      await tx.auditLog.create({
+        data: {
+          entityType: "CaravanVariant",
+          entityId: variantId,
+          action: "UPDATE",
+          changedBy: user.id,
+          changes: {
+            yearTo: { from: source.yearTo, to: newYearTo },
+            slug: { from: oldSlug, to: newSlug },
+          },
+        },
+      });
+    });
+
+    revalidatePath("/admin/catalogue/caravans");
+    return { success: true, data: null };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Failed to advance year to";
+    return { success: false, error: msg };
+  }
+}
+
+export async function closeCaravanCurrentProductionAction(
+  variantId: string
+): Promise<ActionResult> {
+  const user = await getAdminUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  try {
+    const source = await prisma.caravanVariant.findUniqueOrThrow({ where: { id: variantId } });
+
+    if (!source.isCurrentProduction) {
+      return { success: false, error: "Variant is not marked as current production" };
+    }
+
+    const currentYear = new Date().getFullYear();
+    const nameSlug = slugify(source.name);
+    const oldSlug = source.slug;
+    const newSlug = yearRangeSlug(nameSlug, source.yearFrom, currentYear);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.caravanVariant.update({
+        where: { id: variantId },
+        data: { isCurrentProduction: false, yearTo: currentYear, slug: newSlug },
+      });
+      if (oldSlug !== newSlug) {
+        await tx.variantSlugRedirect.create({
+          data: {
+            entityType: "CaravanVariant",
+            entityId: variantId,
+            modelId: source.modelId,
+            fromSlug: oldSlug,
+            toSlug: newSlug,
+          },
+        });
+      }
+      await tx.auditLog.create({
+        data: {
+          entityType: "CaravanVariant",
+          entityId: variantId,
+          action: "UPDATE",
+          changedBy: user.id,
+          changes: {
+            isCurrentProduction: { from: true, to: false },
+            yearTo: { from: source.yearTo, to: currentYear },
+            slug: { from: oldSlug, to: newSlug },
+          },
+        },
+      });
+    });
+
+    revalidatePath("/admin/catalogue/caravans");
+    return { success: true, data: null };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Failed to close current production";
+    return { success: false, error: msg };
+  }
+}
