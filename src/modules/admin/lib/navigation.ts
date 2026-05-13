@@ -33,9 +33,8 @@ export const adminNavSections: NavSection[] = [
   {
     label: 'Submissions',
     icon: 'submissions',
-    disabled: true,
     items: [
-      { label: 'Pending Review', href: '/admin/submissions/pending', icon: 'pending', disabled: true },
+      { label: 'Moderation Queue', href: '/admin/moderation', icon: 'pending' },
       { label: 'Approved', href: '/admin/submissions/approved', icon: 'approved', disabled: true },
       { label: 'Rejected', href: '/admin/submissions/rejected', icon: 'rejected', disabled: true },
       { label: 'All Submissions', href: '/admin/submissions', icon: 'search', disabled: true },
@@ -44,21 +43,18 @@ export const adminNavSections: NavSection[] = [
   {
     label: 'Sponsorship',
     icon: 'sponsorship',
-    disabled: true,
     roles: ['ADMIN'],
     items: [
-      { label: 'Sponsors', href: '/admin/sponsorship/sponsors', icon: 'sponsor', disabled: true },
-      { label: 'Placements', href: '/admin/sponsorship/placements', icon: 'placement', disabled: true },
-      { label: 'Schedule', href: '/admin/sponsorship/schedule', icon: 'schedule', disabled: true },
+      { label: 'Sponsors', href: '/admin/sponsorship', icon: 'sponsor' },
+      { label: 'Schedule', href: '/admin/sponsorship/schedule', icon: 'schedule' },
     ],
   },
   {
     label: 'Operations',
     icon: 'operations',
-    disabled: true,
     items: [
-      { label: 'Regulation Sets', href: '/admin/operations/regulations', icon: 'regulation', disabled: true, roles: ['ADMIN'] },
-      { label: 'Audit Log', href: '/admin/operations/audit', icon: 'audit', disabled: true },
+      { label: 'Regulation Sets', href: '/admin/regulations', icon: 'regulation', roles: ['ADMIN'] },
+      { label: 'Audit Log', href: '/admin/operations/audit', icon: 'audit' },
       { label: 'Sitemap Controls', href: '/admin/operations/sitemap', icon: 'sitemap', disabled: true, roles: ['ADMIN'] },
       { label: 'Feature Flags', href: '/admin/operations/flags', icon: 'flag', disabled: true, roles: ['ADMIN'] },
     ],
