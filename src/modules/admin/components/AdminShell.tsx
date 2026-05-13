@@ -19,6 +19,7 @@ export function AdminShell({
       <AdminSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        role={user.role}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminTopBar

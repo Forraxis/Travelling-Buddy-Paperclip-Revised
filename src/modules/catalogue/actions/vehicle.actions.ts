@@ -65,7 +65,7 @@ export async function getMakeBySlugAction(slug: string) {
 export async function createMakeAction(
   input: Omit<CreateVehicleMakeInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -93,7 +93,7 @@ export async function updateMakeAction(
   id: string,
   input: UpdateVehicleMakeInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -117,7 +117,7 @@ export async function updateMakeAction(
 }
 
 export async function deleteMakeAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -150,7 +150,7 @@ export async function getModelBySlugAction(
 export async function createModelAction(
   input: Omit<CreateVehicleModelInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -178,7 +178,7 @@ export async function updateModelAction(
   id: string,
   input: UpdateVehicleModelInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -202,7 +202,7 @@ export async function updateModelAction(
 }
 
 export async function deleteModelAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -232,7 +232,7 @@ export async function getVariantByIdAction(id: string) {
 export async function createVariantAction(
   input: Omit<CreateVehicleVariantInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -261,7 +261,7 @@ export async function updateVariantAction(
   id: string,
   input: UpdateVehicleVariantInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -286,7 +286,7 @@ export async function updateVariantAction(
 }
 
 export async function deleteVariantAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {

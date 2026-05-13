@@ -1,8 +1,12 @@
+import type { AdminRole } from './auth';
+
 export interface NavItem {
   label: string;
   href: string;
   icon: string;
   disabled?: boolean;
+  /** If set, only these roles can see this item. Undefined means visible to all admin roles. */
+  roles?: AdminRole[];
 }
 
 export interface NavSection {
@@ -10,6 +14,8 @@ export interface NavSection {
   icon: string;
   items: NavItem[];
   disabled?: boolean;
+  /** If set, only these roles can see this section. Undefined means visible to all admin roles. */
+  roles?: AdminRole[];
 }
 
 export const adminNavSections: NavSection[] = [
@@ -39,6 +45,7 @@ export const adminNavSections: NavSection[] = [
     label: 'Sponsorship',
     icon: 'sponsorship',
     disabled: true,
+    roles: ['ADMIN'],
     items: [
       { label: 'Sponsors', href: '/admin/sponsorship/sponsors', icon: 'sponsor', disabled: true },
       { label: 'Placements', href: '/admin/sponsorship/placements', icon: 'placement', disabled: true },
@@ -50,16 +57,17 @@ export const adminNavSections: NavSection[] = [
     icon: 'operations',
     disabled: true,
     items: [
-      { label: 'Regulation Sets', href: '/admin/operations/regulations', icon: 'regulation', disabled: true },
+      { label: 'Regulation Sets', href: '/admin/operations/regulations', icon: 'regulation', disabled: true, roles: ['ADMIN'] },
       { label: 'Audit Log', href: '/admin/operations/audit', icon: 'audit', disabled: true },
-      { label: 'Sitemap Controls', href: '/admin/operations/sitemap', icon: 'sitemap', disabled: true },
-      { label: 'Feature Flags', href: '/admin/operations/flags', icon: 'flag', disabled: true },
+      { label: 'Sitemap Controls', href: '/admin/operations/sitemap', icon: 'sitemap', disabled: true, roles: ['ADMIN'] },
+      { label: 'Feature Flags', href: '/admin/operations/flags', icon: 'flag', disabled: true, roles: ['ADMIN'] },
     ],
   },
   {
     label: 'Analytics',
     icon: 'analytics',
     disabled: true,
+    roles: ['ADMIN'],
     items: [
       { label: 'Calculator Usage', href: '/admin/analytics/calculator', icon: 'calculator', disabled: true },
       { label: 'Submission Stats', href: '/admin/analytics/submissions', icon: 'stats', disabled: true },
@@ -67,3 +75,12 @@ export const adminNavSections: NavSection[] = [
     ],
   },
 ];
+
+export function getVisibleSections(sections: NavSection[], role: AdminRole): NavSection[] {
+  return sections
+    .filter((s) => !s.roles || s.roles.includes(role))
+    .map((s) => ({
+      ...s,
+      items: s.items.filter((item) => !item.roles || item.roles.includes(role)),
+    }));
+}

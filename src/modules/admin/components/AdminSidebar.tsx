@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { adminNavSections } from '../lib/navigation';
+import { adminNavSections, getVisibleSections } from '../lib/navigation';
+import type { AdminRole } from '../lib/auth';
 
 function SectionIcon({ name, className }: { name: string; className?: string }) {
   const icons: Record<string, string> = {
@@ -16,16 +17,20 @@ function SectionIcon({ name, className }: { name: string; className?: string }) 
 export function AdminSidebar({
   open,
   onClose,
+  role,
 }: {
   open: boolean;
   onClose: () => void;
+  role: AdminRole;
 }) {
   const pathname = usePathname();
+  const visibleSections = getVisibleSections(adminNavSections, role);
+
   const [expandedSection, setExpandedSection] = useState<string | null>(() => {
-    const match = adminNavSections.find((s) =>
+    const match = visibleSections.find((s) =>
       s.items.some((item) => pathname.startsWith(item.href))
     );
-    return match?.label ?? 'Catalogue';
+    return match?.label ?? (visibleSections[0]?.label ?? null);
   });
 
   return (
@@ -54,7 +59,7 @@ export function AdminSidebar({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          {adminNavSections.map((section) => {
+          {visibleSections.map((section) => {
             const isExpanded = expandedSection === section.label;
             const sectionActive = section.items.some((item) =>
               pathname.startsWith(item.href)

@@ -50,10 +50,10 @@ export function AdminTopBar({
 
         <div className="flex items-center gap-2 rounded-lg px-2 py-1">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-tb-primary text-xs font-medium text-white">
-            {user.name.charAt(0)}
+            {(user.name ?? user.email ?? '?').charAt(0).toUpperCase()}
           </div>
           <div className="hidden sm:block">
-            <p className="text-sm font-medium text-gray-700 leading-none">{user.name}</p>
+            <p className="text-sm font-medium text-gray-700 leading-none">{user.name ?? user.email}</p>
             <p className="text-xs text-gray-500">{user.role}</p>
           </div>
         </div>

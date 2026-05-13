@@ -65,7 +65,7 @@ export async function getCaravanMakeBySlugAction(slug: string) {
 export async function createCaravanMakeAction(
   input: Omit<CreateCaravanMakeInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -93,7 +93,7 @@ export async function updateCaravanMakeAction(
   id: string,
   input: UpdateCaravanMakeInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -117,7 +117,7 @@ export async function updateCaravanMakeAction(
 }
 
 export async function deleteCaravanMakeAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -150,7 +150,7 @@ export async function getCaravanModelBySlugAction(
 export async function createCaravanModelAction(
   input: Omit<CreateCaravanModelInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -178,7 +178,7 @@ export async function updateCaravanModelAction(
   id: string,
   input: UpdateCaravanModelInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -202,7 +202,7 @@ export async function updateCaravanModelAction(
 }
 
 export async function deleteCaravanModelAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -232,7 +232,7 @@ export async function getCaravanVariantByIdAction(id: string) {
 export async function createCaravanVariantAction(
   input: Omit<CreateCaravanVariantInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -261,7 +261,7 @@ export async function updateCaravanVariantAction(
   id: string,
   input: UpdateCaravanVariantInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -286,7 +286,7 @@ export async function updateCaravanVariantAction(
 }
 
 export async function deleteCaravanVariantAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {

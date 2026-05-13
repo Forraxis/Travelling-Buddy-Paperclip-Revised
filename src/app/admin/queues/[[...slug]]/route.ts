@@ -23,7 +23,7 @@ async function handle(
   req: NextRequest,
   { params }: { params: Promise<{ slug?: string[] }> }
 ): Promise<NextResponse> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!isAdminOrModerator(user)) {
     return new NextResponse("Forbidden", { status: 403 });
   }

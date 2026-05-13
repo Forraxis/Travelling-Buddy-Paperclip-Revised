@@ -76,7 +76,7 @@ async function resolveAccessory(
 export async function previewFitmentUploadAction(
   csvText: string
 ): Promise<ActionResult<FitmentCsvPreviewResult>> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -91,7 +91,7 @@ export async function previewFitmentUploadAction(
 export async function commitFitmentUploadAction(
   csvText: string
 ): Promise<ActionResult<{ imported: number; skipped: number }>> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   const preview = validateAndPreviewFitmentCsv(csvText);

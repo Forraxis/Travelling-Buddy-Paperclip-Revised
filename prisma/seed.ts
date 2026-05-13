@@ -12,6 +12,7 @@ import type {
   FitmentConfidence,
   FitmentSource,
 } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
@@ -3107,8 +3108,47 @@ async function seedCaravans() {
   );
 }
 
+async function seedAdminUsers() {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (adminEmail) {
+    const hashedPw = await bcrypt.hash(
+      process.env.ADMIN_PASSWORD || "changeme-admin",
+      12,
+    );
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: { role: "ADMIN", trustTier: "TRUSTED" },
+      create: {
+        email: adminEmail,
+        name: "Admin",
+        role: "ADMIN",
+        trustTier: "TRUSTED",
+        password: hashedPw,
+      },
+    });
+    console.log(`Seeded admin user: ${adminEmail}`);
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    const modPw = await bcrypt.hash("changeme-mod", 12);
+    await prisma.user.upsert({
+      where: { email: "moderator@travellingbuddy.dev" },
+      update: { role: "MODERATOR", trustTier: "TRUSTED" },
+      create: {
+        email: "moderator@travellingbuddy.dev",
+        name: "Dev Moderator",
+        role: "MODERATOR",
+        trustTier: "TRUSTED",
+        password: modPw,
+      },
+    });
+    console.log("Seeded dev moderator user: moderator@travellingbuddy.dev");
+  }
+}
+
 async function main() {
   console.log("Starting seed...");
+  await seedAdminUsers();
   await seedVehicles();
   await seedCaravans();
   await seedAccessories();

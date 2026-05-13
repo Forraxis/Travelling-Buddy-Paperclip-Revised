@@ -75,7 +75,7 @@ export async function getBrandByIdAction(id: string) {
 export async function createBrandAction(
   input: Omit<CreateAccessoryBrandInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const slug = slugify(input.name);
@@ -96,7 +96,7 @@ export async function updateBrandAction(
   id: string,
   input: UpdateAccessoryBrandInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const brand = await brandService.update(id, input);
@@ -110,7 +110,7 @@ export async function updateBrandAction(
 }
 
 export async function deleteBrandAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     await brandService.remove(id);
@@ -144,7 +144,7 @@ export async function listCategoryTreeAction() {
 export async function createCategoryAction(
   input: Omit<CreateAccessoryCategoryInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const slug = slugify(input.name);
@@ -165,7 +165,7 @@ export async function updateCategoryAction(
   id: string,
   input: UpdateAccessoryCategoryInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const category = await categoryService.update(id, input);
@@ -180,7 +180,7 @@ export async function updateCategoryAction(
 }
 
 export async function deleteCategoryAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     await categoryService.remove(id);
@@ -215,7 +215,7 @@ export async function getAccessoryByIdAction(id: string) {
 export async function createAccessoryAction(
   input: Omit<CreateAccessoryInput, "slug">
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const slug = slugify(input.name);
@@ -236,7 +236,7 @@ export async function updateAccessoryAction(
   id: string,
   input: UpdateAccessoryInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const accessory = await accessoryService.update(id, input);
@@ -251,7 +251,7 @@ export async function updateAccessoryAction(
 }
 
 export async function deleteAccessoryAction(id: string): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     await accessoryService.remove(id);
@@ -277,7 +277,7 @@ export async function getFitmentByIdAction(id: string) {
 export async function createFitmentAction(
   input: CreateAccessoryFitmentInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const fitment = await fitmentService.create(input);
@@ -297,7 +297,7 @@ export async function updateFitmentAction(
   accessoryId: string,
   input: UpdateAccessoryFitmentInput
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     const fitment = await fitmentService.update(id, input);
@@ -316,7 +316,7 @@ export async function deleteFitmentAction(
   id: string,
   accessoryId: string
 ): Promise<ActionResult> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
   try {
     await fitmentService.remove(id);

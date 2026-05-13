@@ -22,7 +22,7 @@ function slugify(name: string): string {
 export async function previewAccessoryUploadAction(
   csvText: string
 ): Promise<ActionResult<AccessoryCsvPreviewResult>> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   try {
@@ -37,7 +37,7 @@ export async function previewAccessoryUploadAction(
 export async function commitAccessoryUploadAction(
   csvText: string
 ): Promise<ActionResult<{ imported: number; skipped: number }>> {
-  const user = getAdminUser();
+  const user = await getAdminUser();
   if (!user) return { success: false, error: "Unauthorized" };
 
   const preview = validateAndPreviewAccessoryCsv(csvText);
