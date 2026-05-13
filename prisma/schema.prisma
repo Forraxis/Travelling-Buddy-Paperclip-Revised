@@ -6,6 +6,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum VehicleVariantStatus {
+  CATALOGUE
+  COMMUNITY
+}
+
 enum VehicleBodyType {
   DUAL_CAB_UTE
   SINGLE_CAB_UTE
@@ -91,30 +96,35 @@ model VehicleModel {
 }
 
 model VehicleVariant {
-  id                    String    @id @default(cuid())
+  id                    String               @id @default(cuid())
   modelId               String
   yearFrom              Int
   yearTo                Int
-  isCurrentProduction   Boolean   @default(false)
+  isCurrentProduction   Boolean              @default(false)
   name                  String
   slug                  String
-  gvmKg                 Int
-  gcmKg                 Int
-  kerbWeightKg          Int
-  maxTowingCapacityKg   Int
-  frontAxleLimitKg      Int
-  rearAxleLimitKg       Int
-  wheelbaseMm           Int
+  // Community-submitted variants have status=COMMUNITY until moderation approves them.
+  // Catalogue entries are CATALOGUE (default).
+  status                VehicleVariantStatus @default(CATALOGUE)
+  communitySubmitterId  String?
+  gvmKg                 Int?
+  gcmKg                 Int?
+  kerbWeightKg          Int?
+  maxTowingCapacityKg   Int?
+  frontAxleLimitKg      Int?
+  rearAxleLimitKg       Int?
+  wheelbaseMm           Int?
   frontOverhangMm       Int?
   rearOverhangMm        Int?
   totalLengthMm         Int?
-  maxTowBallDownloadKg  Int
-  fuelTankCapacityL     Int
-  fuelType              FuelType
-  market                Market    @default(AU)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  model                 VehicleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  maxTowBallDownloadKg  Int?
+  fuelTankCapacityL     Int?
+  fuelType              FuelType?
+  market                Market               @default(AU)
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  model                 VehicleModel         @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  communitySubmitter    User?                @relation("CommunityVehicleVariants", fields: [communitySubmitterId], references: [id], onDelete: SetNull)
   fitments              AccessoryFitment[]
   setups                Setup[]
   vehicleSubmissions    VehicleSubmission[]
@@ -123,6 +133,7 @@ model VehicleVariant {
   @@unique([modelId, slug])
   @@index([slug])
   @@index([modelId])
+  @@index([status, communitySubmitterId])
 }
 
 model CaravanMake {
@@ -302,6 +313,7 @@ model User {
   caravanSubmissionDecisions    CaravanSubmission[]     @relation("CaravanSubmissionDecisions")
   accessorySubmissions          AccessorySubmission[]   @relation("AccessorySubmissions")
   accessorySubmissionDecisions  AccessorySubmission[]   @relation("AccessorySubmissionDecisions")
+  communityVehicleVariants      VehicleVariant[]        @relation("CommunityVehicleVariants")
   auditLogs                     AuditLog[]
   moderationActions             ModerationAction[]
 }

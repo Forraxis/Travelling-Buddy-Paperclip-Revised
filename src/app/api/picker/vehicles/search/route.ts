@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parseSearchParams, withRateLimit, serverError } from "@/lib/api-helpers";
 
@@ -17,13 +18,27 @@ export async function GET(request: Request) {
 
   const { q, limit } = parsed.data;
 
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+
   try {
     const variants = await prisma.vehicleVariant.findMany({
       where: {
-        OR: [
-          { name: { contains: q, mode: "insensitive" } },
-          { model: { name: { contains: q, mode: "insensitive" } } },
-          { model: { make: { name: { contains: q, mode: "insensitive" } } } },
+        // Exclude community variants that belong to other users
+        AND: [
+          {
+            OR: [
+              { status: "CATALOGUE" },
+              { status: "COMMUNITY", communitySubmitterId: userId ?? "__no_match__" },
+            ],
+          },
+          {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { model: { name: { contains: q, mode: "insensitive" } } },
+              { model: { make: { name: { contains: q, mode: "insensitive" } } } },
+            ],
+          },
         ],
       },
       include: { model: { include: { make: true } } },
@@ -61,7 +76,7 @@ export async function GET(request: Request) {
           fuelType: v.fuelType,
           bodyType: v.model.bodyType,
         },
-        confidenceBadge: "manufacturer_spec" as const,
+        confidenceBadge: (v.status === "COMMUNITY" ? "community" : "manufacturer_spec") as "community" | "manufacturer_spec",
       };
     });
 

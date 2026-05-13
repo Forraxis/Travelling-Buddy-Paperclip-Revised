@@ -107,10 +107,10 @@ export function VehicleVariantsList({
                   </td>
                   <td className="px-4 py-3 text-gray-500">{variant.market}</td>
                   <td className="px-4 py-3 text-gray-500 tabular-nums">
-                    {variant.gvmKg.toLocaleString()}
+                    {variant.gvmKg?.toLocaleString() ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-500 tabular-nums">
-                    {variant.maxTowingCapacityKg.toLocaleString()}
+                    {variant.maxTowingCapacityKg?.toLocaleString() ?? "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">

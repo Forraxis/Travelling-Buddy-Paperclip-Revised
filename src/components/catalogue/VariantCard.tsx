@@ -31,23 +31,23 @@ export function VariantCard({ variant, href }: Props) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 sm:grid-cols-3">
           <div>
             <span className="text-gray-400">GVM</span>{" "}
-            <span className="font-medium">{variant.gvmKg.toLocaleString()} kg</span>
+            <span className="font-medium">{variant.gvmKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">GCM</span>{" "}
-            <span className="font-medium">{variant.gcmKg.toLocaleString()} kg</span>
+            <span className="font-medium">{variant.gcmKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">Tow cap.</span>{" "}
-            <span className="font-medium">{variant.maxTowingCapacityKg.toLocaleString()} kg</span>
+            <span className="font-medium">{variant.maxTowingCapacityKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">Kerb</span>{" "}
-            <span className="font-medium">{variant.kerbWeightKg.toLocaleString()} kg</span>
+            <span className="font-medium">{variant.kerbWeightKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">TBM</span>{" "}
-            <span className="font-medium">{variant.maxTowBallDownloadKg.toLocaleString()} kg</span>
+            <span className="font-medium">{variant.maxTowBallDownloadKg?.toLocaleString() ?? "—"} kg</span>
           </div>
           <div>
             <span className="text-gray-400">Fuel</span>{" "}

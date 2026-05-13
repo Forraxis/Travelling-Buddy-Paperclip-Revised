@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { VehicleSubmitForm } from "./_components/VehicleSubmitForm";
 
@@ -9,9 +8,7 @@ export const metadata = {
 
 export default async function SubmitVehiclePage() {
   const session = await auth();
-  if (!session?.user?.id) {
-    redirect("/auth/signup?callbackUrl=/submit/vehicle&reason=submit");
-  }
+  const isAuthenticated = !!session?.user?.id;
 
   return (
     <div className="min-h-screen bg-tb-neutral-50">
@@ -27,7 +24,7 @@ export default async function SubmitVehiclePage() {
             Help build the catalogue for the Australian touring community. Submissions with a compliance plate photo are prioritised for review.
           </p>
         </div>
-        <VehicleSubmitForm />
+        <VehicleSubmitForm isAuthenticated={isAuthenticated} />
       </main>
     </div>
   );

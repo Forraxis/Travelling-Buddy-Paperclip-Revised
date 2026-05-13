@@ -8,19 +8,20 @@ export interface VehicleSnapshot {
   makeName: string;
   yearFrom: number;
   yearTo: number;
-  gvmKg: number;
-  gcmKg: number;
-  kerbWeightKg: number;
-  maxTowingCapacityKg: number;
-  frontAxleLimitKg: number;
-  rearAxleLimitKg: number;
-  wheelbaseMm: number;
+  // Community-submitted variants may have null specs until moderation fills them in
+  gvmKg: number | null;
+  gcmKg: number | null;
+  kerbWeightKg: number | null;
+  maxTowingCapacityKg: number | null;
+  frontAxleLimitKg: number | null;
+  rearAxleLimitKg: number | null;
+  wheelbaseMm: number | null;
   frontOverhangMm: number | null;
   rearOverhangMm: number | null;
   totalLengthMm: number | null;
-  maxTowBallDownloadKg: number;
-  fuelTankCapacityL: number;
-  fuelType: string;
+  maxTowBallDownloadKg: number | null;
+  fuelTankCapacityL: number | null;
+  fuelType: string | null;
   market: string;
   snapshotVersion: 1;
 }

@@ -96,18 +96,18 @@ export async function POST(request: Request) {
 
     const result = calculate({
       vehicle: {
-        gvmKg: vehicle.gvmKg,
-        gcmKg: vehicle.gcmKg,
-        kerbWeightKg: vehicle.kerbWeightKg,
-        maxTowingCapacityKg: vehicle.maxTowingCapacityKg,
-        frontAxleLimitKg: vehicle.frontAxleLimitKg,
-        rearAxleLimitKg: vehicle.rearAxleLimitKg,
-        maxTowBallDownloadKg: vehicle.maxTowBallDownloadKg,
-        wheelbaseMm: vehicle.wheelbaseMm,
+        gvmKg: vehicle.gvmKg ?? 0,
+        gcmKg: vehicle.gcmKg ?? 0,
+        kerbWeightKg: vehicle.kerbWeightKg ?? 0,
+        maxTowingCapacityKg: vehicle.maxTowingCapacityKg ?? 0,
+        frontAxleLimitKg: vehicle.frontAxleLimitKg ?? 0,
+        rearAxleLimitKg: vehicle.rearAxleLimitKg ?? 0,
+        maxTowBallDownloadKg: vehicle.maxTowBallDownloadKg ?? 0,
+        wheelbaseMm: vehicle.wheelbaseMm ?? 0,
         frontOverhangMm: vehicle.frontOverhangMm,
         rearOverhangMm: vehicle.rearOverhangMm,
-        fuelTankCapacityL: vehicle.fuelTankCapacityL,
-        fuelType: vehicle.fuelType as "DIESEL" | "PETROL" | "HYBRID" | "ELECTRIC",
+        fuelTankCapacityL: vehicle.fuelTankCapacityL ?? 0,
+        fuelType: (vehicle.fuelType ?? "PETROL") as "DIESEL" | "PETROL" | "HYBRID" | "ELECTRIC",
       },
       caravan: caravan
         ? {

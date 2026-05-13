@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { PickerVariant, PickerConfig } from './types';
 import { useRecent } from './hooks/useRecent';
 import { PickerShell } from './PickerShell';
@@ -17,6 +18,7 @@ interface EntityPickerProps {
 }
 
 export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const [selected, setSelected] = useState<PickerVariant | null>(initialVariant ?? null);
@@ -43,9 +45,11 @@ export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerP
   );
 
   const handleSubmitClick = useCallback(() => {
-    // Submission flow — spec §7.8 (not yet implemented)
-    console.info('[EntityPicker] submission flow not yet implemented');
-  }, []);
+    const url = config.entityType === 'vehicle'
+      ? '/submit/vehicle'
+      : '/submit/caravan';
+    router.push(url);
+  }, [config.entityType, router]);
 
   // ── Empty state panel ──────────────────────────────────────────────────
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parseSearchParams, withRateLimit, notFound, serverError } from "@/lib/api-helpers";
 
@@ -19,6 +20,9 @@ export async function GET(
   const parsed = parseSearchParams(request, filterSchema);
   if ("error" in parsed) return parsed.error;
 
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+
   try {
     const model = await prisma.vehicleModel.findFirst({
       where: { id: modelId, makeId },
@@ -26,9 +30,17 @@ export async function GET(
     });
     if (!model) return notFound("Vehicle model");
 
+    // Community filter clause — reused for both facets and filtered query
+    const communityFilter = {
+      OR: [
+        { status: "CATALOGUE" as const },
+        { status: "COMMUNITY" as const, communitySubmitterId: userId ?? "__no_match__" },
+      ],
+    };
+
     // Fetch all variants for facet computation
     const allVariants = await prisma.vehicleVariant.findMany({
-      where: { modelId },
+      where: { modelId, ...communityFilter },
       select: { yearFrom: true, yearTo: true, fuelType: true, isCurrentProduction: true },
     });
 
@@ -43,15 +55,15 @@ export async function GET(
 
     // Apply filters
     const { year, fuelType } = parsed.data;
-    const whereFilter: Record<string, unknown> = { modelId };
-    if (fuelType) whereFilter.fuelType = fuelType;
+    const andClauses: object[] = [{ modelId }, communityFilter];
+    if (fuelType) andClauses.push({ fuelType });
     if (year) {
-      whereFilter.yearFrom = { lte: year };
-      whereFilter.OR = [{ yearTo: { gte: year } }, { isCurrentProduction: true }];
+      andClauses.push({ yearFrom: { lte: year } });
+      andClauses.push({ OR: [{ yearTo: { gte: year } }, { isCurrentProduction: true }] });
     }
 
     const variants = await prisma.vehicleVariant.findMany({
-      where: whereFilter,
+      where: { AND: andClauses },
       include: { model: { include: { make: true } } },
       orderBy: [{ yearFrom: "desc" }, { name: "asc" }],
     });
@@ -81,7 +93,7 @@ export async function GET(
           fuelType: v.fuelType,
           bodyType: v.model.bodyType,
         },
-        confidenceBadge: "manufacturer_spec" as const,
+        confidenceBadge: (v.status === "COMMUNITY" ? "community" : "manufacturer_spec") as "community" | "manufacturer_spec",
       };
     });
 

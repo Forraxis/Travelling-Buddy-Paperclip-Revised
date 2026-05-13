@@ -181,11 +181,11 @@ export function VehiclePanel() {
           modelId: v.model.id,
           modelName: v.model.name,
           bodyType: v.model.bodyType,
-          gvmKg: v.gvmKg,
-          gcmKg: v.gcmKg,
-          kerbWeightKg: v.kerbWeightKg,
-          maxTowingCapacityKg: v.maxTowingCapacityKg,
-          fuelType: v.fuelType,
+          gvmKg: v.gvmKg ?? undefined,
+          gcmKg: v.gcmKg ?? undefined,
+          kerbWeightKg: v.kerbWeightKg ?? undefined,
+          maxTowingCapacityKg: v.maxTowingCapacityKg ?? undefined,
+          fuelType: v.fuelType ?? undefined,
         };
         setSelectedVariant(pv);
       })
