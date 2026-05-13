@@ -7,13 +7,16 @@ const TRUSTED_APPROVED_COUNT = 5;
 const TRUSTED_MIN_ACCOUNT_AGE_DAYS = 60;
 const TRUSTED_REJECTION_WINDOW_DAYS = 30;
 
-export async function promoteUserTrustTier(userId: string): Promise<void> {
+// Returns the new tier if promotion occurred, null otherwise
+export async function promoteUserTrustTier(
+  userId: string
+): Promise<TrustTier | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, trustTier: true, createdAt: true },
   });
 
-  if (!user || user.trustTier === "EXPERT") return;
+  if (!user || user.trustTier === "EXPERT") return null;
 
   const now = new Date();
   const accountAgeDays =
@@ -27,12 +30,13 @@ export async function promoteUserTrustTier(userId: string): Promise<void> {
         where: { id: userId },
         data: { trustTier: "BASIC" },
       });
+      return "BASIC";
     }
   } else if (user.trustTier === "BASIC") {
-    if (accountAgeDays < TRUSTED_MIN_ACCOUNT_AGE_DAYS) return;
+    if (accountAgeDays < TRUSTED_MIN_ACCOUNT_AGE_DAYS) return null;
 
     const approvedCount = await countApprovedSubmissions(userId);
-    if (approvedCount < TRUSTED_APPROVED_COUNT) return;
+    if (approvedCount < TRUSTED_APPROVED_COUNT) return null;
 
     // No rejections in the last 30 days
     const windowStart = new Date(
@@ -43,13 +47,16 @@ export async function promoteUserTrustTier(userId: string): Promise<void> {
       userId,
       windowStart
     );
-    if (recentRejections > 0) return;
+    if (recentRejections > 0) return null;
 
     await prisma.user.update({
       where: { id: userId },
       data: { trustTier: "TRUSTED" },
     });
+    return "TRUSTED";
   }
+
+  return null;
 }
 
 async function countApprovedSubmissions(userId: string): Promise<number> {
