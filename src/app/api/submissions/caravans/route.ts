@@ -234,6 +234,11 @@ export async function POST(request: Request) {
       submissionId: submission.id,
       photoKeys,
       submittedData: submittedData as Record<string, unknown>,
+    }, {
+      attempts: 3,
+      backoff: { type: "exponential", delay: 10_000 },
+      removeOnComplete: { count: 200 },
+      removeOnFail: { count: 500 },
     });
 
     await prisma.caravanSubmission.update({

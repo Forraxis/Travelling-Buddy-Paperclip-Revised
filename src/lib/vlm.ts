@@ -46,7 +46,7 @@ export interface VlmSubmissionAnalysis {
 }
 
 function getClient(): { baseUrl: string; apiKey: string; model: string } {
-  const baseUrl = process.env.VLM_API_URL;
+  const baseUrl = process.env.VLM_ENDPOINT_URL ?? process.env.VLM_API_URL;
   const apiKey = process.env.VLM_API_KEY ?? "none";
   const model = process.env.VLM_MODEL ?? "Qwen/Qwen3-35B-A3B";
 
