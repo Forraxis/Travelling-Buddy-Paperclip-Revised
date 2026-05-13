@@ -22,7 +22,7 @@ export const ACCESSORY_CSV_EXAMPLE_ROW = [
   "ACTIVE",
 ];
 
-const ACCESSORY_STATUSES = ["ACTIVE", "DISCONTINUED", "PLACEHOLDER"] as const;
+const ACCESSORY_STATUSES = ["ACTIVE", "DISCONTINUED", "PLACEHOLDER", "COMMUNITY"] as const;
 
 // ── Parsed row type ────────────────────────────────
 

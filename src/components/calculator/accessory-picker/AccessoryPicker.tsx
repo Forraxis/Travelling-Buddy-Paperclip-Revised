@@ -6,27 +6,32 @@ import { readRecentAccessories, writeRecentAccessory } from './types';
 import { AccessorySearchTab } from './AccessorySearchTab';
 import { AccessoryBrowseTab } from './AccessoryBrowseTab';
 import { AccessoryChip } from './AccessoryChip';
+import { AccessorySubmitModal } from './AccessorySubmitModal';
 
 interface AccessoryPickerProps {
   onAdd: (item: AccessoryItem) => void;
   onRemove: (fitmentId: string) => void;
   addedFitmentIds: string[];
+  context?: 'vehicle' | 'caravan';
 }
 
 function AccessoryPickerModal({
   isOpen,
   onClose,
   onAdd,
+  context = 'vehicle',
 }: {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (item: AccessoryItem) => void;
+  context?: 'vehicle' | 'caravan';
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number | null>(null);
   const dragCurrentY = useRef<number>(0);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const [recent, setRecent] = useState<AccessoryItem[]>([]);
+  const [submitOpen, setSubmitOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) setRecent(readRecentAccessories());
@@ -146,14 +151,21 @@ function AccessoryPickerModal({
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto overscroll-contain py-3">
           {activeTab === 'search' ? (
-            <AccessorySearchTab recent={recent} onAdd={handleAdd} />
+            <AccessorySearchTab recent={recent} onAdd={handleAdd} context={context} />
           ) : (
-            <AccessoryBrowseTab onAdd={handleAdd} />
+            <AccessoryBrowseTab onAdd={handleAdd} context={context} />
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex flex-none items-center justify-center border-t border-tb-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="flex flex-none items-center justify-between border-t border-tb-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={() => setSubmitOpen(true)}
+            className="text-sm text-tb-primary hover:underline"
+          >
+            Can&apos;t find it? Add manually
+          </button>
           <button
             type="button"
             onClick={onClose}
@@ -163,11 +175,22 @@ function AccessoryPickerModal({
           </button>
         </div>
       </div>
+
+      <AccessorySubmitModal
+        isOpen={submitOpen}
+        onClose={() => setSubmitOpen(false)}
+        onSubmitted={(item) => {
+          onAdd(item);
+          setSubmitOpen(false);
+          onClose();
+        }}
+        context={context}
+      />
     </>
   );
 }
 
-export function AccessoryPicker({ onAdd, onRemove, addedFitmentIds }: AccessoryPickerProps) {
+export function AccessoryPicker({ onAdd, onRemove, addedFitmentIds, context = 'vehicle' }: AccessoryPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [addedItems, setAddedItems] = useState<AccessoryItem[]>([]);
 
@@ -214,6 +237,7 @@ export function AccessoryPicker({ onAdd, onRemove, addedFitmentIds }: AccessoryP
         isOpen={isOpen}
         onClose={closePicker}
         onAdd={handleAdd}
+        context={context}
       />
     </>
   );

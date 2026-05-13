@@ -53,6 +53,9 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
 
   useEffect(() => {
     const params = stateToParams(state);
+    // Preserve setupId across calculator state updates
+    const setupId = searchParams.get('setupId');
+    if (setupId) params.set('setupId', setupId);
     const qs = params.toString();
     const current = searchParams.toString();
     if (qs !== current) {

@@ -12,12 +12,19 @@ interface AccessoryChipProps {
 }
 
 export function AccessoryChip({ item, onRemove }: AccessoryChipProps) {
+  const isCommunity = item.fitmentId.startsWith('community:');
   return (
-    <div className="flex items-center gap-2 rounded-full border border-tb-neutral-200 bg-white pl-3 pr-1.5 py-1.5">
+    <div className={[
+      'flex items-center gap-2 rounded-full border pl-3 pr-1.5 py-1.5 bg-white',
+      isCommunity ? 'border-amber-300' : 'border-tb-neutral-200',
+    ].join(' ')}>
       <div className="min-w-0 flex-1">
         <span className="truncate text-xs font-medium text-gray-800">
           {item.brandName} {item.name}
         </span>
+        {isCommunity && (
+          <span className="ml-1.5 text-[10px] font-medium text-amber-600">Awaiting review</span>
+        )}
         <span className="ml-1.5 text-[10px] text-gray-400">
           {mountingLabel(item.mountingLocation)} · {item.installedWeightKg} kg
         </span>

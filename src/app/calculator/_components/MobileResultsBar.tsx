@@ -258,19 +258,47 @@ function AdvancedPanel() {
   );
 }
 
-function ActionBar() {
+interface ActionBarProps {
+  onSave?: () => void;
+  onShare?: () => void;
+  saving?: boolean;
+}
+
+function ActionBar({ onSave, onShare, saving }: ActionBarProps) {
+  const actions = [
+    {
+      label: saving ? 'Saving…' : 'Save',
+      path: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z',
+      onClick: onSave,
+      disabled: saving,
+    },
+    {
+      label: 'Share',
+      path: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z',
+      onClick: onShare,
+      disabled: false,
+    },
+    {
+      label: 'PDF',
+      path: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+      onClick: undefined,
+      disabled: true,
+    },
+  ];
+
   return (
     <div className="flex gap-2 border-t border-gray-200 bg-white pt-4 pb-2">
-      {[
-        { label: 'Save', path: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z' },
-        { label: 'Share', path: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z' },
-        { label: 'PDF', path: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-      ].map(({ label, path }) => (
+      {actions.map(({ label, path, onClick, disabled }) => (
         <button
           key={label}
           type="button"
-          disabled
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-gray-200 px-3 text-sm text-gray-400 cursor-not-allowed"
+          onClick={onClick}
+          disabled={disabled || !onClick}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 text-sm transition-colors ${
+            disabled || !onClick
+              ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+          }`}
           style={{ minHeight: 44 }}
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -283,7 +311,14 @@ function ActionBar() {
   );
 }
 
-function SheetResultsContent({ result }: { result: PhysicsResult }) {
+interface SheetResultsContentProps {
+  result: PhysicsResult;
+  onSave?: () => void;
+  onShare?: () => void;
+  saving?: boolean;
+}
+
+function SheetResultsContent({ result, onSave, onShare, saving }: SheetResultsContentProps) {
   return (
     <>
       <VerdictBanner result={result} />
@@ -293,7 +328,7 @@ function SheetResultsContent({ result }: { result: PhysicsResult }) {
       <AxleGrid result={result} />
       <RecommendationsPanel result={result} />
       <AdvancedPanel />
-      <ActionBar />
+      <ActionBar onSave={onSave} onShare={onShare} saving={saving} />
     </>
   );
 }
@@ -304,9 +339,12 @@ interface SheetProps {
   open: boolean;
   onClose: () => void;
   result: PhysicsResult | null;
+  onSave?: () => void;
+  onShare?: () => void;
+  saving?: boolean;
 }
 
-function ResultsSheet({ open, onClose, result }: SheetProps) {
+function ResultsSheet({ open, onClose, result, onSave, onShare, saving }: SheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number | null>(null);
   const dragCurrentY = useRef<number>(0);
@@ -395,7 +433,7 @@ function ResultsSheet({ open, onClose, result }: SheetProps) {
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {result ? (
-            <SheetResultsContent result={result} />
+            <SheetResultsContent result={result} onSave={onSave} onShare={onShare} saving={saving} />
           ) : (
             <p className="text-sm text-gray-400 text-center mt-8">Loading results…</p>
           )}
@@ -410,9 +448,12 @@ function ResultsSheet({ open, onClose, result }: SheetProps) {
 interface MobileResultsBarProps {
   vehicleSelected: boolean;
   result: PhysicsResult | null;
+  onSave?: () => void;
+  onShare?: () => void;
+  saving?: boolean;
 }
 
-export function MobileResultsBar({ vehicleSelected, result }: MobileResultsBarProps) {
+export function MobileResultsBar({ vehicleSelected, result, onSave, onShare, saving }: MobileResultsBarProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const overallStatus = result?.overallStatus;
@@ -463,7 +504,7 @@ export function MobileResultsBar({ vehicleSelected, result }: MobileResultsBarPr
         </button>
       </div>
 
-      <ResultsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} result={result} />
+      <ResultsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} result={result} onSave={onSave} onShare={onShare} saving={saving} />
     </>
   );
 }

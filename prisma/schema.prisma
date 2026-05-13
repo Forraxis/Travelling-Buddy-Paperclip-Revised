@@ -58,6 +58,7 @@ enum AccessoryStatus {
   ACTIVE
   DISCONTINUED
   PLACEHOLDER
+  COMMUNITY
 }
 
 model VehicleMake {
@@ -559,23 +560,39 @@ model SetupCustomLoad {
 }
 
 enum SubmissionStatus {
+  DRAFT
   PENDING
   APPROVED
   REJECTED
+  DEFERRED
 }
 
 model VehicleSubmission {
   id                      String           @id @default(cuid())
   submitterId             String
-  status                  SubmissionStatus @default(PENDING)
+  status                  SubmissionStatus @default(DRAFT)
   submittedData           Json
   compliancePlatePhotoUrl String?
   additionalPhotoUrls     String[]
+  // Tier 1: synchronous Tesseract pre-fill output (raw OCR text + per-field extracted values)
+  ocrData                 Json?
+  // Tier 2: async Qwen3.6 VLM extraction result (structured JSON with confidence scores)
+  vlmExtractionResult     Json?
+  // Tier 2: VLM gatekeeper assessment (plate authenticity, anomaly flags, recommended action)
+  vlmGatekeeperResult     Json?
+  // BullMQ job ID for the async VLM processing job
+  vlmJobId                String?
+  // Duplicate detection fingerprint (make+model+year+body+drivetrain+transmission hash)
+  duplicateFingerprint    String?
+  // Set when submission is flagged as a potential duplicate of an existing entry
+  suspectedDuplicateOfId  String?
   notes                   String?
   decidedById             String?
   decidedAt               DateTime?
   decisionNotes           String?
   resultingVariantId      String?
+  // Draft auto-expires after 30 days of inactivity
+  draftExpiresAt          DateTime?
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
   submitter               User             @relation("VehicleSubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
@@ -584,20 +601,28 @@ model VehicleSubmission {
 
   @@index([status])
   @@index([submitterId])
+  @@index([duplicateFingerprint])
 }
 
 model CaravanSubmission {
   id                      String           @id @default(cuid())
   submitterId             String
-  status                  SubmissionStatus @default(PENDING)
+  status                  SubmissionStatus @default(DRAFT)
   submittedData           Json
   compliancePlatePhotoUrl String?
   additionalPhotoUrls     String[]
+  ocrData                 Json?
+  vlmExtractionResult     Json?
+  vlmGatekeeperResult     Json?
+  vlmJobId                String?
+  duplicateFingerprint    String?
+  suspectedDuplicateOfId  String?
   notes                   String?
   decidedById             String?
   decidedAt               DateTime?
   decisionNotes           String?
   resultingVariantId      String?
+  draftExpiresAt          DateTime?
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
   submitter               User             @relation("CaravanSubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
@@ -606,25 +631,34 @@ model CaravanSubmission {
 
   @@index([status])
   @@index([submitterId])
+  @@index([duplicateFingerprint])
 }
 
 model AccessorySubmission {
   id                        String           @id @default(cuid())
   submitterId               String
-  status                    SubmissionStatus @default(PENDING)
+  status                    SubmissionStatus @default(DRAFT)
   brandId                   String?
   categoryId                String?
   submittedData             Json
   productPhotoUrl           String?
   installationPhotoUrl      String?
+  // For accessories: VLM does visual similarity check against existing photos
+  vlmSimilarityResult       Json?
+  vlmJobId                  String?
+  duplicateFingerprint      String?
+  suspectedDuplicateOfId    String?
   appliesToVehicleVariantId String?
   appliesToCaravanVariantId String?
+  // When false, submission is private to the submitter (sharing toggle off)
+  isShared                  Boolean          @default(true)
   notes                     String?
   decidedById               String?
   decidedAt                 DateTime?
   decisionNotes             String?
   resultingAccessoryId      String?
   resultingFitmentId        String?
+  draftExpiresAt            DateTime?
   createdAt                 DateTime         @default(now())
   updatedAt                 DateTime         @updatedAt
   submitter                 User             @relation("AccessorySubmissions", fields: [submitterId], references: [id], onDelete: Cascade)
@@ -640,6 +674,7 @@ model AccessorySubmission {
   @@index([submitterId])
   @@index([brandId])
   @@index([categoryId])
+  @@index([duplicateFingerprint])
 }
 
 enum SponsorStatus {

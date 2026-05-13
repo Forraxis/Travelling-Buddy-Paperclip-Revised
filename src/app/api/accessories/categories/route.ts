@@ -7,9 +7,27 @@ export async function GET(request: Request) {
   if (limited) return limited;
 
   try {
+    const { searchParams } = new URL(request.url);
+    const vehicleVariantId = searchParams.get("vehicleVariantId") ?? undefined;
+    const caravanVariantId = searchParams.get("caravanVariantId") ?? undefined;
+
+    // For caravans, show all accessories that fit any caravan (variant-specific
+    // weight/location is resolved at the items step, not during browse).
+    const fitmentFilter = vehicleVariantId
+      ? { vehicleVariantId }
+      : caravanVariantId
+        ? { caravanVariantId: { not: null } }
+        : undefined;
+
+    const accessoryWhere = {
+      status: "ACTIVE" as const,
+      ...(fitmentFilter ? { fitments: { some: fitmentFilter } } : {}),
+    };
+
     const categories = await prisma.accessoryCategory.findMany({
+      where: { accessories: { some: accessoryWhere } },
       orderBy: { name: "asc" },
-      include: { _count: { select: { accessories: { where: { status: "ACTIVE" } } } } },
+      include: { _count: { select: { accessories: { where: accessoryWhere } } } },
     });
 
     const items = categories.map((c) => ({

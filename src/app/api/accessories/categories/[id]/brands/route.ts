@@ -11,17 +11,28 @@ export async function GET(
 
   try {
     const { id: categoryId } = await params;
+    const { searchParams } = new URL(request.url);
+    const vehicleVariantId = searchParams.get("vehicleVariantId") ?? undefined;
+    const caravanVariantId = searchParams.get("caravanVariantId") ?? undefined;
+
+    // For caravans, show all brands that have any caravan fitment; exact variant
+    // matching happens at the items step.
+    const fitmentFilter = vehicleVariantId
+      ? { vehicleVariantId }
+      : caravanVariantId
+        ? { caravanVariantId: { not: null } }
+        : undefined;
+
+    const accessoryWhere = {
+      categoryId,
+      status: "ACTIVE" as const,
+      ...(fitmentFilter ? { fitments: { some: fitmentFilter } } : {}),
+    };
 
     const brands = await prisma.accessoryBrand.findMany({
-      where: {
-        accessories: {
-          some: { categoryId, status: "ACTIVE" },
-        },
-      },
+      where: { accessories: { some: accessoryWhere } },
       orderBy: [{ isPartner: "desc" }, { name: "asc" }],
-      include: {
-        _count: { select: { accessories: { where: { categoryId, status: "ACTIVE" } } } },
-      },
+      include: { _count: { select: { accessories: { where: accessoryWhere } } } },
     });
 
     const items = brands.map((b) => ({

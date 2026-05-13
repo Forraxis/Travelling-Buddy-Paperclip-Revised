@@ -178,9 +178,10 @@ function ItemsList({
 
 interface AccessoryBrowseTabProps {
   onAdd: (item: AccessoryItem) => void;
+  context?: 'vehicle' | 'caravan';
 }
 
-export function AccessoryBrowseTab({ onAdd }: AccessoryBrowseTabProps) {
+export function AccessoryBrowseTab({ onAdd, context = 'vehicle' }: AccessoryBrowseTabProps) {
   const {
     step,
     selectedCategory,
@@ -196,7 +197,7 @@ export function AccessoryBrowseTab({ onAdd }: AccessoryBrowseTabProps) {
     selectCategory,
     selectBrand,
     goBack,
-  } = useAccessoryBrowse();
+  } = useAccessoryBrowse(context);
 
   const breadcrumbs =
     step === 'brands' && selectedCategory

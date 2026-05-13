@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { PickerVariant, PickerConfig } from './types';
 import { useRecent } from './hooks/useRecent';
 import { PickerShell } from './PickerShell';
@@ -12,13 +12,22 @@ interface EntityPickerProps {
   config: PickerConfig;
   /** Called when the user finalises a variant selection. */
   onSelect?: (variant: PickerVariant) => void;
+  /** Pre-selected variant, e.g. restored from URL state. */
+  initialVariant?: PickerVariant | null;
 }
 
-export function EntityPicker({ config, onSelect }: EntityPickerProps) {
+export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
-  const [selected, setSelected] = useState<PickerVariant | null>(null);
+  const [selected, setSelected] = useState<PickerVariant | null>(initialVariant ?? null);
   const { recent, addRecent } = useRecent(config.entityType);
+
+  // Sync when the parent resolves the variant asynchronously
+  useEffect(() => {
+    if (initialVariant && !selected) {
+      setSelected(initialVariant);
+    }
+  }, [initialVariant, selected]);
 
   const openPicker = useCallback(() => setIsOpen(true), []);
   const closePicker = useCallback(() => setIsOpen(false), []);

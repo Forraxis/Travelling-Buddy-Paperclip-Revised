@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useCalculatorState } from '@/modules/calculator/context';
 import type { AccessoryItem } from '../types';
 
-export function useAccessorySearch(limit = 15) {
+export function useAccessorySearch(limit = 15, context: 'vehicle' | 'caravan' = 'vehicle') {
   const { state } = useCalculatorState();
-  const vehicleVariantId = state.vehicleVariantId;
-  const caravanVariantId = state.caravanVariantId;
+  const vehicleVariantId = context === 'vehicle' ? state.vehicleVariantId : null;
+  const caravanVariantId = context === 'caravan' ? state.caravanVariantId : null;
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<AccessoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);

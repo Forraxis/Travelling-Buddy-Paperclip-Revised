@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useCalculatorState } from '@/modules/calculator/context';
 import { EntityPicker, VEHICLE_CONFIG } from '@/components/calculator/picker';
 import type { PickerVariant } from '@/components/calculator/picker';
@@ -161,6 +161,38 @@ export function VehiclePanel() {
   const { state, setVehicleVariant, addAccessory, removeAccessory } = useCalculatorState();
   const [selectedVariant, setSelectedVariant] = useState<PickerVariant | null>(null);
 
+  // Hydrate from URL-persisted vehicleVariantId on mount
+  useEffect(() => {
+    if (!state.vehicleVariantId || selectedVariant) return;
+    fetch(`/api/v1/vehicles/variants/${state.vehicleVariantId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((v) => {
+        if (!v) return;
+        const pv: PickerVariant = {
+          id: v.id,
+          name: v.name,
+          yearFrom: v.yearFrom,
+          yearTo: v.yearTo,
+          isCurrentProduction: v.isCurrentProduction,
+          entityType: 'vehicle',
+          makeId: v.model.make.id,
+          makeName: v.model.make.name,
+          makeLogoUrl: v.model.make.logoUrl,
+          modelId: v.model.id,
+          modelName: v.model.name,
+          bodyType: v.model.bodyType,
+          gvmKg: v.gvmKg,
+          gcmKg: v.gcmKg,
+          kerbWeightKg: v.kerbWeightKg,
+          maxTowingCapacityKg: v.maxTowingCapacityKg,
+          fuelType: v.fuelType,
+        };
+        setSelectedVariant(pv);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.vehicleVariantId]);
+
   const handleSelect = useCallback(
     (variant: PickerVariant) => {
       setSelectedVariant(variant);
@@ -195,7 +227,7 @@ export function VehiclePanel() {
   return (
     <section>
       {/* Vehicle picker — renders empty-state CTA or compact card */}
-      <EntityPicker config={VEHICLE_CONFIG} onSelect={handleSelect} />
+      <EntityPicker config={VEHICLE_CONFIG} onSelect={handleSelect} initialVariant={selectedVariant} />
 
       {selectedVariant && (
         <>

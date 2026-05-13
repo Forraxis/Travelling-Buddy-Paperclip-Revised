@@ -1,3 +1,9 @@
+import { config as loadDotenv } from "dotenv";
+// jiti doesn't load .env files automatically; load .env.local first so
+// DATABASE_URL is available when running `npx prisma db seed`.
+loadDotenv({ path: ".env.local" });
+loadDotenv(); // fallback to .env if .env.local doesn't have the var
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import type {
@@ -1571,6 +1577,12 @@ const accessoryBrandData = [
   { name: "Ironman 4x4", slug: "ironman-4x4", websiteUrl: "https://www.ironman4x4.com" },
   { name: "Kaymar", slug: "kaymar", websiteUrl: "https://www.kaymar.com.au" },
   { name: "MSA 4x4", slug: "msa-4x4", websiteUrl: "https://www.msa4x4.com.au" },
+  // Caravan-focused brands
+  { name: "Victron Energy", slug: "victron-energy", websiteUrl: "https://www.victronenergy.com" },
+  { name: "Carefree of Colorado", slug: "carefree", websiteUrl: "https://www.carefreeofcolorado.com" },
+  { name: "Henna Caravans", slug: "henna", websiteUrl: "https://www.hennacaravans.com.au" },
+  { name: "A.R.E.", slug: "are", websiteUrl: "https://www.4are.com" },
+  { name: "Thetford", slug: "thetford", websiteUrl: "https://www.thetford.com/en-au" },
 ];
 
 const accessoryCategoryData = [
@@ -1637,6 +1649,35 @@ const accessoryCategoryData = [
     displayOrder: 9,
     iconName: "truck",
   },
+  // Caravan-specific categories
+  {
+    name: "Solar Panel",
+    slug: "solar-panel",
+    description: "Rigid and flexible solar panels for caravan rooftop installation",
+    displayOrder: 10,
+    iconName: "sun",
+  },
+  {
+    name: "Awning",
+    slug: "awning",
+    description: "Roll-out and retractable awnings for caravan side walls",
+    displayOrder: 11,
+    iconName: "umbrella",
+  },
+  {
+    name: "Spare Wheel Carrier",
+    slug: "spare-wheel-carrier",
+    description: "External spare tyre carriers for caravan drawbars and bumper bars",
+    displayOrder: 12,
+    iconName: "circle",
+  },
+  {
+    name: "Water Tank",
+    slug: "water-tank",
+    description: "Additional fresh water tanks for extended touring",
+    displayOrder: 13,
+    iconName: "droplet",
+  },
 ];
 
 // Fitment position helpers (coordinates: 0 = rear axle, positive = toward front)
@@ -1645,7 +1686,8 @@ const accessoryCategoryData = [
 // Patrol (wb=2950, frontOH=890, rearOH=1025): front bumper=+3840, rear bumper=-1025
 
 type FitmentSeedData = {
-  vehicleKey: string; // "make-slug/model-slug/variant-slug"
+  vehicleKey?: string; // "make-slug/model-slug/variant-slug"
+  caravanKey?: string; // "make-slug/model-slug/variant-slug"
   installedWeightKg: number;
   positionType: string;
   cogXMm?: number;
@@ -2572,6 +2614,218 @@ const accessoryData: AccessorySeedData[] = [
       },
     ],
   },
+
+  // ---- CARAVAN ACCESSORIES ----
+
+  // Solar panels
+  {
+    brandSlug: "redarc",
+    categorySlug: "solar-panel",
+    name: "Redarc 200W Mono Solar Panel",
+    slug: "redarc-200w-mono-solar-panel",
+    description:
+      "200W monocrystalline solar panel with anodised aluminium frame and pre-drilled mounting holes. IP65 rated junction box. Suits most caravan rooftop installations.",
+    priceMin: 499,
+    priceMax: 649,
+    fitments: [
+      {
+        caravanKey: "jayco/silverline/21-65-3-2020-2026",
+        installedWeightKg: 16,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_ROOF",
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "jayco/silverline/24-65-3-2022-2026",
+        installedWeightKg: 16,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_ROOF",
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "jayco/journey/17-58-3-2018-2022",
+        installedWeightKg: 16,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_ROOF",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "victron-energy",
+    categorySlug: "solar-panel",
+    name: "Victron 175W Mono Solar Panel",
+    slug: "victron-175w-mono-solar-panel",
+    description:
+      "175W monocrystalline solar panel from Victron Energy. Lightweight aluminium frame with 5 × 2 cell layout. Compatible with Victron MPPT charge controllers.",
+    priceMin: 429,
+    priceMax: 549,
+    fitments: [
+      {
+        caravanKey: "jayco/silverline/21-65-3-2020-2026",
+        installedWeightKg: 12,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_ROOF",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "coromal/lifestyle/623s-2021-2026",
+        installedWeightKg: 12,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_ROOF",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+
+  // Awnings
+  {
+    brandSlug: "carefree",
+    categorySlug: "awning",
+    name: "Carefree 2.5m Roll-Out Awning",
+    slug: "carefree-2-5m-awning",
+    description:
+      "2.5m electric roll-out awning with aluminium extrusion arm and UV-resistant acrylic fabric. Includes wind sensor and manual override.",
+    priceMin: 1299,
+    priceMax: 1699,
+    fitments: [
+      {
+        caravanKey: "jayco/silverline/21-65-3-2020-2026",
+        installedWeightKg: 22,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_WALL_LEFT",
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "jayco/silverline/24-65-3-2022-2026",
+        installedWeightKg: 22,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_WALL_LEFT",
+        confidence: "MANUFACTURER_SPEC",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+  {
+    brandSlug: "dometic",
+    categorySlug: "awning",
+    name: "Dometic 3.0m Roll-Out Awning",
+    slug: "dometic-3-0m-awning",
+    description:
+      "3.0m manual or electric roll-out awning. Anodised aluminium housing and arms with Sunbrella®-grade fabric. Fits most full-height caravans.",
+    priceMin: 1499,
+    priceMax: 1999,
+    fitments: [
+      {
+        caravanKey: "jayco/silverline/21-65-3-2020-2026",
+        installedWeightKg: 28,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_WALL_LEFT",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "jayco/silverline/24-65-3-2022-2026",
+        installedWeightKg: 28,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_WALL_LEFT",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "coromal/lifestyle/623s-2021-2026",
+        installedWeightKg: 28,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_WALL_LEFT",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+
+  // Spare wheel carrier
+  {
+    brandSlug: "are",
+    categorySlug: "spare-wheel-carrier",
+    name: "A.R.E. Swing-Away Spare Tyre Carrier",
+    slug: "are-swing-away-spare-carrier",
+    description:
+      "Heavy-duty swing-away spare tyre carrier for caravan A-frames and drawbars. Suits tyres up to 265/75R16. Hot-dip galvanised finish.",
+    priceMin: 849,
+    priceMax: 1199,
+    fitments: [
+      {
+        caravanKey: "jayco/silverline/21-65-3-2020-2026",
+        installedWeightKg: 18,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_A_FRAME",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "jayco/silverline/24-65-3-2022-2026",
+        installedWeightKg: 18,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_A_FRAME",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "jayco/journey/17-58-3-2018-2022",
+        installedWeightKg: 16,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_A_FRAME",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+      {
+        caravanKey: "coromal/lifestyle/623s-2021-2026",
+        installedWeightKg: 18,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_A_FRAME",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+      },
+    ],
+  },
+
+  // Additional water tank
+  {
+    brandSlug: "henna",
+    categorySlug: "water-tank",
+    name: "Henna 40L Underslung Water Tank",
+    slug: "henna-40l-underslung-tank",
+    description:
+      "40L polyethylene underslung water tank with brass fittings. Mounts to caravan chassis rails. Food-grade material rated for potable water storage.",
+    priceMin: 349,
+    priceMax: 499,
+    fitments: [
+      {
+        caravanKey: "jayco/silverline/21-65-3-2020-2026",
+        installedWeightKg: 6,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_UNDERBODY",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Full tank adds ~40 kg to payload.",
+      },
+      {
+        caravanKey: "jayco/silverline/24-65-3-2022-2026",
+        installedWeightKg: 6,
+        positionType: "FIXED",
+        mountingLocation: "CARAVAN_UNDERBODY",
+        confidence: "ESTIMATED",
+        source: "AFTERMARKET_VERIFIED",
+        notes: "Full tank adds ~40 kg to payload.",
+      },
+    ],
+  },
 ];
 
 async function seedAccessories() {
@@ -2623,6 +2877,24 @@ async function seedAccessories() {
     variantMap.set(`${v.model.make.slug}/${v.model.slug}/${v.slug}`, v.id);
   }
 
+  // 3b. Build caravan variant lookup map
+  const caravanVariantRows = await prisma.caravanVariant.findMany({
+    select: {
+      id: true,
+      slug: true,
+      model: {
+        select: {
+          slug: true,
+          make: { select: { slug: true } },
+        },
+      },
+    },
+  });
+  const caravanVariantMap = new Map<string, string>();
+  for (const v of caravanVariantRows) {
+    caravanVariantMap.set(`${v.model.make.slug}/${v.model.slug}/${v.slug}`, v.id);
+  }
+
   // 4. Accessories + fitments
   let accessoryCount = 0;
   let fitmentCount = 0;
@@ -2653,16 +2925,20 @@ async function seedAccessories() {
     accessoryCount++;
 
     for (const f of acc.fitments) {
-      const vehicleVariantId = variantMap.get(f.vehicleKey);
-      if (!vehicleVariantId) {
-        console.warn(`  Skipping fitment: variant not found for key "${f.vehicleKey}"`);
+      const vehicleVariantId = f.vehicleKey ? variantMap.get(f.vehicleKey) : undefined;
+      const caravanVariantId = f.caravanKey ? caravanVariantMap.get(f.caravanKey) : undefined;
+
+      if (!vehicleVariantId && !caravanVariantId) {
+        const key = f.vehicleKey ?? f.caravanKey ?? "(unknown)";
+        console.warn(`  Skipping fitment: variant not found for key "${key}"`);
         continue;
       }
 
       const existing = await prisma.accessoryFitment.findFirst({
         where: {
           accessoryId: accessory.id,
-          vehicleVariantId,
+          vehicleVariantId: vehicleVariantId ?? null,
+          caravanVariantId: caravanVariantId ?? null,
           mountingLocation: f.mountingLocation as MountingLocation,
         },
       });
@@ -2671,7 +2947,8 @@ async function seedAccessories() {
         await prisma.accessoryFitment.create({
           data: {
             accessoryId: accessory.id,
-            vehicleVariantId,
+            vehicleVariantId: vehicleVariantId ?? null,
+            caravanVariantId: caravanVariantId ?? null,
             installedWeightKg: f.installedWeightKg,
             positionType: f.positionType as PositionType,
             cogXMm: f.cogXMm,

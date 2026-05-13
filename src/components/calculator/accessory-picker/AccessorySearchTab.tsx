@@ -48,6 +48,7 @@ interface RecentRowProps {
 }
 
 function RecentRow({ item, onAdd }: RecentRowProps) {
+  const isCommunity = item.fitmentId.startsWith('community:');
   return (
     <button
       type="button"
@@ -60,6 +61,11 @@ function RecentRow({ item, onAdd }: RecentRowProps) {
       <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
         {item.brandName} {item.name}
       </span>
+      {isCommunity && (
+        <span className="flex-none rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+          Awaiting review
+        </span>
+      )}
       <span className="flex-none text-xs text-gray-400">{item.installedWeightKg} kg</span>
     </button>
   );
@@ -68,10 +74,11 @@ function RecentRow({ item, onAdd }: RecentRowProps) {
 interface AccessorySearchTabProps {
   recent: AccessoryItem[];
   onAdd: (item: AccessoryItem) => void;
+  context?: 'vehicle' | 'caravan';
 }
 
-export function AccessorySearchTab({ recent, onAdd }: AccessorySearchTabProps) {
-  const { query, setQuery, items, isLoading, error } = useAccessorySearch();
+export function AccessorySearchTab({ recent, onAdd, context = 'vehicle' }: AccessorySearchTabProps) {
+  const { query, setQuery, items, isLoading, error } = useAccessorySearch(15, context);
 
   const showEmpty = !query.trim();
   const showResults = !showEmpty && (items.length > 0 || isLoading || !!error);

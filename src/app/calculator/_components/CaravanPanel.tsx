@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useCalculatorState } from '@/modules/calculator/context';
 import type { PickerVariant } from '@/components/calculator/picker';
 import { CompactCard, CARAVAN_CONFIG } from '@/components/calculator/picker';
@@ -8,6 +8,8 @@ import { PickerShell } from '@/components/calculator/picker/PickerShell';
 import { SearchTab } from '@/components/calculator/picker/SearchTab';
 import { BrowseTab } from '@/components/calculator/picker/BrowseTab';
 import { useRecent } from '@/components/calculator/picker/hooks/useRecent';
+import { AccessoryPicker } from '@/components/calculator/accessory-picker';
+import type { AccessoryItem } from '@/components/calculator/accessory-picker';
 
 const WATER_ACCENT = '#2563eb';
 
@@ -68,12 +70,45 @@ function WaterTankSection({ label, capacityL, percent, onChange }: WaterTankSect
 }
 
 export function CaravanPanel() {
-  const { state, setCaravanVariant, setCaravanAssumptions, setJourney } = useCalculatorState();
+  const { state, setCaravanVariant, setCaravanAssumptions, setJourney, addCaravanAccessory, removeCaravanAccessory } = useCalculatorState();
   const [selectedVariant, setSelectedVariant] = useState<PickerVariant | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const { recent, addRecent } = useRecent('caravan');
   const { caravanAssumptions, journey } = state;
+
+  // Hydrate from URL-persisted caravanVariantId on mount
+  useEffect(() => {
+    if (!state.caravanVariantId || selectedVariant) return;
+    fetch(`/api/v1/caravans/variants/${state.caravanVariantId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((v) => {
+        if (!v) return;
+        const pv: PickerVariant = {
+          id: v.id,
+          name: v.name,
+          yearFrom: v.yearFrom,
+          yearTo: v.yearTo,
+          isCurrentProduction: v.isCurrentProduction,
+          entityType: 'caravan',
+          makeId: v.model.make.id,
+          makeName: v.model.make.name,
+          makeLogoUrl: v.model.make.logoUrl,
+          modelId: v.model.id,
+          modelName: v.model.name,
+          bodyType: v.model.bodyType,
+          atmKg: v.atmKg,
+          gtmKg: v.gtmKg,
+          tbmKg: v.tbmKg,
+          axleConfiguration: v.axleConfiguration,
+          freshWaterCapacityL: v.freshWaterCapacityL,
+          greyWaterCapacityL: v.greyWaterCapacityL,
+        };
+        setSelectedVariant(pv);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.caravanVariantId]);
 
   const openPicker = useCallback(() => setIsOpen(true), []);
   const closePicker = useCallback(() => setIsOpen(false), []);
@@ -93,6 +128,27 @@ export function CaravanPanel() {
     setCaravanVariant(null);
     setCaravanAssumptions({ freshWaterL: 0, greyWaterL: 0, gearKg: 0 });
   }, [setCaravanVariant, setCaravanAssumptions]);
+
+  const handleAddCaravanAccessory = useCallback(
+    (item: AccessoryItem) => {
+      addCaravanAccessory({
+        accessoryId: item.fitmentId,
+        massKg: item.installedWeightKg,
+        mountingLocation: item.mountingLocation,
+      });
+    },
+    [addCaravanAccessory],
+  );
+
+  const handleRemoveCaravanAccessory = useCallback(
+    (fitmentId: string) => {
+      removeCaravanAccessory(fitmentId);
+    },
+    [removeCaravanAccessory],
+  );
+
+  const addedCaravanFitmentIds = state.caravanAccessories.map((a) => a.accessoryId);
+  const totalCaravanAccessoryKg = state.caravanAccessories.reduce((sum, a) => sum + a.massKg, 0);
 
   const handleSubmitClick = useCallback(() => {
     // Submission flow — spec §7.8 (not yet implemented)
@@ -212,12 +268,22 @@ export function CaravanPanel() {
           </div>
         </div>
 
-        {/* Accessories stub */}
+        {/* Accessories */}
         <div className="mt-4">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
             Accessories
           </p>
-          <p className="text-xs text-gray-400">Accessory fitments coming soon.</p>
+          <AccessoryPicker
+            onAdd={handleAddCaravanAccessory}
+            onRemove={handleRemoveCaravanAccessory}
+            addedFitmentIds={addedCaravanFitmentIds}
+            context="caravan"
+          />
+          {state.caravanAccessories.length > 0 && (
+            <p className="mt-3 text-xs tabular-nums text-gray-500">
+              Accessories: {Math.round(totalCaravanAccessoryKg)} kg
+            </p>
+          )}
         </div>
 
         {/* Remove caravan */}

@@ -15,10 +15,17 @@ export async function GET(
     const categoryId = searchParams.get("categoryId") ?? undefined;
     const mountingLocation = searchParams.get("mountingLocation") ?? undefined;
     const vehicleVariantId = searchParams.get("vehicleVariantId") ?? undefined;
+    const caravanVariantId = searchParams.get("caravanVariantId") ?? undefined;
+
+    const variantFilter = vehicleVariantId
+      ? { vehicleVariantId }
+      : caravanVariantId
+        ? { caravanVariantId }
+        : {};
 
     const fitments = await prisma.accessoryFitment.findMany({
       where: {
-        ...(vehicleVariantId ? { vehicleVariantId } : {}),
+        ...variantFilter,
         ...(mountingLocation ? { mountingLocation: mountingLocation as never } : {}),
         accessory: {
           brandId,
