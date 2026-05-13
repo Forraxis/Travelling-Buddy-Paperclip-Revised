@@ -1,20 +1,60 @@
 import { prisma } from "@/lib/db";
 import type { TrustTier } from "@prisma/client";
 
-// Spec 7.8: trust tier thresholds (configurable post-launch)
-const CONTRIBUTOR_APPROVED_COUNT = 1;
-const TRUSTED_APPROVED_COUNT = 5;
-const TRUSTED_MIN_ACCOUNT_AGE_DAYS = 60;
-const TRUSTED_REJECTION_WINDOW_DAYS = 30;
+// Fallback defaults matching original hardcoded constants (spec 7.8)
+const DEFAULTS = {
+  contributorApprovedCount: 1,
+  trustedApprovedCount: 5,
+  trustedMinAccountAgeDays: 60,
+  trustedRejectionWindowDays: 30,
+} as const;
+
+export type TrustTierConfig = typeof DEFAULTS;
+
+// Simple in-process TTL cache (60 s)
+let cachedConfig: TrustTierConfig | null = null;
+let cacheExpiry = 0;
+const CACHE_TTL_MS = 60_000;
+
+export async function getTrustTierConfig(): Promise<TrustTierConfig> {
+  if (cachedConfig && Date.now() < cacheExpiry) return cachedConfig;
+
+  const rows = await prisma.adminConfig.findMany({
+    where: {
+      key: { in: Object.keys(DEFAULTS) },
+    },
+    select: { key: true, value: true },
+  });
+
+  const config = { ...DEFAULTS };
+  for (const row of rows) {
+    const key = row.key as keyof TrustTierConfig;
+    if (key in DEFAULTS && typeof row.value === "number") {
+      (config as Record<string, number>)[key] = row.value as number;
+    }
+  }
+
+  cachedConfig = config;
+  cacheExpiry = Date.now() + CACHE_TTL_MS;
+  return config;
+}
+
+export function invalidateTrustTierConfigCache(): void {
+  cachedConfig = null;
+  cacheExpiry = 0;
+}
 
 // Returns the new tier if promotion occurred, null otherwise
 export async function promoteUserTrustTier(
   userId: string
 ): Promise<TrustTier | null> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, trustTier: true, createdAt: true },
-  });
+  const [user, config] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, trustTier: true, createdAt: true },
+    }),
+    getTrustTierConfig(),
+  ]);
 
   if (!user || user.trustTier === "EXPERT") return null;
 
@@ -23,9 +63,8 @@ export async function promoteUserTrustTier(
     (now.getTime() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24);
 
   if (user.trustTier === "NEW") {
-    // Promote to CONTRIBUTOR on first approved submission
     const approvedCount = await countApprovedSubmissions(userId);
-    if (approvedCount >= CONTRIBUTOR_APPROVED_COUNT) {
+    if (approvedCount >= config.contributorApprovedCount) {
       await prisma.user.update({
         where: { id: userId },
         data: { trustTier: "BASIC" },
@@ -33,15 +72,13 @@ export async function promoteUserTrustTier(
       return "BASIC";
     }
   } else if (user.trustTier === "BASIC") {
-    if (accountAgeDays < TRUSTED_MIN_ACCOUNT_AGE_DAYS) return null;
+    if (accountAgeDays < config.trustedMinAccountAgeDays) return null;
 
     const approvedCount = await countApprovedSubmissions(userId);
-    if (approvedCount < TRUSTED_APPROVED_COUNT) return null;
+    if (approvedCount < config.trustedApprovedCount) return null;
 
-    // No rejections in the last 30 days
     const windowStart = new Date(
-      now.getTime() -
-        TRUSTED_REJECTION_WINDOW_DAYS * 24 * 60 * 60 * 1000
+      now.getTime() - config.trustedRejectionWindowDays * 24 * 60 * 60 * 1000
     );
     const recentRejections = await countRejectedSubmissionsAfter(
       userId,
@@ -104,10 +141,11 @@ async function countRejectedSubmissionsAfter(
   return v + c + a;
 }
 
-export function submissionsUntilTrusted(
+export async function submissionsUntilTrusted(
   approvedCount: number,
   tier: TrustTier
-): number | null {
+): Promise<number | null> {
   if (tier !== "BASIC") return null;
-  return Math.max(0, TRUSTED_APPROVED_COUNT - approvedCount);
+  const config = await getTrustTierConfig();
+  return Math.max(0, config.trustedApprovedCount - approvedCount);
 }

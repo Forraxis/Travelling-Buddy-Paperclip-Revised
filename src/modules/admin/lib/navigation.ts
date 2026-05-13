@@ -60,14 +60,21 @@ export const adminNavSections: NavSection[] = [
     ],
   },
   {
-    label: 'Analytics',
-    icon: 'analytics',
-    disabled: true,
+    label: 'Settings',
+    icon: 'settings',
     roles: ['ADMIN'],
     items: [
-      { label: 'Calculator Usage', href: '/admin/analytics/calculator', icon: 'calculator', disabled: true },
-      { label: 'Submission Stats', href: '/admin/analytics/submissions', icon: 'stats', disabled: true },
-      { label: 'Search & SEO', href: '/admin/analytics/seo', icon: 'seo', disabled: true },
+      { label: 'Trust Tier Thresholds', href: '/admin/settings/trust-tier', icon: 'trust', roles: ['ADMIN'] },
+    ],
+  },
+  {
+    label: 'Analytics',
+    icon: 'analytics',
+    roles: ['ADMIN'],
+    items: [
+      { label: 'Submission Stats', href: '/admin/analytics/submissions', icon: 'stats' },
+      { label: 'Calculator Usage', href: '/admin/analytics/calculator', icon: 'calculator' },
+      { label: 'Search & SEO', href: '/admin/analytics/seo', icon: 'seo' },
     ],
   },
 ];

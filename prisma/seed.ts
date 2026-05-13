@@ -3146,9 +3146,38 @@ async function seedAdminUsers() {
   }
 }
 
+async function seedTrustTierConfig() {
+  // Find any ADMIN user to associate config rows with
+  const adminUser = await prisma.user.findFirst({
+    where: { role: "ADMIN" },
+    select: { id: true },
+  });
+  if (!adminUser) {
+    console.log("No ADMIN user found — skipping trust tier config seed");
+    return;
+  }
+
+  const defaults: { key: string; value: number }[] = [
+    { key: "contributorApprovedCount", value: 1 },
+    { key: "trustedApprovedCount", value: 5 },
+    { key: "trustedMinAccountAgeDays", value: 60 },
+    { key: "trustedRejectionWindowDays", value: 30 },
+  ];
+
+  for (const { key, value } of defaults) {
+    await prisma.adminConfig.upsert({
+      where: { key },
+      update: {},
+      create: { key, value, updatedById: adminUser.id },
+    });
+  }
+  console.log("Seeded trust tier config defaults");
+}
+
 async function main() {
   console.log("Starting seed...");
   await seedAdminUsers();
+  await seedTrustTierConfig();
   await seedVehicles();
   await seedCaravans();
   await seedAccessories();

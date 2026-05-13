@@ -327,6 +327,7 @@ model User {
   auditLogs                     AuditLog[]
   moderationActions             ModerationAction[]
   regulationSetVersions         RegulationSetVersion[]
+  adminConfigUpdates            AdminConfig[]
 }
 
 model Account {
@@ -821,6 +822,16 @@ model AuditLog {
   @@index([changedBy])
   @@index([action])
   @@index([createdAt])
+}
+
+model AdminConfig {
+  key           String   @id
+  value         Json
+  updatedAt     DateTime @updatedAt
+  updatedById   String
+  updatedBy     User     @relation(fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([updatedById])
 }
 
 model VariantSlugRedirect {
