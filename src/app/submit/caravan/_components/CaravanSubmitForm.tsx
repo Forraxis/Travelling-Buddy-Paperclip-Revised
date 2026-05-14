@@ -82,11 +82,12 @@ function isFormValid(form: FormValues): boolean {
 
 interface Props {
   isAuthenticated: boolean;
+  initialValues?: Partial<Record<keyof FormValues, string>>;
 }
 
-export function CaravanSubmitForm({ isAuthenticated }: Props) {
+export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("photo");
+  const [step, setStep] = useState<Step>(initialValues ? "form" : "photo");
   const [platePhotoFile, setPlatePhotoFile] = useState<File | null>(null);
   const [platePreview, setPlatePreview] = useState<string | null>(null);
   const [platePhotoKey, setPlatePhotoKey] = useState<string | null>(null);
@@ -99,7 +100,7 @@ export function CaravanSubmitForm({ isAuthenticated }: Props) {
   const dupCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<FormValues>({
+  const EMPTY_CARAVAN_FORM: FormValues = {
     newMakeName: "",
     newModelName: "",
     year: String(new Date().getFullYear()),
@@ -118,7 +119,11 @@ export function CaravanSubmitForm({ isAuthenticated }: Props) {
     greyWaterLitres: "",
     gasBottleConfig: "",
     notes: "",
-  });
+  };
+
+  const [form, setForm] = useState<FormValues>(
+    initialValues ? { ...EMPTY_CARAVAN_FORM, ...initialValues } as FormValues : EMPTY_CARAVAN_FORM
+  );
 
   // Mid-flow duplicate check for caravans
   useEffect(() => {
@@ -293,7 +298,7 @@ export function CaravanSubmitForm({ isAuthenticated }: Props) {
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => router.push("/account/submissions")}
+            onClick={() => router.push("/account/submissions?submitted=1")}
             className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
           >
             View my submissions

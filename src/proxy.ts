@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
 import { routing } from './i18n/routing';
 
 const DEV_AUTH_BYPASS =
@@ -14,16 +15,27 @@ function hasSessionCookie(request: NextRequest): boolean {
   );
 }
 
-export default function proxy(request: NextRequest) {
+function proxyHandler(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const session = request.auth;
 
   if (pathname.startsWith('/admin')) {
     if (DEV_AUTH_BYPASS) {
       return NextResponse.next();
     }
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
+    if (!session?.user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/signin';
+      url.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(url);
+    }
+
+    const role = session.user.role;
+    if (role !== 'ADMIN' && role !== 'MODERATOR') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
   }
 
   if (PROTECTED_PAGES.some((p) => p.test(pathname)) && !hasSessionCookie(request)) {
@@ -44,6 +56,8 @@ export default function proxy(request: NextRequest) {
 
   return response;
 }
+
+export default auth(proxyHandler);
 
 export const config = {
   matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],

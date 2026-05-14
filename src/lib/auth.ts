@@ -37,6 +37,7 @@ declare module "@auth/core/jwt" {
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/auth/signin",
@@ -107,9 +108,22 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id!;
-        token.role = user.role;
-        token.trustTier = user.trustTier;
-        token.homeState = user.homeState;
+        if (user.role !== undefined) {
+          // Credentials provider: authorize() returns custom fields directly
+          token.role = user.role;
+          token.trustTier = user.trustTier;
+          token.homeState = user.homeState;
+        } else {
+          // OAuth provider: Auth.js strips custom fields from the adapter user
+          // before passing to this callback — fetch them from the database.
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id! },
+            select: { role: true, trustTier: true, homeState: true },
+          });
+          token.role = dbUser?.role ?? "VIEWER";
+          token.trustTier = dbUser?.trustTier ?? "NEW";
+          token.homeState = dbUser?.homeState ?? null;
+        }
       }
       return token;
     },

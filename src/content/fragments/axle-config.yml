@@ -1,0 +1,32 @@
+# Axle configuration fragments
+# These blocks describe how the caravan's axle configuration affects the combo.
+#
+# Schema: see README.md in this directory.
+
+- id: frag-axle-001
+  tags:
+    axle_config: single
+  body: >-
+    This caravan runs a single-axle configuration. Single-axle vans are typically lighter and
+    more manoeuvrable than tandem-axle equivalents, making them easier to tow and reverse in tight
+    spaces such as bush camps and caravan park sites. They are best suited to sealed and light
+    off-road conditions, as a single tyre failure leaves the van unsupported on one side.
+
+- id: frag-axle-002
+  tags:
+    axle_config: tandem
+  body: >-
+    The tandem-axle setup provides stability and redundancy. With two axles, load is spread more
+    evenly along the caravan's undercarriage, reducing individual tyre loads and improving
+    straight-line tracking at highway speeds. A tyre failure on a tandem-axle van is less critical
+    than on a single-axle, as the opposite tyre can support the corner while you slow to a stop
+    safely.
+
+- id: frag-axle-003
+  tags:
+    axle_config: triple
+  body: >-
+    Triple-axle caravans are typically heavy, load-focussed rigs — toy haulers, fifth-wheelers, or
+    slide-out vans. The three-axle configuration distributes weight across a longer footprint but
+    requires greater tow vehicle rating and makes reversing more demanding. These setups are best
+    handled by experienced towers with purpose-built tow vehicles rated above 3,500 kg.

@@ -1,0 +1,42 @@
+# Caravan size class fragments
+# These blocks describe the caravan's size class in the context of the tow vehicle combination.
+#
+# Schema: see README.md in this directory.
+
+- id: frag-size-001
+  tags:
+    caravan_size_class: small
+  body: >-
+    This is a lightweight caravan — ATM under 1,800 kg — making it accessible to a wide range of
+    tow vehicles. Small caravans are well suited to weekend getaways and unsealed roads where a
+    lighter rig offers more flexibility. Their lower towball download means they place less demand
+    on the vehicle's GVM headroom, which benefits owners of smaller SUVs and wagons.
+
+- id: frag-size-002
+  tags:
+    caravan_size_class: medium
+  body: >-
+    This caravan falls in the medium class (ATM 1,800–2,800 kg), the most popular segment in the
+    Australian market. Medium vans balance livability with towability, fitting most large SUVs and
+    dual-cab utes with room to spare in the towing capacity. Pay attention to GVM headroom and
+    actual towball download, as real-world loads often push medium vans close to the upper end of
+    their ATM.
+
+- id: frag-size-003
+  tags:
+    caravan_size_class: large
+  body: >-
+    This is a heavy caravan — ATM over 2,800 kg — suited to capable tow vehicles with high towing
+    ratings and significant GVM headroom. Large caravans often include full ensuite, large fridges,
+    and substantial water capacity. The towball download from a large van can easily exceed 300 kg,
+    so confirming GVM headroom and front axle load ratings is essential before any trip.
+
+- id: frag-size-004
+  tags:
+    caravan_size_class: large
+    vehicle_body_type: ute
+  body: >-
+    A dual-cab ute paired with a large caravan (ATM over 2,800 kg) requires careful GVM management.
+    Ute trays and accessories — canopy, tool boxes, dual-battery systems — can quickly consume
+    payload before hitching the van. A GVM upgrade may be required to legally accommodate the
+    combination's towball download.

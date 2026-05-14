@@ -1,0 +1,51 @@
+# GVM headroom fragments
+# These blocks are inserted into combo pages based on how much GVM headroom the tow vehicle has
+# available after accounting for its loaded weight and the caravan's towball download.
+#
+# Schema: see README.md in this directory.
+
+- id: frag-gvm-001
+  tags:
+    gvm_headroom_range: "0-100kg"
+  body: >-
+    This combination is at the limits of what the tow vehicle's GVM can accommodate.
+    The available headroom between the vehicle's loaded weight and its GVM is less than 100 kg,
+    which means even a small caravan towball download could push the vehicle over its legal mass
+    limit. Before towing, weigh your fully loaded vehicle at a certified weighbridge and confirm
+    the setup is within GVM.
+
+- id: frag-gvm-002
+  tags:
+    gvm_headroom_range: "0-200kg"
+  body: >-
+    The tow vehicle has moderate GVM headroom in this configuration. The towball download from
+    this caravan (typically 8–12% of ATM) will consume most of that headroom. Careful loading is
+    essential — avoid carrying unnecessary gear in the vehicle cab or tray, and confirm the loaded
+    weight at a weighbridge before a long trip.
+
+- id: frag-gvm-003
+  tags:
+    gvm_headroom_range: "100-300kg"
+  body: >-
+    GVM headroom is workable for this combination. The caravan's estimated towball download sits
+    within the available margin, provided the vehicle is not heavily loaded with passengers and
+    accessories. Confirm at a weighbridge if you carry substantial gear, as GVM limits are easy
+    to breach when adding bull bars, roof racks, and full water tanks.
+
+- id: frag-gvm-004
+  tags:
+    gvm_headroom_range: "200-500kg"
+  body: >-
+    This tow vehicle has comfortable GVM headroom for the caravan's towball download. Normal
+    loading — occupants, luggage, and standard accessories — should keep the setup within legal
+    mass limits. A weighbridge check is still best practice before your first trip, but the margin
+    here is generous compared to many combinations.
+
+- id: frag-gvm-005
+  tags:
+    gvm_headroom_range: "500kg+"
+  body: >-
+    Ample GVM headroom is available in this combination. The vehicle has significant capacity above
+    its loaded weight, so even a heavy caravan towball download leaves a comfortable buffer. This
+    setup is well-suited to extended touring where additional accessories and a full water tank are
+    likely to be carried.

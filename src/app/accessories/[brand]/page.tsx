@@ -4,26 +4,23 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { createCategoryService } from "@/modules/catalogue/services/category.service";
-import { createAccessoryService } from "@/modules/catalogue/services/accessory.service";
 import { Breadcrumbs } from "@/components/catalogue/Breadcrumbs";
 import { SearchInput } from "@/components/catalogue/SearchInput";
 import { PaginationBar } from "@/components/catalogue/PaginationBar";
-import type { AccessoryDto } from "@/modules/catalogue/types/accessory.types";
 
 export const dynamic = "force-dynamic";
 
 const categoryService = createCategoryService(prisma);
-const accessoryService = createAccessoryService(prisma);
 
 const PAGE_SIZE = 24;
 
 interface Props {
-  params: Promise<{ "category-slug": string }>;
-  searchParams: Promise<{ q?: string; cursor?: string; brand?: string }>;
+  params: Promise<{ brand: string }>;
+  searchParams: Promise<{ q?: string; cursor?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { "category-slug": categorySlug } = await params;
+  const { brand: categorySlug } = await params;
   const category = await categoryService.getBySlug(categorySlug);
   if (!category) return { title: "Category Not Found" };
   return {
@@ -32,10 +29,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function AccessoryCard({ accessory, categorySlug }: { accessory: AccessoryDto; categorySlug: string }) {
+interface AccessoryListItem {
+  id: string;
+  name: string;
+  slug: string;
+  imageUrls: string[];
+  priceMin: number | null;
+  currencyCode: string;
+  brandSlug: string;
+}
+
+function AccessoryCard({ accessory }: { accessory: AccessoryListItem }) {
   return (
     <Link
-      href={`/accessories/${categorySlug}/${accessory.slug}`}
+      href={`/accessories/${accessory.brandSlug}/${accessory.slug}/`}
       className="group flex flex-col gap-2 rounded-xl border border-tb-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
     >
       {accessory.imageUrls[0] && (
@@ -59,7 +66,7 @@ function AccessoryCard({ accessory, categorySlug }: { accessory: AccessoryDto; c
 }
 
 export default async function CategoryAccessoriesPage({ params, searchParams }: Props) {
-  const { "category-slug": categorySlug } = await params;
+  const { brand: categorySlug } = await params;
   const sp = await searchParams;
   const q = sp.q?.trim() ?? "";
   const cursor = sp.cursor;
@@ -67,21 +74,65 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
   const category = await categoryService.getBySlug(categorySlug);
   if (!category) notFound();
 
-  let items: AccessoryDto[] = [];
+  let items: AccessoryListItem[] = [];
   let nextCursor: string | null = null;
   let hasMore = false;
 
   if (q) {
-    const results = await accessoryService.searchByCategory(category.id, q, 50);
-    items = results.accessories;
+    const rawItems = await prisma.accessory.findMany({
+      where: {
+        categoryId: category.id,
+        status: "ACTIVE",
+        name: { contains: q, mode: "insensitive" },
+      },
+      take: 50,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        imageUrls: true,
+        priceMin: true,
+        currencyCode: true,
+        brand: { select: { slug: true } },
+      },
+    });
+    items = rawItems.map((r) => ({
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      imageUrls: r.imageUrls,
+      priceMin: r.priceMin ? (r.priceMin as unknown as { toNumber(): number }).toNumber() : null,
+      currencyCode: r.currencyCode,
+      brandSlug: r.brand.slug,
+    }));
   } else {
-    const result = await accessoryService.list(
-      { categoryId: category.id, status: "ACTIVE" },
-      { cursor, limit: PAGE_SIZE }
-    );
-    items = result.items;
-    nextCursor = result.nextCursor;
-    hasMore = result.hasMore;
+    const rawItems = await prisma.accessory.findMany({
+      where: { categoryId: category.id, status: "ACTIVE" },
+      take: PAGE_SIZE + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        imageUrls: true,
+        priceMin: true,
+        currencyCode: true,
+        brand: { select: { slug: true } },
+      },
+    });
+    hasMore = rawItems.length > PAGE_SIZE;
+    const page = hasMore ? rawItems.slice(0, PAGE_SIZE) : rawItems;
+    nextCursor = hasMore ? page[page.length - 1].id : null;
+    items = page.map((r) => ({
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      imageUrls: r.imageUrls,
+      priceMin: r.priceMin ? (r.priceMin as unknown as { toNumber(): number }).toNumber() : null,
+      currencyCode: r.currencyCode,
+      brandSlug: r.brand.slug,
+    }));
   }
 
   return (
@@ -112,7 +163,7 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
           {category.children.map((child) => (
             <Link
               key={child.id}
-              href={`/accessories/${child.slug}`}
+              href={`/accessories/${child.slug}/`}
               className="rounded-full border border-tb-neutral-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:border-tb-primary-light hover:text-tb-primary"
             >
               {child.name}
@@ -123,14 +174,12 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
 
       {items.length === 0 ? (
         <div className="rounded-xl border border-tb-neutral-200 py-16 text-center text-gray-400">
-          {q
-            ? `No accessories match "${q}".`
-            : `No accessories in ${category.name} yet.`}
+          {q ? `No accessories match "${q}".` : `No accessories in ${category.name} yet.`}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {items.map((acc) => (
-            <AccessoryCard key={acc.id} accessory={acc} categorySlug={categorySlug} />
+            <AccessoryCard key={acc.id} accessory={acc} />
           ))}
         </div>
       )}

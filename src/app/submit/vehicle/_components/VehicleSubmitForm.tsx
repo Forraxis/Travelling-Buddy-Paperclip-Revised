@@ -86,11 +86,12 @@ function clearDraft() {
 
 interface Props {
   isAuthenticated: boolean;
+  initialValues?: Partial<FormValues>;
 }
 
-export function VehicleSubmitForm({ isAuthenticated }: Props) {
+export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("photo");
+  const [step, setStep] = useState<Step>(initialValues ? "form" : "photo");
   const [platePhotoFile, setPlatePhotoFile] = useState<File | null>(null);
   const [platePreview, setPlatePreview] = useState<string | null>(null);
   const [platePhotoKey, setPlatePhotoKey] = useState<string | null>(null);
@@ -107,15 +108,17 @@ export function VehicleSubmitForm({ isAuthenticated }: Props) {
   const dupCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<FormValues>(EMPTY_FORM);
+  const [form, setForm] = useState<FormValues>(
+    initialValues ? { ...EMPTY_FORM, ...initialValues } : EMPTY_FORM
+  );
 
-  // Restore draft for anonymous users on mount
+  // Restore draft for anonymous users on mount (skip if pre-filling from rejected submission)
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !initialValues) {
       const draft = loadDraft();
       if (draft) setForm(draft);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, initialValues]);
 
   // Auto-save draft for anonymous users on each form change
   useEffect(() => {
@@ -349,7 +352,7 @@ export function VehicleSubmitForm({ isAuthenticated }: Props) {
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => router.push("/account/submissions")}
+            onClick={() => router.push("/account/submissions?submitted=1")}
             className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
           >
             View my submissions

@@ -19,6 +19,10 @@ const tailwindcssIndexCss = _req.resolve('tailwindcss/index.css');
 const projectRoot = path.dirname(_req.resolve('./package.json'));
 
 const nextConfig: NextConfig = {
+  // recharts 3.x pulls in victory-vendor which uses wildcard package exports
+  // (./d3-*) that Turbopack cannot resolve. Transpiling these packages forces
+  // Next.js to process their source directly, bypassing the broken exports map.
+  transpilePackages: ['recharts', 'victory-vendor'],
   turbopack: {
     root: projectRoot,
     resolveAlias: {
