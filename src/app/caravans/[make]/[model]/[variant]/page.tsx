@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { resolveVariantRedirect } from '@/lib/variant-redirects';
 import {
   getCaravanVariantProfileData,
   getAllCaravanVariantSlugsForSSG,
@@ -408,7 +409,11 @@ function SiblingLinks({
 export default async function CaravanVariantProfilePage({ params }: Props) {
   const { make, model, variant } = await params;
   const data = await getCaravanVariantProfileData(make, model, variant);
-  if (!data) notFound();
+  if (!data) {
+    const toSlug = await resolveVariantRedirect('CaravanVariant', variant);
+    if (toSlug) permanentRedirect(`/caravans/${make}/${model}/${toSlug}/`);
+    notFound();
+  }
 
   const v = data.variant;
   const makeName = v.model.make.name;

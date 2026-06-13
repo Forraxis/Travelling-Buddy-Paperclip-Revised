@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { resolveVariantRedirect } from '@/lib/variant-redirects';
 import {
   getVariantProfileData,
   getAllVehicleVariantSlugsForSSG,
@@ -409,7 +410,11 @@ function SiblingLinks({
 export default async function VehicleVariantProfilePage({ params }: Props) {
   const { make, model, variant } = await params;
   const data = await getVariantProfileData(make, model, variant);
-  if (!data) notFound();
+  if (!data) {
+    const toSlug = await resolveVariantRedirect('VehicleVariant', variant);
+    if (toSlug) permanentRedirect(`/vehicles/${make}/${model}/${toSlug}/`);
+    notFound();
+  }
 
   const v = data.variant;
   const makeName = v.model.make.name;
