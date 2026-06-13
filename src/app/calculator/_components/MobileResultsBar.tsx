@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import RigSchematic from '@/components/schematic/RigSchematic';
+import AdvancedPanel from '@/components/metrics/AdvancedPanel';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -310,44 +311,6 @@ function RecommendationsPanel({ result }: { result: PhysicsResult }) {
   );
 }
 
-function AdvancedPanel() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="mb-4 rounded-lg border border-gray-200 bg-white">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-gray-700"
-        aria-expanded={open}
-        style={{ minHeight: 44 }}
-      >
-        Advanced
-        <svg
-          className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      {open && (
-        <div className="border-t border-gray-100 px-4 py-3">
-          <p className="text-sm text-gray-400">
-            Advanced options will appear here.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 interface ActionBarProps {
   onSave?: () => void;
   onShare?: () => void;
@@ -432,7 +395,7 @@ function SheetResultsContent({
       <TowBallCard result={result} />
       <AxleGrid result={result} />
       <RecommendationsPanel result={result} />
-      <AdvancedPanel />
+      <AdvancedPanel result={result} />
       <ActionBar onSave={onSave} onShare={onShare} saving={saving} />
     </>
   );

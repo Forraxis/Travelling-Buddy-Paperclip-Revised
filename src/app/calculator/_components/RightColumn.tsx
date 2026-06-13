@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import RigSchematic from '@/components/schematic/RigSchematic';
+import AdvancedPanel from '@/components/metrics/AdvancedPanel';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -409,45 +409,6 @@ function RecommendationsPanel({ result }: { result: PhysicsResult }) {
   );
 }
 
-// ── Advanced panel ─────────────────────────────────────────────────────────────
-
-function AdvancedPanel() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border-tb-neutral-200 mb-4 rounded-lg border bg-white">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="hover:bg-tb-neutral-50 flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-gray-700"
-        aria-expanded={open}
-      >
-        Advanced
-        <svg
-          className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      {open && (
-        <div className="border-tb-neutral-200 border-t px-4 py-3">
-          <p className="text-sm text-gray-400">
-            Advanced options will appear here.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Action bar ─────────────────────────────────────────────────────────────────
 
 function ActionBar() {
@@ -508,7 +469,7 @@ function ResultsView({
       <TowBallCard result={result} />
       <AxleGrid result={result} />
       <RecommendationsPanel result={result} />
-      <AdvancedPanel />
+      <AdvancedPanel result={result} />
       <ActionBar />
     </>
   );
