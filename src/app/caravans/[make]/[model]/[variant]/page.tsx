@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { resolveVariantRedirect } from '@/lib/variant-redirects';
+import { breadcrumbJsonLd } from '@/lib/seo/json-ld';
 import {
   getCaravanVariantProfileData,
   getAllCaravanVariantSlugsForSSG,
@@ -425,6 +426,12 @@ export default async function CaravanVariantProfilePage({ params }: Props) {
   const faqJsonLd = buildFaqJsonLd(faqs);
 
   const modelHref = `/caravans/${make}/${model}/`;
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: 'Caravans', path: '/caravans/' },
+    { name: makeName, path: modelHref },
+    { name: modelName, path: modelHref },
+    { name: v.name, path: `/caravans/${make}/${model}/${v.slug}/` },
+  ]);
 
   return (
     <>
@@ -432,6 +439,10 @@ export default async function CaravanVariantProfilePage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
       {faqs.length > 0 && (
         <script

@@ -105,11 +105,11 @@ function articleJsonLd(params: {
     description: params.description,
     author: {
       '@type': 'Organization',
-      name: 'TowingBuddy',
+      name: 'TravellingBuddy',
     },
     publisher: {
       '@type': 'Organization',
-      name: 'TowingBuddy',
+      name: 'TravellingBuddy',
     },
     datePublished: params.datePublished,
     dateModified: params.dateModified,

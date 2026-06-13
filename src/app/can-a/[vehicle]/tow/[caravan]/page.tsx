@@ -16,6 +16,7 @@ import {
   getComboFragments,
   comboFragmentCriteria,
 } from '@/lib/content/fragments';
+import { breadcrumbJsonLd } from '@/lib/seo/json-ld';
 
 export const revalidate = 86400;
 
@@ -715,6 +716,17 @@ export default async function ComboPage({ params }: Props) {
   const vehicleProfileHref = `/vehicles/${vMake.slug}/${vModel.slug}/${v.slug}/`;
   const caravanProfileHref = `/caravans/${cMake.slug}/${cModel.slug}/${c.slug}/`;
   const calculatorHref = `/calculator?v=${v.slug}&c=${c.slug}`;
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: 'Vehicles', path: '/vehicles/' },
+    {
+      name: `${vMake.name} ${vModel.name} ${v.name}`,
+      path: vehicleProfileHref,
+    },
+    {
+      name: `vs ${cMake.name} ${cModel.name} ${c.name}`,
+      path: `/can-a/${vehicleSlug}/tow/${caravanSlug}/`,
+    },
+  ]);
 
   // Hand-authored prose fragments, selected by this combination's characteristics
   // (spec §9.3). Estimate GVM headroom the same way computeComboMetrics does:
@@ -745,6 +757,10 @@ export default async function ComboPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
       {faqs.length > 0 && (
         <script
