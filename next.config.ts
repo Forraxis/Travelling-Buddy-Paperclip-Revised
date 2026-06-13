@@ -19,6 +19,10 @@ const tailwindcssIndexCss = _req.resolve('tailwindcss/index.css');
 const projectRoot = path.dirname(_req.resolve('./package.json'));
 
 const nextConfig: NextConfig = {
+  // Canonical URLs and internal links throughout the app use trailing slashes
+  // (e.g. /vehicles/{make}/{model}/{variant}/). Enforce that convention so
+  // those canonicals resolve to 200 rather than 308-redirecting.
+  trailingSlash: true,
   // recharts 3.x pulls in victory-vendor which uses wildcard package exports
   // (./d3-*) that Turbopack cannot resolve. Transpiling these packages forces
   // Next.js to process their source directly, bypassing the broken exports map.
