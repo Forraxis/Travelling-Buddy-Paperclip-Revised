@@ -15,10 +15,10 @@ export function DataTableShell<T extends { id: string }>({
   emptyMessage?: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-tb-neutral-200">
+    <div className="border-tb-neutral-200 overflow-x-auto rounded-lg border">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-tb-neutral-200 bg-tb-neutral-50">
+          <tr className="border-tb-neutral-200 bg-tb-neutral-50 border-b">
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -43,10 +43,13 @@ export function DataTableShell<T extends { id: string }>({
             data.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-tb-neutral-200 last:border-0 hover:bg-tb-neutral-50"
+                className="border-tb-neutral-200 hover:bg-tb-neutral-50 border-b last:border-0"
               >
                 {columns.map((col) => (
-                  <td key={col.key} className={`px-4 py-3 ${col.className ?? ''}`}>
+                  <td
+                    key={col.key}
+                    className={`px-4 py-3 ${col.className ?? ''}`}
+                  >
                     {col.render
                       ? col.render(row)
                       : String((row as Record<string, unknown>)[col.key] ?? '')}

@@ -6,7 +6,7 @@
 
 - id: frag-gvm-001
   tags:
-    gvm_headroom_range: "0-100kg"
+    gvm_headroom_range: '0-100kg'
   body: >-
     This combination is at the limits of what the tow vehicle's GVM can accommodate.
     The available headroom between the vehicle's loaded weight and its GVM is less than 100 kg,
@@ -16,7 +16,7 @@
 
 - id: frag-gvm-002
   tags:
-    gvm_headroom_range: "0-200kg"
+    gvm_headroom_range: '0-200kg'
   body: >-
     The tow vehicle has moderate GVM headroom in this configuration. The towball download from
     this caravan (typically 8–12% of ATM) will consume most of that headroom. Careful loading is
@@ -25,7 +25,7 @@
 
 - id: frag-gvm-003
   tags:
-    gvm_headroom_range: "100-300kg"
+    gvm_headroom_range: '100-300kg'
   body: >-
     GVM headroom is workable for this combination. The caravan's estimated towball download sits
     within the available margin, provided the vehicle is not heavily loaded with passengers and
@@ -34,7 +34,7 @@
 
 - id: frag-gvm-004
   tags:
-    gvm_headroom_range: "200-500kg"
+    gvm_headroom_range: '200-500kg'
   body: >-
     This tow vehicle has comfortable GVM headroom for the caravan's towball download. Normal
     loading — occupants, luggage, and standard accessories — should keep the setup within legal
@@ -43,7 +43,7 @@
 
 - id: frag-gvm-005
   tags:
-    gvm_headroom_range: "500kg+"
+    gvm_headroom_range: '500kg+'
   body: >-
     Ample GVM headroom is available in this combination. The vehicle has significant capacity above
     its loaded weight, so even a heavy caravan towball download leaves a comfortable buffer. This

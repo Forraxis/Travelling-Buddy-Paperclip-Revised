@@ -1,30 +1,33 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
-import { ConfirmDialog } from "@/modules/admin/components/ConfirmDialog";
-import { inputClassName, selectClassName } from "@/modules/admin/components/FormField";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
+import { ConfirmDialog } from '@/modules/admin/components/ConfirmDialog';
+import {
+  inputClassName,
+  selectClassName,
+} from '@/modules/admin/components/FormField';
 import {
   createCaravanModelAction,
   updateCaravanModelAction,
   deleteCaravanModelAction,
-} from "@/modules/catalogue/actions/caravan.actions";
+} from '@/modules/catalogue/actions/caravan.actions';
 import type {
   CaravanMakeWithModels,
   CaravanModelDto,
-} from "@/modules/catalogue/types/caravan.types";
-import type { CaravanBodyType } from "@prisma/client";
+} from '@/modules/catalogue/types/caravan.types';
+import type { CaravanBodyType } from '@prisma/client';
 
 const BODY_TYPES: { value: CaravanBodyType; label: string }[] = [
-  { value: "CARAVAN_POP_TOP", label: "Pop Top" },
-  { value: "CARAVAN_FULL_HEIGHT", label: "Full Height" },
-  { value: "OFF_ROAD_CARAVAN", label: "Off Road" },
-  { value: "CAMPER_TRAILER", label: "Camper Trailer" },
-  { value: "HYBRID", label: "Hybrid" },
-  { value: "FIFTH_WHEELER", label: "Fifth Wheeler" },
-  { value: "OTHER", label: "Other" },
+  { value: 'CARAVAN_POP_TOP', label: 'Pop Top' },
+  { value: 'CARAVAN_FULL_HEIGHT', label: 'Full Height' },
+  { value: 'OFF_ROAD_CARAVAN', label: 'Off Road' },
+  { value: 'CAMPER_TRAILER', label: 'Camper Trailer' },
+  { value: 'HYBRID', label: 'Hybrid' },
+  { value: 'FIFTH_WHEELER', label: 'Fifth Wheeler' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
 export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
@@ -32,13 +35,18 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
   const { toast } = useToast();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createBodyType, setCreateBodyType] =
-    useState<CaravanBodyType>("CARAVAN_FULL_HEIGHT");
+  const [createName, setCreateName] = useState('');
+  const [createBodyType, setCreateBodyType] = useState<CaravanBodyType>(
+    'CARAVAN_FULL_HEIGHT',
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editBodyType, setEditBodyType] = useState<CaravanBodyType>("CARAVAN_FULL_HEIGHT");
-  const [deleteTarget, setDeleteTarget] = useState<CaravanModelDto | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editBodyType, setEditBodyType] = useState<CaravanBodyType>(
+    'CARAVAN_FULL_HEIGHT',
+  );
+  const [deleteTarget, setDeleteTarget] = useState<CaravanModelDto | null>(
+    null,
+  );
 
   async function handleCreate() {
     if (!createName.trim()) return;
@@ -48,12 +56,12 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
       bodyType: createBodyType,
     });
     if (result.success) {
-      toast("Model created successfully");
+      toast('Model created successfully');
       setShowCreate(false);
-      setCreateName("");
+      setCreateName('');
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
@@ -67,11 +75,11 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
       bodyType: editBodyType,
     });
     if (result.success) {
-      toast("Model updated");
+      toast('Model updated');
       setEditingId(null);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
@@ -79,11 +87,11 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
     if (!deleteTarget) return;
     const result = await deleteCaravanModelAction(deleteTarget.id);
     if (result.success) {
-      toast("Model deleted");
+      toast('Model deleted');
       setDeleteTarget(null);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
@@ -96,14 +104,14 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
       <div className="mb-4 flex items-center justify-end">
         <button
           onClick={() => setShowCreate(true)}
-          className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+          className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
         >
           + Add Model
         </button>
       </div>
 
       {showCreate && (
-        <div className="mb-4 rounded-lg border border-tb-neutral-200 bg-white p-4">
+        <div className="border-tb-neutral-200 mb-4 rounded-lg border bg-white p-4">
           <h3 className="mb-3 text-sm font-semibold text-gray-900">
             New Model for {make.name}
           </h3>
@@ -115,7 +123,7 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
               onChange={(e) => setCreateName(e.target.value)}
               className={`${inputClassName} max-w-xs`}
               autoFocus
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
             <select
               value={createBodyType}
@@ -132,16 +140,16 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
             </select>
             <button
               onClick={handleCreate}
-              className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+              className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
             >
               Create
             </button>
             <button
               onClick={() => {
                 setShowCreate(false);
-                setCreateName("");
+                setCreateName('');
               }}
-              className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+              className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
             >
               Cancel
             </button>
@@ -149,14 +157,14 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-tb-neutral-200">
+      <div className="border-tb-neutral-200 overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-tb-neutral-200 bg-tb-neutral-50">
+            <tr className="border-tb-neutral-200 bg-tb-neutral-50 border-b">
               <th className="px-4 py-3 font-medium text-gray-700">Name</th>
               <th className="px-4 py-3 font-medium text-gray-700">Slug</th>
               <th className="px-4 py-3 font-medium text-gray-700">Body Type</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">
+              <th className="px-4 py-3 text-right font-medium text-gray-700">
                 Actions
               </th>
             </tr>
@@ -164,10 +172,7 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
           <tbody>
             {make.models.length === 0 ? (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-8 text-center text-gray-500"
-                >
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
                   No models yet. Click &apos;+ Add Model&apos; to get started.
                 </td>
               </tr>
@@ -175,7 +180,7 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
               make.models.map((model) => (
                 <tr
                   key={model.id}
-                  className="border-b border-tb-neutral-200 last:border-0 hover:bg-tb-neutral-50"
+                  className="border-tb-neutral-200 hover:bg-tb-neutral-50 border-b last:border-0"
                 >
                   <td className="px-4 py-3">
                     {editingId === model.id ? (
@@ -185,8 +190,8 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
                         onChange={(e) => setEditName(e.target.value)}
                         onBlur={() => handleInlineEdit(model.id)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") handleInlineEdit(model.id);
-                          if (e.key === "Escape") setEditingId(null);
+                          if (e.key === 'Enter') handleInlineEdit(model.id);
+                          if (e.key === 'Escape') setEditingId(null);
                         }}
                         className={`${inputClassName} max-w-[12rem]`}
                         autoFocus
@@ -194,7 +199,7 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
                     ) : (
                       <Link
                         href={`/admin/catalogue/caravans/${make.slug}/${model.slug}`}
-                        className="font-medium text-tb-primary hover:underline"
+                        className="text-tb-primary font-medium hover:underline"
                       >
                         {model.name}
                       </Link>
@@ -228,7 +233,7 @@ export function CaravanModelsList({ make }: { make: CaravanMakeWithModels }) {
                           setEditName(model.name);
                           setEditBodyType(model.bodyType);
                         }}
-                        className="text-sm text-gray-500 hover:text-tb-primary"
+                        className="hover:text-tb-primary text-sm text-gray-500"
                       >
                         Edit
                       </button>

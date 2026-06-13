@@ -1,9 +1,9 @@
-import { AdminPageHeader } from "@/modules/admin/components";
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   listBrandsAction,
   listCategoriesAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import { AccessoryForm } from "../AccessoryForm";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import { AccessoryForm } from '../AccessoryForm';
 
 export default async function NewAccessoryPage() {
   const [brandsResult, categoriesResult] = await Promise.all([

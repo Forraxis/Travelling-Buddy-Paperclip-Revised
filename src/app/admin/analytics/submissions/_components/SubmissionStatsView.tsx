@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useTransition, useState, useCallback } from 'react';
 import {
   LineChart,
   Line,
@@ -16,7 +16,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts";
+} from 'recharts';
 import type {
   SubmissionsOverTimeRow,
   ApprovalRate,
@@ -25,7 +25,7 @@ import type {
   VlmAccuracy,
   TrustTierCount,
   TopContributor,
-} from "@/modules/admin/actions/analytics.actions";
+} from '@/modules/admin/actions/analytics.actions';
 
 export interface SubmissionStatsData {
   overTime: SubmissionsOverTimeRow[];
@@ -40,16 +40,16 @@ export interface SubmissionStatsData {
 }
 
 const TYPE_COLORS = {
-  vehicle: "#6366f1",
-  caravan: "#8b5cf6",
-  accessory: "#06b6d4",
+  vehicle: '#6366f1',
+  caravan: '#8b5cf6',
+  accessory: '#06b6d4',
 };
 
 const TIER_COLORS: Record<string, string> = {
-  NEW: "#94a3b8",
-  BASIC: "#60a5fa",
-  TRUSTED: "#34d399",
-  EXPERT: "#f59e0b",
+  NEW: '#94a3b8',
+  BASIC: '#60a5fa',
+  TRUSTED: '#34d399',
+  EXPERT: '#f59e0b',
 };
 
 function StatCard({
@@ -68,7 +68,7 @@ function StatCard({
       <p className="text-sm text-gray-500">{label}</p>
       <p
         className="mt-1 text-3xl font-bold"
-        style={{ color: color ?? "#111827" }}
+        style={{ color: color ?? '#111827' }}
       >
         {value}
       </p>
@@ -87,8 +87,8 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
 
   const applyDateRange = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("from", from);
-    params.set("to", to);
+    params.set('from', from);
+    params.set('to', to);
     startTransition(() => {
       router.push(`/admin/analytics/submissions?${params.toString()}`);
     });
@@ -101,34 +101,34 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
     totalDecided > 0 ? Math.round((totalApproved / totalDecided) * 100) : 0;
 
   const shortDate = (d: string) => {
-    const [, m, day] = d.split("-");
+    const [, m, day] = d.split('-');
     return `${parseInt(m)}/${parseInt(day)}`;
   };
 
   return (
     <div className="space-y-8">
       {/* Date range picker */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm text-gray-600 font-medium">Date range:</span>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm font-medium text-gray-600">Date range:</span>
         <input
           type="date"
           value={from}
           onChange={(e) => setFrom(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
         />
         <span className="text-gray-400">→</span>
         <input
           type="date"
           value={to}
           onChange={(e) => setTo(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
         />
         <button
           onClick={applyDateRange}
           disabled={isPending}
           className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
         >
-          {isPending ? "Loading…" : "Apply"}
+          {isPending ? 'Loading…' : 'Apply'}
         </button>
       </div>
 
@@ -149,19 +149,21 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
           label="VLM auto-approve accuracy"
           value={`${data.vlmAccuracy.accuracy}%`}
           sub={`${data.vlmAccuracy.autoApprovedConfirmed}/${data.vlmAccuracy.autoApprovedTotal} confirmed`}
-          color={data.vlmAccuracy.accuracy >= 80 ? "#10b981" : "#f59e0b"}
+          color={data.vlmAccuracy.accuracy >= 80 ? '#10b981' : '#f59e0b'}
         />
         <StatCard
           label="VLM revocations"
           value={data.vlmAccuracy.autoApprovedRevoked}
           sub="auto-approved then rejected"
-          color={data.vlmAccuracy.autoApprovedRevoked > 0 ? "#ef4444" : undefined}
+          color={
+            data.vlmAccuracy.autoApprovedRevoked > 0 ? '#ef4444' : undefined
+          }
         />
       </div>
 
       {/* Per-type approval rate cards */}
       <div>
-        <h2 className="text-base font-semibold text-gray-800 mb-3">
+        <h2 className="mb-3 text-base font-semibold text-gray-800">
           Approval rates by type
         </h2>
         <div className="grid grid-cols-3 gap-4">
@@ -170,7 +172,7 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
               key={r.type}
               className="rounded-lg border border-gray-200 bg-white p-4"
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <span
                   className="text-sm font-medium capitalize"
                   style={{ color: TYPE_COLORS[r.type] }}
@@ -181,7 +183,7 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
                   {r.rate}%
                 </span>
               </div>
-              <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+              <div className="h-2 overflow-hidden rounded-full bg-gray-100">
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -202,7 +204,7 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
 
       {/* Submissions over time line chart */}
       <div className="rounded-lg border border-gray-200 bg-white p-5">
-        <h2 className="text-base font-semibold text-gray-800 mb-4">
+        <h2 className="mb-4 text-base font-semibold text-gray-800">
           Submissions over time
         </h2>
         <ResponsiveContainer width="100%" height={260}>
@@ -248,11 +250,11 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Rejection reasons bar chart */}
         <div className="rounded-lg border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">
+          <h2 className="mb-4 text-base font-semibold text-gray-800">
             Rejection reasons
           </h2>
           {data.rejectionReasons.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">
+            <p className="py-8 text-center text-sm text-gray-400">
               No rejections in this period
             </p>
           ) : (
@@ -261,15 +263,23 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
                 data={data.rejectionReasons.map((r) => ({
                   reason:
                     r.reason.length > 22
-                      ? r.reason.slice(0, 22) + "…"
+                      ? r.reason.slice(0, 22) + '…'
                       : r.reason,
                   count: r.count,
                 }))}
                 layout="vertical"
                 margin={{ top: 0, right: 16, left: 8, bottom: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#f0f0f0"
+                  horizontal={false}
+                />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11 }}
+                  allowDecimals={false}
+                />
                 <YAxis
                   type="category"
                   dataKey="reason"
@@ -285,11 +295,11 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
 
         {/* Trust tier pie chart */}
         <div className="rounded-lg border border-gray-200 bg-white p-5">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">
+          <h2 className="mb-4 text-base font-semibold text-gray-800">
             User trust tier distribution
           </h2>
           {data.trustTiers.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No data</p>
+            <p className="py-8 text-center text-sm text-gray-400">No data</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -301,18 +311,18 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
                   cy="50%"
                   outerRadius={80}
                   label={(entry: { name?: string; percent?: number }) =>
-                    `${entry.name ?? ""} ${Math.round((entry.percent ?? 0) * 100)}%`
+                    `${entry.name ?? ''} ${Math.round((entry.percent ?? 0) * 100)}%`
                   }
                   labelLine={false}
                 >
                   {data.trustTiers.map((t) => (
                     <Cell
                       key={t.tier}
-                      fill={TIER_COLORS[t.tier] ?? "#9ca3af"}
+                      fill={TIER_COLORS[t.tier] ?? '#9ca3af'}
                     />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => [`${v} users`, ""]} />
+                <Tooltip formatter={(v) => [`${v} users`, '']} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -322,19 +332,19 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
 
       {/* Top contributors table */}
       <div className="rounded-lg border border-gray-200 bg-white">
-        <div className="px-5 py-4 border-b border-gray-100">
+        <div className="border-b border-gray-100 px-5 py-4">
           <h2 className="text-base font-semibold text-gray-800">
             Top contributors (approved submissions)
           </h2>
         </div>
         {data.topContributors.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">
+          <p className="py-8 text-center text-sm text-gray-400">
             No approved submissions in this period
           </p>
         ) : (
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+              <tr className="bg-gray-50 text-xs tracking-wide text-gray-500 uppercase">
                 <th className="px-5 py-3 text-left font-medium">Rank</th>
                 <th className="px-5 py-3 text-left font-medium">User</th>
                 <th className="px-5 py-3 text-left font-medium">Trust tier</th>
@@ -344,12 +354,12 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
             <tbody className="divide-y divide-gray-100">
               {data.topContributors.map((c, i) => (
                 <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 text-gray-400 font-medium">
+                  <td className="px-5 py-3 font-medium text-gray-400">
                     #{i + 1}
                   </td>
                   <td className="px-5 py-3">
                     <p className="font-medium text-gray-900">
-                      {c.name ?? "Anonymous"}
+                      {c.name ?? 'Anonymous'}
                     </p>
                     <p className="text-xs text-gray-400">{c.email}</p>
                   </td>
@@ -358,8 +368,8 @@ export function SubmissionStatsView({ data }: { data: SubmissionStatsData }) {
                       className="rounded-full px-2 py-0.5 text-xs font-medium"
                       style={{
                         backgroundColor:
-                          (TIER_COLORS[c.trustTier] ?? "#9ca3af") + "22",
-                        color: TIER_COLORS[c.trustTier] ?? "#6b7280",
+                          (TIER_COLORS[c.trustTier] ?? '#9ca3af') + '22',
+                        color: TIER_COLORS[c.trustTier] ?? '#6b7280',
                       }}
                     >
                       {c.trustTier}

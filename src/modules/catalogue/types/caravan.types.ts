@@ -3,8 +3,8 @@ import type {
   CaravanVariantStatus,
   AxleConfiguration,
   Market,
-} from "@prisma/client";
-import type { PaginationOptions, PaginatedResult } from "./vehicle.types";
+} from '@prisma/client';
+import type { PaginationOptions, PaginatedResult } from './vehicle.types';
 
 export type { PaginationOptions, PaginatedResult };
 

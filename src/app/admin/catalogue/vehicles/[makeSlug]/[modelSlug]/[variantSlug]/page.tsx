@@ -1,10 +1,8 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import {
-  getModelBySlugAction,
-} from "@/modules/catalogue/actions/vehicle.actions";
-import { VariantForm } from "../VariantForm";
-import { VariantAdminActions } from "./VariantAdminActions";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getModelBySlugAction } from '@/modules/catalogue/actions/vehicle.actions';
+import { VariantForm } from '../VariantForm';
+import { VariantAdminActions } from './VariantAdminActions';
 
 export default async function VariantDetailPage({
   params,
@@ -13,7 +11,7 @@ export default async function VariantDetailPage({
 }) {
   const { makeSlug, modelSlug, variantSlug } = await params;
 
-  if (variantSlug === "new") {
+  if (variantSlug === 'new') {
     const model = await getModelBySlugAction(makeSlug, modelSlug);
     if (!model) notFound();
     return (

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from '@prisma/client';
 import type {
   CreateVehicleMakeInput,
   UpdateVehicleMakeInput,
@@ -17,7 +17,7 @@ import type {
   PaginationOptions,
   PaginatedResult,
   VehicleSearchResult,
-} from "../types/vehicle.types";
+} from '../types/vehicle.types';
 
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -25,14 +25,14 @@ export function createVehicleService(prisma: PrismaClient) {
   // ── Makes ──────────────────────────────────────────
 
   async function createMake(
-    input: CreateVehicleMakeInput
+    input: CreateVehicleMakeInput,
   ): Promise<VehicleMakeDto> {
     return prisma.vehicleMake.create({ data: input });
   }
 
   async function updateMake(
     id: string,
-    input: UpdateVehicleMakeInput
+    input: UpdateVehicleMakeInput,
   ): Promise<VehicleMakeDto> {
     return prisma.vehicleMake.update({ where: { id }, data: input });
   }
@@ -42,7 +42,7 @@ export function createVehicleService(prisma: PrismaClient) {
   }
 
   async function getMakeById(
-    id: string
+    id: string,
   ): Promise<VehicleMakeWithModels | null> {
     return prisma.vehicleMake.findUnique({
       where: { id },
@@ -51,7 +51,7 @@ export function createVehicleService(prisma: PrismaClient) {
   }
 
   async function getMakeBySlug(
-    slug: string
+    slug: string,
   ): Promise<VehicleMakeWithModels | null> {
     return prisma.vehicleMake.findUnique({
       where: { slug },
@@ -60,15 +60,13 @@ export function createVehicleService(prisma: PrismaClient) {
   }
 
   async function listMakes(
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<VehicleMakeDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const items = await prisma.vehicleMake.findMany({
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: { name: "asc" },
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: { name: 'asc' },
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -82,14 +80,14 @@ export function createVehicleService(prisma: PrismaClient) {
   // ── Models ─────────────────────────────────────────
 
   async function createModel(
-    input: CreateVehicleModelInput
+    input: CreateVehicleModelInput,
   ): Promise<VehicleModelDto> {
     return prisma.vehicleModel.create({ data: input });
   }
 
   async function updateModel(
     id: string,
-    input: UpdateVehicleModelInput
+    input: UpdateVehicleModelInput,
   ): Promise<VehicleModelDto> {
     return prisma.vehicleModel.update({ where: { id }, data: input });
   }
@@ -99,7 +97,7 @@ export function createVehicleService(prisma: PrismaClient) {
   }
 
   async function getModelById(
-    id: string
+    id: string,
   ): Promise<VehicleModelWithVariants | null> {
     return prisma.vehicleModel.findUnique({
       where: { id },
@@ -109,7 +107,7 @@ export function createVehicleService(prisma: PrismaClient) {
 
   async function getModelBySlug(
     makeSlug: string,
-    modelSlug: string
+    modelSlug: string,
   ): Promise<(VehicleModelWithVariants & { make: VehicleMakeDto }) | null> {
     const make = await prisma.vehicleMake.findUnique({
       where: { slug: makeSlug },
@@ -123,16 +121,14 @@ export function createVehicleService(prisma: PrismaClient) {
 
   async function listModelsByMake(
     makeId: string,
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<VehicleModelDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const items = await prisma.vehicleModel.findMany({
       where: { makeId },
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: { name: "asc" },
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: { name: 'asc' },
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -146,14 +142,14 @@ export function createVehicleService(prisma: PrismaClient) {
   // ── Variants ───────────────────────────────────────
 
   async function createVariant(
-    input: CreateVehicleVariantInput
+    input: CreateVehicleVariantInput,
   ): Promise<VehicleVariantDto> {
     return prisma.vehicleVariant.create({ data: input });
   }
 
   async function updateVariant(
     id: string,
-    input: UpdateVehicleVariantInput
+    input: UpdateVehicleVariantInput,
   ): Promise<VehicleVariantDto> {
     return prisma.vehicleVariant.update({ where: { id }, data: input });
   }
@@ -163,7 +159,7 @@ export function createVehicleService(prisma: PrismaClient) {
   }
 
   async function getVariantById(
-    id: string
+    id: string,
   ): Promise<VehicleVariantWithModel | null> {
     return prisma.vehicleVariant.findUnique({
       where: { id },
@@ -173,16 +169,14 @@ export function createVehicleService(prisma: PrismaClient) {
 
   async function listVariantsByModel(
     modelId: string,
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<VehicleVariantDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const items = await prisma.vehicleVariant.findMany({
       where: { modelId },
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: [{ yearFrom: "desc" }, { name: "asc" }],
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: [{ yearFrom: 'desc' }, { name: 'asc' }],
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -197,7 +191,7 @@ export function createVehicleService(prisma: PrismaClient) {
 
   async function findVariantByYear(
     modelId: string,
-    year: number
+    year: number,
   ): Promise<VehicleVariantDto[]> {
     return prisma.vehicleVariant.findMany({
       where: {
@@ -205,14 +199,14 @@ export function createVehicleService(prisma: PrismaClient) {
         yearFrom: { lte: year },
         OR: [{ yearTo: { gte: year } }, { isCurrentProduction: true }],
       },
-      orderBy: { yearFrom: "desc" },
+      orderBy: { yearFrom: 'desc' },
     });
   }
 
   async function findVariantsInRange(
     modelId: string,
     yearFrom: number,
-    yearTo: number
+    yearTo: number,
   ): Promise<VehicleVariantDto[]> {
     return prisma.vehicleVariant.findMany({
       where: {
@@ -220,7 +214,7 @@ export function createVehicleService(prisma: PrismaClient) {
         yearFrom: { lte: yearTo },
         OR: [{ yearTo: { gte: yearFrom } }, { isCurrentProduction: true }],
       },
-      orderBy: { yearFrom: "asc" },
+      orderBy: { yearFrom: 'asc' },
     });
   }
 
@@ -229,7 +223,7 @@ export function createVehicleService(prisma: PrismaClient) {
   async function findBySlug(
     makeSlug: string,
     modelSlug: string,
-    variantSlug: string
+    variantSlug: string,
   ): Promise<VehicleVariantWithModel | null> {
     const make = await prisma.vehicleMake.findUnique({
       where: { slug: makeSlug },
@@ -251,36 +245,36 @@ export function createVehicleService(prisma: PrismaClient) {
 
   async function search(
     query: string,
-    limit = 10
+    limit = 10,
   ): Promise<VehicleSearchResult> {
     const [makes, models, variants] = await Promise.all([
       prisma.vehicleMake.findMany({
-        where: { name: { contains: query, mode: "insensitive" } },
+        where: { name: { contains: query, mode: 'insensitive' } },
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: { name: 'asc' },
       }),
       prisma.vehicleModel.findMany({
         where: {
           OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { make: { name: { contains: query, mode: "insensitive" } } },
+            { name: { contains: query, mode: 'insensitive' } },
+            { make: { name: { contains: query, mode: 'insensitive' } } },
           ],
         },
         include: { make: true },
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: { name: 'asc' },
       }),
       prisma.vehicleVariant.findMany({
         where: {
           OR: [
-            { name: { contains: query, mode: "insensitive" } },
+            { name: { contains: query, mode: 'insensitive' } },
             {
               model: {
                 OR: [
-                  { name: { contains: query, mode: "insensitive" } },
+                  { name: { contains: query, mode: 'insensitive' } },
                   {
                     make: {
-                      name: { contains: query, mode: "insensitive" },
+                      name: { contains: query, mode: 'insensitive' },
                     },
                   },
                 ],
@@ -290,7 +284,7 @@ export function createVehicleService(prisma: PrismaClient) {
         },
         include: { model: { include: { make: true } } },
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: { name: 'asc' },
       }),
     ]);
 
@@ -301,7 +295,7 @@ export function createVehicleService(prisma: PrismaClient) {
 
   async function listVariantsFiltered(
     filter: VehicleVariantFilter,
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<VehicleVariantWithModel>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
 
@@ -321,10 +315,8 @@ export function createVehicleService(prisma: PrismaClient) {
       where,
       include: { model: { include: { make: true } } },
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: [{ model: { make: { name: "asc" } } }, { name: "asc" }],
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: [{ model: { make: { name: 'asc' } } }, { name: 'asc' }],
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();

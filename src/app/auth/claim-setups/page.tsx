@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { listLocalSetups, deleteLocalSetup } from "@/lib/local-setups";
-import type { LocalSetup } from "@/lib/local-setups";
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { listLocalSetups, deleteLocalSetup } from '@/lib/local-setups';
+import type { LocalSetup } from '@/lib/local-setups';
 
 export default function ClaimSetupsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get("redirect") ?? "/account/setups";
+  const redirectUrl = searchParams.get('redirect') ?? '/account/setups';
 
   const [setups, setSetups] = useState<LocalSetup[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -46,15 +46,15 @@ export default function ClaimSetupsPage() {
     setError(null);
 
     try {
-      const res = await fetch("/api/setups/claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/setups/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ setups: toUpload }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error ?? "Failed to save setups. Please try again.");
+        setError(data?.error ?? 'Failed to save setups. Please try again.');
         setLoading(false);
         return;
       }
@@ -65,7 +65,7 @@ export default function ClaimSetupsPage() {
 
       router.push(redirectUrl);
     } catch {
-      setError("Failed to save setups. Please try again.");
+      setError('Failed to save setups. Please try again.');
       setLoading(false);
     }
   }
@@ -83,16 +83,13 @@ export default function ClaimSetupsPage() {
           Save your setups
         </h1>
         <p className="mb-6 text-sm text-gray-500">
-          You have {setups.length} setup{setups.length !== 1 ? "s" : ""} saved
+          You have {setups.length} setup{setups.length !== 1 ? 's' : ''} saved
           on this device. Add them to your account to access them anywhere.
         </p>
 
         <ul className="mb-6 divide-y divide-gray-100 rounded-lg border border-gray-200">
           {setups.map((setup) => (
-            <li
-              key={setup.id}
-              className="flex items-center gap-3 px-4 py-3"
-            >
+            <li key={setup.id} className="flex items-center gap-3 px-4 py-3">
               <input
                 type="checkbox"
                 id={`setup-${setup.id}`}
@@ -108,8 +105,8 @@ export default function ClaimSetupsPage() {
                   {setup.name}
                 </span>
                 <span className="block text-xs text-gray-400">
-                  {setup.rigIdentifier} &middot;{" "}
-                  {new Date(setup.lastEditedAt).toLocaleDateString("en-AU")}
+                  {setup.rigIdentifier} &middot;{' '}
+                  {new Date(setup.lastEditedAt).toLocaleDateString('en-AU')}
                 </span>
               </label>
             </li>
@@ -130,9 +127,9 @@ export default function ClaimSetupsPage() {
             className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {loading
-              ? "Saving…"
+              ? 'Saving…'
               : checkedCount === 0
-                ? "Continue"
+                ? 'Continue'
                 : `Add ${checkedCount} to my account`}
           </button>
           <button

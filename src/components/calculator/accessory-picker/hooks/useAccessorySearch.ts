@@ -4,10 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import { useCalculatorState } from '@/modules/calculator/context';
 import type { AccessoryItem } from '../types';
 
-export function useAccessorySearch(limit = 15, context: 'vehicle' | 'caravan' = 'vehicle') {
+export function useAccessorySearch(
+  limit = 15,
+  context: 'vehicle' | 'caravan' = 'vehicle',
+) {
   const { state } = useCalculatorState();
-  const vehicleVariantId = context === 'vehicle' ? state.vehicleVariantId : null;
-  const caravanVariantId = context === 'caravan' ? state.caravanVariantId : null;
+  const vehicleVariantId =
+    context === 'vehicle' ? state.vehicleVariantId : null;
+  const caravanVariantId =
+    context === 'caravan' ? state.caravanVariantId : null;
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<AccessoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,13 +39,16 @@ export function useAccessorySearch(limit = 15, context: 'vehicle' | 'caravan' = 
       setError(null);
 
       try {
-        const params = new URLSearchParams({ q: query.trim(), limit: String(limit) });
+        const params = new URLSearchParams({
+          q: query.trim(),
+          limit: String(limit),
+        });
         if (vehicleVariantId) params.set('vehicleVariantId', vehicleVariantId);
         if (caravanVariantId) params.set('caravanVariantId', caravanVariantId);
         const url = `/api/accessories/search?${params}`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-        const data = await res.json() as { items: AccessoryItem[] };
+        const data = (await res.json()) as { items: AccessoryItem[] };
         setItems(data.items);
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;

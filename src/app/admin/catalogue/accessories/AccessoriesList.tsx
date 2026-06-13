@@ -1,18 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
-import { ConfirmDialog } from "@/modules/admin/components/ConfirmDialog";
-import { inputClassName, selectClassName } from "@/modules/admin/components/FormField";
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
+import { ConfirmDialog } from '@/modules/admin/components/ConfirmDialog';
+import {
+  inputClassName,
+  selectClassName,
+} from '@/modules/admin/components/FormField';
 import {
   listAccessoriesAction,
   deleteAccessoryAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import type { AccessoryDto, PaginatedResult } from "@/modules/catalogue/types/accessory.types";
-import type { AccessoryBrandDto } from "@/modules/catalogue/types/accessory-brand.types";
-import type { AccessoryCategoryDto } from "@/modules/catalogue/types/accessory-category.types";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import type {
+  AccessoryDto,
+  PaginatedResult,
+} from '@/modules/catalogue/types/accessory.types';
+import type { AccessoryBrandDto } from '@/modules/catalogue/types/accessory-brand.types';
+import type { AccessoryCategoryDto } from '@/modules/catalogue/types/accessory-category.types';
 
 export function AccessoriesList({
   initialData,
@@ -45,7 +51,7 @@ export function AccessoriesList({
         cursor,
         q || undefined,
         bId || undefined,
-        cId || undefined
+        cId || undefined,
       );
       if (cursor) {
         setData((prev) => ({
@@ -83,11 +89,11 @@ export function AccessoriesList({
     if (!deleteTarget) return;
     const result = await deleteAccessoryAction(deleteTarget.id);
     if (result.success) {
-      toast("Accessory deleted");
+      toast('Accessory deleted');
       setDeleteTarget(null);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
@@ -130,15 +136,17 @@ export function AccessoriesList({
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-tb-neutral-200">
+      <div className="border-tb-neutral-200 overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-tb-neutral-200 bg-tb-neutral-50">
+            <tr className="border-tb-neutral-200 bg-tb-neutral-50 border-b">
               <th className="px-4 py-3 font-medium text-gray-700">Name</th>
               <th className="px-4 py-3 font-medium text-gray-700">Brand</th>
               <th className="px-4 py-3 font-medium text-gray-700">Category</th>
               <th className="px-4 py-3 font-medium text-gray-700">Status</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">Actions</th>
+              <th className="px-4 py-3 text-right font-medium text-gray-700">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -146,7 +154,7 @@ export function AccessoriesList({
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                   {search || brandId || categoryId
-                    ? "No accessories match your filters."
+                    ? 'No accessories match your filters.'
                     : "No accessories yet. Click '+ Add Accessory' to get started."}
                 </td>
               </tr>
@@ -154,12 +162,12 @@ export function AccessoriesList({
               data.items.map((acc) => (
                 <tr
                   key={acc.id}
-                  className="border-b border-tb-neutral-200 last:border-0 hover:bg-tb-neutral-50"
+                  className="border-tb-neutral-200 hover:bg-tb-neutral-50 border-b last:border-0"
                 >
                   <td className="px-4 py-3">
                     <Link
                       href={`/admin/catalogue/accessories/${acc.id}`}
-                      className="font-medium text-tb-primary hover:underline"
+                      className="text-tb-primary font-medium hover:underline"
                     >
                       {acc.name}
                     </Link>
@@ -173,11 +181,11 @@ export function AccessoriesList({
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        acc.status === "ACTIVE"
-                          ? "bg-green-100 text-green-700"
-                          : acc.status === "DISCONTINUED"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-gray-100 text-gray-600"
+                        acc.status === 'ACTIVE'
+                          ? 'bg-green-100 text-green-700'
+                          : acc.status === 'DISCONTINUED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-600'
                       }`}
                     >
                       {acc.status}
@@ -187,13 +195,13 @@ export function AccessoriesList({
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/admin/catalogue/accessories/${acc.id}/fitments`}
-                        className="text-sm text-gray-500 hover:text-tb-primary"
+                        className="hover:text-tb-primary text-sm text-gray-500"
                       >
                         Fitments
                       </Link>
                       <Link
                         href={`/admin/catalogue/accessories/${acc.id}`}
-                        className="text-sm text-gray-500 hover:text-tb-primary"
+                        className="hover:text-tb-primary text-sm text-gray-500"
                       >
                         Edit
                       </Link>
@@ -217,9 +225,9 @@ export function AccessoriesList({
           <button
             onClick={handleLoadMore}
             disabled={isPending}
-            className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50 disabled:opacity-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
           >
-            {isPending ? "Loading..." : "Load more"}
+            {isPending ? 'Loading...' : 'Load more'}
           </button>
         </div>
       )}

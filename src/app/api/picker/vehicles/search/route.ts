@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
-import { z } from "zod/v4";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { parseSearchParams, withRateLimit, serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { z } from 'zod/v4';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import {
+  parseSearchParams,
+  withRateLimit,
+  serverError,
+} from '@/lib/api-helpers';
 
 const schema = z.object({
   q: z.string().min(1).max(200),
@@ -14,7 +18,7 @@ export async function GET(request: Request) {
   if (limited) return limited;
 
   const parsed = parseSearchParams(request, schema);
-  if ("error" in parsed) return parsed.error;
+  if ('error' in parsed) return parsed.error;
 
   const { q, limit } = parsed.data;
 
@@ -28,15 +32,20 @@ export async function GET(request: Request) {
         AND: [
           {
             OR: [
-              { status: "CATALOGUE" },
-              { status: "COMMUNITY", communitySubmitterId: userId ?? "__no_match__" },
+              { status: 'CATALOGUE' },
+              {
+                status: 'COMMUNITY',
+                communitySubmitterId: userId ?? '__no_match__',
+              },
             ],
           },
           {
             OR: [
-              { name: { contains: q, mode: "insensitive" } },
-              { model: { name: { contains: q, mode: "insensitive" } } },
-              { model: { make: { name: { contains: q, mode: "insensitive" } } } },
+              { name: { contains: q, mode: 'insensitive' } },
+              { model: { name: { contains: q, mode: 'insensitive' } } },
+              {
+                model: { make: { name: { contains: q, mode: 'insensitive' } } },
+              },
             ],
           },
         ],
@@ -44,10 +53,10 @@ export async function GET(request: Request) {
       include: { model: { include: { make: true } } },
       take: limit,
       orderBy: [
-        { model: { make: { name: "asc" } } },
-        { model: { name: "asc" } },
-        { yearFrom: "desc" },
-        { name: "asc" },
+        { model: { make: { name: 'asc' } } },
+        { model: { name: 'asc' } },
+        { yearFrom: 'desc' },
+        { name: 'asc' },
       ],
     });
 
@@ -57,7 +66,7 @@ export async function GET(request: Request) {
         : `${v.yearFrom}–${v.yearTo}`;
       return {
         id: v.id,
-        type: "vehicle" as const,
+        type: 'vehicle' as const,
         label: `${v.model.make.name} ${v.model.name} ${v.name} (${yearSpan})`,
         make: v.model.make.name,
         makeId: v.model.make.id,
@@ -76,7 +85,9 @@ export async function GET(request: Request) {
           fuelType: v.fuelType,
           bodyType: v.model.bodyType,
         },
-        confidenceBadge: (v.status === "COMMUNITY" ? "community" : "manufacturer_spec") as "community" | "manufacturer_spec",
+        confidenceBadge: (v.status === 'COMMUNITY'
+          ? 'community'
+          : 'manufacturer_spec') as 'community' | 'manufacturer_spec',
       };
     });
 

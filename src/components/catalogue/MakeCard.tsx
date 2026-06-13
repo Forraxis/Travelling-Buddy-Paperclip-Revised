@@ -1,6 +1,6 @@
-import Link from "next/link";
-import type { VehicleMakeDto } from "@/modules/catalogue/types/vehicle.types";
-import type { CaravanMakeDto } from "@/modules/catalogue/types/caravan.types";
+import Link from 'next/link';
+import type { VehicleMakeDto } from '@/modules/catalogue/types/vehicle.types';
+import type { CaravanMakeDto } from '@/modules/catalogue/types/caravan.types';
 
 type MakeDto = VehicleMakeDto | CaravanMakeDto;
 
@@ -14,10 +14,10 @@ export function MakeCard({ make, href, modelCount }: Props) {
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-1 rounded-xl border border-tb-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
+      className="group border-tb-neutral-200 flex flex-col gap-1 rounded-xl border bg-white p-4 transition-shadow hover:shadow-md"
     >
       <div className="flex items-center justify-between">
-        <span className="text-base font-semibold text-tb-primary group-hover:text-tb-primary-light">
+        <span className="text-tb-primary group-hover:text-tb-primary-light text-base font-semibold">
           {make.name}
         </span>
         {make.countryOfOrigin && (
@@ -26,7 +26,7 @@ export function MakeCard({ make, href, modelCount }: Props) {
       </div>
       {modelCount !== undefined && (
         <span className="text-xs text-gray-500">
-          {modelCount} {modelCount === 1 ? "model" : "models"}
+          {modelCount} {modelCount === 1 ? 'model' : 'models'}
         </span>
       )}
     </Link>

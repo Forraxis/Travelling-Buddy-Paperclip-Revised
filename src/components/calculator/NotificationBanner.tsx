@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
 interface NotificationBannerProps {
   message: string;
-  type?: "info" | "warning" | "success";
+  type?: 'info' | 'warning' | 'success';
   dismissible?: boolean;
 }
 
 export function NotificationBanner({
   message,
-  type = "info",
+  type = 'info',
   dismissible = true,
 }: NotificationBannerProps) {
   const [dismissed, setDismissed] = useState(false);
@@ -18,9 +18,9 @@ export function NotificationBanner({
   if (dismissed) return null;
 
   const colorMap = {
-    info: "bg-blue-50 text-blue-800 border-blue-200",
-    warning: "bg-amber-50 text-amber-800 border-amber-200",
-    success: "bg-green-50 text-green-800 border-green-200",
+    info: 'bg-blue-50 text-blue-800 border-blue-200',
+    warning: 'bg-amber-50 text-amber-800 border-amber-200',
+    success: 'bg-green-50 text-green-800 border-green-200',
   };
 
   return (

@@ -1,9 +1,9 @@
-import { AdminPageHeader } from "@/modules/admin/components";
-import { listSponsorsAction } from "@/modules/sponsorship/actions/sponsor-admin.actions";
-import { SponsorsList } from "./_components/SponsorsList";
-import Link from "next/link";
+import { AdminPageHeader } from '@/modules/admin/components';
+import { listSponsorsAction } from '@/modules/sponsorship/actions/sponsor-admin.actions';
+import { SponsorsList } from './_components/SponsorsList';
+import Link from 'next/link';
 
-export const metadata = { title: "Sponsors — Admin" };
+export const metadata = { title: 'Sponsors — Admin' };
 
 export default async function SponsorshipPage() {
   const sponsors = await listSponsorsAction();
@@ -16,7 +16,7 @@ export default async function SponsorshipPage() {
         actions={
           <Link
             href="/admin/sponsorship/new"
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
           >
             + New Sponsor
           </Link>

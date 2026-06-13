@@ -1,13 +1,13 @@
-"use server";
+'use server';
 
-import { prisma } from "@/lib/db";
-import { getAdminUser } from "@/modules/admin/lib/auth";
-import { redirect } from "next/navigation";
-import { SubmissionStatus } from "@prisma/client";
+import { prisma } from '@/lib/db';
+import { getAdminUser } from '@/modules/admin/lib/auth';
+import { redirect } from 'next/navigation';
+import { SubmissionStatus } from '@prisma/client';
 
 function adminOnly() {
   return getAdminUser().then((u) => {
-    if (!u || u.role !== "ADMIN") redirect("/admin");
+    if (!u || u.role !== 'ADMIN') redirect('/admin');
     return u;
   });
 }
@@ -30,7 +30,7 @@ export type SubmissionsOverTimeRow = {
 };
 
 export async function getSubmissionsOverTime(
-  range: DateRange
+  range: DateRange,
 ): Promise<SubmissionsOverTimeRow[]> {
   await adminOnly();
 
@@ -80,7 +80,7 @@ export async function getSubmissionsOverTime(
 // ── Approval rates per type ────────────────────────────────────────────────
 
 export type ApprovalRate = {
-  type: "vehicle" | "caravan" | "accessory";
+  type: 'vehicle' | 'caravan' | 'accessory';
   total: number;
   approved: number;
   rejected: number;
@@ -88,25 +88,27 @@ export type ApprovalRate = {
   rate: number; // 0-100
 };
 
-export async function getApprovalRates(range: DateRange): Promise<ApprovalRate[]> {
+export async function getApprovalRates(
+  range: DateRange,
+): Promise<ApprovalRate[]> {
   await adminOnly();
 
   const where = { createdAt: { gte: range.from, lte: range.to } };
 
   const [vGroups, cGroups, aGroups] = await Promise.all([
-    prisma.vehicleSubmission.groupBy({ by: ["status"], where, _count: true }),
-    prisma.caravanSubmission.groupBy({ by: ["status"], where, _count: true }),
-    prisma.accessorySubmission.groupBy({ by: ["status"], where, _count: true }),
+    prisma.vehicleSubmission.groupBy({ by: ['status'], where, _count: true }),
+    prisma.caravanSubmission.groupBy({ by: ['status'], where, _count: true }),
+    prisma.accessorySubmission.groupBy({ by: ['status'], where, _count: true }),
   ]);
 
   function buildRate(
     groups: { status: string; _count: number }[],
-    type: ApprovalRate["type"]
+    type: ApprovalRate['type'],
   ): ApprovalRate {
     const total = groups.reduce((s, g) => s + g._count, 0);
-    const approved = groups.find((g) => g.status === "APPROVED")?._count ?? 0;
-    const rejected = groups.find((g) => g.status === "REJECTED")?._count ?? 0;
-    const pending = groups.find((g) => g.status === "PENDING")?._count ?? 0;
+    const approved = groups.find((g) => g.status === 'APPROVED')?._count ?? 0;
+    const rejected = groups.find((g) => g.status === 'REJECTED')?._count ?? 0;
+    const pending = groups.find((g) => g.status === 'PENDING')?._count ?? 0;
     const decided = approved + rejected;
     return {
       type,
@@ -119,9 +121,9 @@ export async function getApprovalRates(range: DateRange): Promise<ApprovalRate[]
   }
 
   return [
-    buildRate(vGroups, "vehicle"),
-    buildRate(cGroups, "caravan"),
-    buildRate(aGroups, "accessory"),
+    buildRate(vGroups, 'vehicle'),
+    buildRate(cGroups, 'caravan'),
+    buildRate(aGroups, 'accessory'),
   ];
 }
 
@@ -130,24 +132,33 @@ export async function getApprovalRates(range: DateRange): Promise<ApprovalRate[]
 export type RejectionReason = { reason: string; count: number };
 
 export async function getRejectionReasons(
-  range: DateRange
+  range: DateRange,
 ): Promise<RejectionReason[]> {
   await adminOnly();
 
   const where = {
-    status: "REJECTED" as const,
+    status: 'REJECTED' as const,
     decidedAt: { gte: range.from, lte: range.to },
   };
 
   const [vehicles, caravans, accessories] = await Promise.all([
-    prisma.vehicleSubmission.findMany({ where, select: { decisionNotes: true } }),
-    prisma.caravanSubmission.findMany({ where, select: { decisionNotes: true } }),
-    prisma.accessorySubmission.findMany({ where, select: { decisionNotes: true } }),
+    prisma.vehicleSubmission.findMany({
+      where,
+      select: { decisionNotes: true },
+    }),
+    prisma.caravanSubmission.findMany({
+      where,
+      select: { decisionNotes: true },
+    }),
+    prisma.accessorySubmission.findMany({
+      where,
+      select: { decisionNotes: true },
+    }),
   ]);
 
   const counts = new Map<string, number>();
   for (const r of [...vehicles, ...caravans, ...accessories]) {
-    const key = r.decisionNotes?.trim() || "No reason given";
+    const key = r.decisionNotes?.trim() || 'No reason given';
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
@@ -166,7 +177,7 @@ export type ModerationTiming = {
 };
 
 export async function getModerationTiming(
-  range: DateRange
+  range: DateRange,
 ): Promise<ModerationTiming> {
   await adminOnly();
 
@@ -207,13 +218,13 @@ export async function getModerationTiming(
 export type VlmAccuracy = {
   autoApprovedTotal: number;
   autoApprovedConfirmed: number; // later moderation = APPROVED
-  autoApprovedRevoked: number;  // later moderation = REJECTED
+  autoApprovedRevoked: number; // later moderation = REJECTED
   accuracy: number; // 0-100
 };
 
 function extractRecommendedAction(result: unknown): string | null {
   const r = result as Record<string, unknown> | null;
-  return typeof r?.recommendedAction === "string" ? r.recommendedAction : null;
+  return typeof r?.recommendedAction === 'string' ? r.recommendedAction : null;
 }
 
 export async function getVlmAccuracy(range: DateRange): Promise<VlmAccuracy> {
@@ -246,17 +257,17 @@ export async function getVlmAccuracy(range: DateRange): Promise<VlmAccuracy> {
 
   for (const v of [...vehicles, ...caravans]) {
     const rec = extractRecommendedAction(v.vlmGatekeeperResult);
-    if (rec === "AUTO_APPROVE") {
+    if (rec === 'AUTO_APPROVE') {
       autoApprovedTotal++;
-      if (v.status === "APPROVED") autoApprovedConfirmed++;
+      if (v.status === 'APPROVED') autoApprovedConfirmed++;
       else autoApprovedRevoked++;
     }
   }
   for (const a of accessories) {
     const rec = extractRecommendedAction(a.vlmSimilarityResult);
-    if (rec === "AUTO_APPROVE") {
+    if (rec === 'AUTO_APPROVE') {
       autoApprovedTotal++;
-      if (a.status === "APPROVED") autoApprovedConfirmed++;
+      if (a.status === 'APPROVED') autoApprovedConfirmed++;
       else autoApprovedRevoked++;
     }
   }
@@ -280,11 +291,11 @@ export async function getTrustTierDistribution(): Promise<TrustTierCount[]> {
   await adminOnly();
 
   const groups = await prisma.user.groupBy({
-    by: ["trustTier"],
+    by: ['trustTier'],
     _count: true,
   });
 
-  const ORDER = ["NEW", "BASIC", "TRUSTED", "EXPERT"];
+  const ORDER = ['NEW', 'BASIC', 'TRUSTED', 'EXPERT'];
   return groups
     .map((g) => ({ tier: g.trustTier, count: g._count }))
     .sort((a, b) => ORDER.indexOf(a.tier) - ORDER.indexOf(b.tier));
@@ -302,12 +313,12 @@ export type TopContributor = {
 
 export async function getTopContributors(
   range: DateRange,
-  limit = 10
+  limit = 10,
 ): Promise<TopContributor[]> {
   await adminOnly();
 
   const where = {
-    status: "APPROVED" as const,
+    status: 'APPROVED' as const,
     decidedAt: { gte: range.from, lte: range.to },
   };
 
@@ -350,7 +361,7 @@ export async function getTopContributors(
         id,
         name: u?.name ?? null,
         email: u?.email ?? null,
-        trustTier: u?.trustTier ?? "NEW",
+        trustTier: u?.trustTier ?? 'NEW',
         approvedCount: counts.get(id) ?? 0,
       };
     })

@@ -1,7 +1,10 @@
-"use client";
+'use client';
 
-import type { VehicleSnapshot } from "@/lib/setup-snapshots";
-import type { CaravanSnapshot, AccessoryFitmentSnapshot } from "@/lib/setup-snapshots";
+import type { VehicleSnapshot } from '@/lib/setup-snapshots';
+import type {
+  CaravanSnapshot,
+  AccessoryFitmentSnapshot,
+} from '@/lib/setup-snapshots';
 
 interface RemovedEntity {
   name: string;
@@ -29,12 +32,12 @@ export function CatalogueRemovedBanner({
 }: CatalogueRemovedBannerProps) {
   const removed: RemovedEntity[] = [];
   const dateStr = savedAt
-    ? new Date(savedAt).toLocaleDateString("en-AU", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
+    ? new Date(savedAt).toLocaleDateString('en-AU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
       })
-    : "the last save";
+    : 'the last save';
 
   if (vehicleSnapshotOnly && vehicleSnapshot) {
     removed.push({
@@ -67,13 +70,10 @@ export function CatalogueRemovedBanner({
   return (
     <div className="border-b border-amber-300 bg-amber-50 px-4 py-3">
       {removed.map((entity) => (
-        <p
-          key={entity.name}
-          className="text-sm text-amber-800"
-        >
+        <p key={entity.name} className="text-sm text-amber-800">
           <strong>{entity.name}</strong> is no longer in our catalogue. Your
-          setup still calculates against the data we had on {entity.snapshotDate}
-          . Edit to replace.
+          setup still calculates against the data we had on{' '}
+          {entity.snapshotDate}. Edit to replace.
         </p>
       ))}
     </div>

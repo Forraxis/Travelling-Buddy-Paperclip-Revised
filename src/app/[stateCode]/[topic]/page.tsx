@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { MDXRemote } from "next-mdx-remote/rsc";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { MDXRemote } from 'next-mdx-remote/rsc';
 import {
   getAllStateGuidanceParams,
   getStateGuidance,
@@ -9,10 +9,10 @@ import {
   STATE_NAMES,
   STATE_AUTHORITY,
   type AUStateCode,
-} from "@/lib/content/state-guidance";
-import { prisma } from "@/lib/db";
-import { createRegulationService } from "@/modules/regulations/services/regulation.service";
-import type { RegulationData } from "@/modules/regulations/types/regulation.types";
+} from '@/lib/content/state-guidance';
+import { prisma } from '@/lib/db';
+import { createRegulationService } from '@/modules/regulations/services/regulation.service';
+import type { RegulationData } from '@/modules/regulations/types/regulation.types';
 
 // ISR: revalidate once per day (content changes require deployment per spec 9.9)
 export const revalidate = 86400;
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description: frontmatter.description,
       url: canonical,
-      type: "article",
+      type: 'article',
     },
   };
 }
@@ -69,12 +69,12 @@ function articleJsonLd(params: {
   lastReviewed: string;
 }) {
   return {
-    "@context": "https://schema.org",
-    "@type": "Article",
+    '@context': 'https://schema.org',
+    '@type': 'Article',
     headline: params.title,
     description: params.description,
-    author: { "@type": "Organization", name: "TowingBuddy" },
-    publisher: { "@type": "Organization", name: "TowingBuddy" },
+    author: { '@type': 'Organization', name: 'TowingBuddy' },
+    publisher: { '@type': 'Organization', name: 'TowingBuddy' },
     dateModified: params.lastReviewed,
     url: `/${params.stateCode}/${params.topic}/`,
   };
@@ -83,14 +83,14 @@ function articleJsonLd(params: {
 // ── State banner ──────────────────────────────────────────────────────────────
 
 const STATE_FLAGS: Record<AUStateCode, string> = {
-  nsw: "🏛️",
-  vic: "🏙️",
-  qld: "☀️",
-  wa: "🌅",
-  sa: "🍷",
-  tas: "🏔️",
-  nt: "🐊",
-  act: "🏛️",
+  nsw: '🏛️',
+  vic: '🏙️',
+  qld: '☀️',
+  wa: '🌅',
+  sa: '🍷',
+  tas: '🏔️',
+  nt: '🐊',
+  act: '🏛️',
 };
 
 function StateBanner({ stateCode }: { stateCode: AUStateCode }) {
@@ -106,7 +106,9 @@ function StateBanner({ stateCode }: { stateCode: AUStateCode }) {
         </span>
         <div>
           <p className="font-semibold text-blue-900">{stateName}</p>
-          <p className="text-xs text-blue-700">State-specific towing regulations</p>
+          <p className="text-xs text-blue-700">
+            State-specific towing regulations
+          </p>
         </div>
       </div>
       <a
@@ -130,57 +132,71 @@ function RegulationDataSection({ data }: { data: RegulationData }) {
 
       {/* Towing speed limits */}
       <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+        <h3 className="mb-2 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Towing Speed Limits
         </h3>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-gray-500">
-              <th className="pb-2 pr-4 font-medium">Road type</th>
+              <th className="pr-4 pb-2 font-medium">Road type</th>
               <th className="pb-2 font-medium">Limit</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             <tr>
               <td className="py-2 pr-4 text-gray-700">Urban</td>
-              <td className="py-2 font-medium">{data.towingSpeedLimits.urban} km/h</td>
+              <td className="py-2 font-medium">
+                {data.towingSpeedLimits.urban} km/h
+              </td>
             </tr>
             <tr>
               <td className="py-2 pr-4 text-gray-700">Rural</td>
-              <td className="py-2 font-medium">{data.towingSpeedLimits.rural} km/h</td>
+              <td className="py-2 font-medium">
+                {data.towingSpeedLimits.rural} km/h
+              </td>
             </tr>
             <tr>
               <td className="py-2 pr-4 text-gray-700">Highway</td>
-              <td className="py-2 font-medium">{data.towingSpeedLimits.highway} km/h</td>
+              <td className="py-2 font-medium">
+                {data.towingSpeedLimits.highway} km/h
+              </td>
             </tr>
           </tbody>
         </table>
         {data.towingSpeedLimits.notes && (
-          <p className="mt-2 text-xs text-gray-500">{data.towingSpeedLimits.notes}</p>
+          <p className="mt-2 text-xs text-gray-500">
+            {data.towingSpeedLimits.notes}
+          </p>
         )}
       </div>
 
       {/* GVM upgrade */}
       <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+        <h3 className="mb-2 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           GVM Upgrade
         </h3>
         <table className="w-full text-sm">
           <tbody className="divide-y divide-gray-100">
             <tr>
               <td className="py-2 pr-4 text-gray-700">Max upgrade</td>
-              <td className="py-2 font-medium">{data.gvmUpgrade.maxUpgradePercent}%</td>
-            </tr>
-            <tr>
-              <td className="py-2 pr-4 text-gray-700">Engineer cert required</td>
               <td className="py-2 font-medium">
-                {data.gvmUpgrade.requiresEngineerCert ? "Yes" : "No"}
+                {data.gvmUpgrade.maxUpgradePercent}%
               </td>
             </tr>
             <tr>
-              <td className="py-2 pr-4 text-gray-700">Vehicle inspection required</td>
+              <td className="py-2 pr-4 text-gray-700">
+                Engineer cert required
+              </td>
               <td className="py-2 font-medium">
-                {data.gvmUpgrade.requiresVehicleInspection ? "Yes" : "No"}
+                {data.gvmUpgrade.requiresEngineerCert ? 'Yes' : 'No'}
+              </td>
+            </tr>
+            <tr>
+              <td className="py-2 pr-4 text-gray-700">
+                Vehicle inspection required
+              </td>
+              <td className="py-2 font-medium">
+                {data.gvmUpgrade.requiresVehicleInspection ? 'Yes' : 'No'}
               </td>
             </tr>
           </tbody>
@@ -192,66 +208,83 @@ function RegulationDataSection({ data }: { data: RegulationData }) {
 
       {/* Towing licence */}
       <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+        <h3 className="mb-2 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Towing Licence Thresholds
         </h3>
         <table className="w-full text-sm">
           <tbody className="divide-y divide-gray-100">
             <tr>
-              <td className="py-2 pr-4 text-gray-700">Standard licence max GTM</td>
+              <td className="py-2 pr-4 text-gray-700">
+                Standard licence max GTM
+              </td>
               <td className="py-2 font-medium">
                 {data.towingLicence.standardLicenceMaxGtmKg.toLocaleString()} kg
               </td>
             </tr>
             <tr>
-              <td className="py-2 pr-4 text-gray-700">Heavy vehicle threshold</td>
+              <td className="py-2 pr-4 text-gray-700">
+                Heavy vehicle threshold
+              </td>
               <td className="py-2 font-medium">
-                {data.towingLicence.heavyVehicleLicenceThresholdKg.toLocaleString()} kg
+                {data.towingLicence.heavyVehicleLicenceThresholdKg.toLocaleString()}{' '}
+                kg
               </td>
             </tr>
           </tbody>
         </table>
         {data.towingLicence.notes && (
-          <p className="mt-2 text-xs text-gray-500">{data.towingLicence.notes}</p>
+          <p className="mt-2 text-xs text-gray-500">
+            {data.towingLicence.notes}
+          </p>
         )}
       </div>
 
       {/* Trailer brakes */}
       <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+        <h3 className="mb-2 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Trailer Brake Requirements
         </h3>
         <table className="w-full text-sm">
           <tbody className="divide-y divide-gray-100">
             <tr>
-              <td className="py-2 pr-4 text-gray-700">Brakes required above GTM</td>
+              <td className="py-2 pr-4 text-gray-700">
+                Brakes required above GTM
+              </td>
               <td className="py-2 font-medium">
-                {data.trailerBrakes.brakesRequiredAboveGtmKg.toLocaleString()} kg
+                {data.trailerBrakes.brakesRequiredAboveGtmKg.toLocaleString()}{' '}
+                kg
               </td>
             </tr>
             <tr>
-              <td className="py-2 pr-4 text-gray-700">Electric brakes required above GTM</td>
+              <td className="py-2 pr-4 text-gray-700">
+                Electric brakes required above GTM
+              </td>
               <td className="py-2 font-medium">
-                {data.trailerBrakes.electricBrakesRequiredAboveGtmKg.toLocaleString()} kg
+                {data.trailerBrakes.electricBrakesRequiredAboveGtmKg.toLocaleString()}{' '}
+                kg
               </td>
             </tr>
             <tr>
-              <td className="py-2 pr-4 text-gray-700">Breakaway system required</td>
+              <td className="py-2 pr-4 text-gray-700">
+                Breakaway system required
+              </td>
               <td className="py-2 font-medium">
-                {data.trailerBrakes.breakawaySystemRequired ? "Yes" : "No"}
+                {data.trailerBrakes.breakawaySystemRequired ? 'Yes' : 'No'}
               </td>
             </tr>
           </tbody>
         </table>
         {data.trailerBrakes.notes && (
-          <p className="mt-2 text-xs text-gray-500">{data.trailerBrakes.notes}</p>
+          <p className="mt-2 text-xs text-gray-500">
+            {data.trailerBrakes.notes}
+          </p>
         )}
       </div>
 
       {/* Regulatory references from DB */}
       {data.regulatoryReferences.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h3 className="mb-2 text-sm font-semibold tracking-wide text-gray-500 uppercase">
             Official Sources
           </h3>
           <ul className="space-y-1 text-sm">
@@ -266,7 +299,9 @@ function RegulationDataSection({ data }: { data: RegulationData }) {
                   {ref.title} ↗
                 </a>
                 {ref.notes && (
-                  <span className="ml-2 text-xs text-gray-500">{ref.notes}</span>
+                  <span className="ml-2 text-xs text-gray-500">
+                    {ref.notes}
+                  </span>
                 )}
               </li>
             ))}
@@ -292,7 +327,7 @@ function CrossStateNav({
       aria-label="Same topic in other states"
       className="mt-10 border-t pt-6"
     >
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <h2 className="mb-3 text-sm font-semibold tracking-wide text-gray-500 uppercase">
         See also: other states
       </h2>
       <ul className="flex flex-wrap gap-2">
@@ -318,7 +353,8 @@ function CalculatorCta({ stateCode }: { stateCode: AUStateCode }) {
     <aside className="mt-8 rounded-lg border border-green-200 bg-green-50 px-5 py-4">
       <p className="font-semibold text-green-900">Check your tow capacity</p>
       <p className="mt-1 text-sm text-green-800">
-        Use our towing calculator with {STATE_NAMES[stateCode]} regulations pre-selected.
+        Use our towing calculator with {STATE_NAMES[stateCode]} regulations
+        pre-selected.
       </p>
       <a
         href={`/calculator?state=${stateCode}`}
@@ -334,21 +370,21 @@ function CalculatorCta({ stateCode }: { stateCode: AUStateCode }) {
 
 const mdxComponents = {
   Callout: ({
-    type = "info",
+    type = 'info',
     children,
   }: {
-    type?: "info" | "warning" | "danger";
+    type?: 'info' | 'warning' | 'danger';
     children: React.ReactNode;
   }) => {
     const styles: Record<string, string> = {
-      info: "border-blue-400 bg-blue-50 text-blue-900",
-      warning: "border-amber-400 bg-amber-50 text-amber-900",
-      danger: "border-red-400 bg-red-50 text-red-900",
+      info: 'border-blue-400 bg-blue-50 text-blue-900',
+      warning: 'border-amber-400 bg-amber-50 text-amber-900',
+      danger: 'border-red-400 bg-red-50 text-red-900',
     };
     return (
       <aside
         role="note"
-        className={`my-6 border-l-4 rounded-r px-4 py-3 text-sm ${styles[type] ?? styles.info}`}
+        className={`my-6 rounded-r border-l-4 px-4 py-3 text-sm ${styles[type] ?? styles.info}`}
       >
         {children}
       </aside>
@@ -357,7 +393,7 @@ const mdxComponents = {
   DisclaimerBox: ({ children }: { children: React.ReactNode }) => (
     <aside
       role="note"
-      className="my-6 border border-gray-300 rounded bg-gray-50 px-4 py-3 text-xs text-gray-600"
+      className="my-6 rounded border border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-600"
     >
       {children}
     </aside>
@@ -382,7 +418,7 @@ export default async function StateGuidancePage({ params }: Props) {
   // Fetch live regulation data from DB (may be null if set not yet seeded)
   const regulationService = createRegulationService(prisma);
   const regulationResult = await regulationService.getSetByCode(
-    frontmatter.regulation_set_code
+    frontmatter.regulation_set_code,
   );
   const regulationData = regulationResult?.currentData ?? null;
 
@@ -396,7 +432,9 @@ export default async function StateGuidancePage({ params }: Props) {
 
   // Determine which other states also have this topic for cross-state nav
   const statesWithTopic = AU_STATES.filter(
-    (s) => s !== (stateCode as AUStateCode) && getTopicSlugsForState(s).includes(topic)
+    (s) =>
+      s !== (stateCode as AUStateCode) &&
+      getTopicSlugsForState(s).includes(topic),
   );
 
   return (
@@ -410,23 +448,28 @@ export default async function StateGuidancePage({ params }: Props) {
         {/* Main article */}
         <article className="min-w-0 flex-1">
           <header className="mb-6">
-            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            <div className="mb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
               State Guidance · {stateName}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
               {frontmatter.title}
             </h1>
-            <p className="mt-3 text-lg text-gray-600">{frontmatter.description}</p>
+            <p className="mt-3 text-lg text-gray-600">
+              {frontmatter.description}
+            </p>
 
             {/* Last reviewed — prominent for regulatory content */}
             <p className="mt-4 inline-flex items-center gap-1.5 rounded border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">
               <span>Last reviewed:</span>
               <time dateTime={frontmatter.last_reviewed}>
-                {new Date(frontmatter.last_reviewed).toLocaleDateString("en-AU", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {new Date(frontmatter.last_reviewed).toLocaleDateString(
+                  'en-AU',
+                  {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  },
+                )}
               </time>
             </p>
 
@@ -457,7 +500,7 @@ export default async function StateGuidancePage({ params }: Props) {
           {frontmatter.regulatory_references &&
             frontmatter.regulatory_references.length > 0 && (
               <section className="mt-8 border-t pt-6">
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                <h2 className="mb-3 text-sm font-semibold tracking-wide text-gray-500 uppercase">
                   Regulatory References
                 </h2>
                 <ul className="space-y-1 text-sm text-gray-700">
@@ -470,10 +513,7 @@ export default async function StateGuidancePage({ params }: Props) {
 
           {/* Cross-state navigation — only show states that have the same topic */}
           {statesWithTopic.length > 0 && (
-            <CrossStateNav
-              currentState={frontmatter.state}
-              topic={topic}
-            />
+            <CrossStateNav currentState={frontmatter.state} topic={topic} />
           )}
         </article>
 
@@ -492,8 +532,8 @@ export default async function StateGuidancePage({ params }: Props) {
                     href={`/${s}/${topic}/`}
                     className={`block rounded px-2 py-1 text-sm ${
                       s === stateCode
-                        ? "bg-blue-100 font-medium text-blue-800"
-                        : "text-gray-600 hover:bg-gray-100"
+                        ? 'bg-blue-100 font-medium text-blue-800'
+                        : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     {STATE_NAMES[s]}

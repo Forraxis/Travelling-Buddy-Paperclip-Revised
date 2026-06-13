@@ -1,4 +1,4 @@
-export { calculate } from "./engine";
+export { calculate } from './engine';
 export type {
   PhysicsInput,
   PhysicsResult,
@@ -16,4 +16,4 @@ export type {
   AxleConfiguration,
   MountingLocation,
   RegulationSetCode,
-} from "./types";
+} from './types';

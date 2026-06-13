@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { z } from "zod/v4";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { generateShareToken } from "@/lib/share-token";
-import { generateSetupName } from "@/lib/setup-name";
-import { serverError } from "@/lib/api-helpers";
-import { buildSnapshots } from "@/lib/setup-snapshots";
-import type { Prisma } from "@prisma/client";
+import { NextResponse } from 'next/server';
+import { z } from 'zod/v4';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { generateShareToken } from '@/lib/share-token';
+import { generateSetupName } from '@/lib/setup-name';
+import { serverError } from '@/lib/api-helpers';
+import { buildSnapshots } from '@/lib/setup-snapshots';
+import type { Prisma } from '@prisma/client';
 
 const accessorySelectionSchema = z.object({
   accessoryId: z.string(),
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -58,13 +58,13 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Invalid request body",
+          error: 'Invalid request body',
           details: parsed.error.issues.map((i) => ({
-            field: i.path.join("."),
+            field: i.path.join('.'),
             message: i.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
           : null;
         if (vehicle) name = generateSetupName(vehicle, caravan);
       }
-      if (!name) name = `Setup ${new Date().toLocaleDateString("en-AU")}`;
+      if (!name) name = `Setup ${new Date().toLocaleDateString('en-AU')}`;
 
       const snapshots = await buildSnapshots({
         vehicleVariantId: vehicleVariantId ?? null,
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
           freshWaterPercent: journey?.freshWaterPercent ?? 100,
           greyWaterPercent: journey?.greyWaterPercent ?? 0,
           calibrationOverrides: {} as Prisma.InputJsonValue,
-          regulationSetCode: "AU_ADR",
+          regulationSetCode: 'AU_ADR',
           tags: [],
           shareToken: generateShareToken(),
           vehicleSnapshot: snapshots.vehicleSnapshot,
@@ -142,7 +142,10 @@ export async function POST(request: Request) {
       created.push(setup.id);
     }
 
-    return NextResponse.json({ created, count: created.length }, { status: 201 });
+    return NextResponse.json(
+      { created, count: created.length },
+      { status: 201 },
+    );
   } catch (err) {
     return serverError(err);
   }

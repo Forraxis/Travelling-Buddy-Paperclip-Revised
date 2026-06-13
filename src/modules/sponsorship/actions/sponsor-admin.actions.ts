@@ -1,9 +1,14 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
-import { getAdminUser } from "@/modules/admin/lib/auth";
-import type { SponsorStatus, PlacementType, PlacementTier, VehicleBodyType } from "@prisma/client";
+import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db';
+import { getAdminUser } from '@/modules/admin/lib/auth';
+import type {
+  SponsorStatus,
+  PlacementType,
+  PlacementTier,
+  VehicleBodyType,
+} from '@prisma/client';
 
 type ActionResult<T = unknown> =
   | { success: true; data: T }
@@ -12,9 +17,9 @@ type ActionResult<T = unknown> =
 async function writeAuditLog(
   entityType: string,
   entityId: string,
-  action: "CREATE" | "UPDATE" | "DELETE",
+  action: 'CREATE' | 'UPDATE' | 'DELETE',
   changedBy: string,
-  changes: object
+  changes: object,
 ) {
   await prisma.auditLog.create({
     data: {
@@ -101,7 +106,7 @@ export interface AccessoryOption {
 
 export async function listSponsorsAction(): Promise<SponsorDto[]> {
   const sponsors = await prisma.sponsor.findMany({
-    orderBy: { name: "asc" },
+    orderBy: { name: 'asc' },
     include: {
       _count: { select: { placements: true } },
     },
@@ -119,7 +124,9 @@ export async function listSponsorsAction(): Promise<SponsorDto[]> {
   }));
 }
 
-export async function getSponsorByIdAction(id: string): Promise<SponsorDto | null> {
+export async function getSponsorByIdAction(
+  id: string,
+): Promise<SponsorDto | null> {
   const s = await prisma.sponsor.findUnique({
     where: { id },
     include: { _count: { select: { placements: true } } },
@@ -137,22 +144,25 @@ export async function getSponsorByIdAction(id: string): Promise<SponsorDto | nul
   };
 }
 
-export async function createSponsorAction(input: CreateSponsorInput): Promise<ActionResult<SponsorDto>> {
+export async function createSponsorAction(
+  input: CreateSponsorInput,
+): Promise<ActionResult<SponsorDto>> {
   const user = await getAdminUser();
-  if (!user || user.role !== "ADMIN") return { success: false, error: "Unauthorized" };
+  if (!user || user.role !== 'ADMIN')
+    return { success: false, error: 'Unauthorized' };
   try {
     const sponsor = await prisma.sponsor.create({
       data: {
         name: input.name,
-        status: input.status ?? "ACTIVE",
+        status: input.status ?? 'ACTIVE',
         contactName: input.contactName ?? null,
         contactEmail: input.contactEmail ?? null,
         billingReference: input.billingReference ?? null,
       },
       include: { _count: { select: { placements: true } } },
     });
-    await writeAuditLog("Sponsor", sponsor.id, "CREATE", user.id, input);
-    revalidatePath("/admin/sponsorship");
+    await writeAuditLog('Sponsor', sponsor.id, 'CREATE', user.id, input);
+    revalidatePath('/admin/sponsorship');
     return {
       success: true,
       data: {
@@ -167,28 +177,38 @@ export async function createSponsorAction(input: CreateSponsorInput): Promise<Ac
       },
     };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
+    const msg = e instanceof Error ? e.message : 'Unknown error';
     return { success: false, error: msg };
   }
 }
 
-export async function updateSponsorAction(id: string, input: UpdateSponsorInput): Promise<ActionResult<SponsorDto>> {
+export async function updateSponsorAction(
+  id: string,
+  input: UpdateSponsorInput,
+): Promise<ActionResult<SponsorDto>> {
   const user = await getAdminUser();
-  if (!user || user.role !== "ADMIN") return { success: false, error: "Unauthorized" };
+  if (!user || user.role !== 'ADMIN')
+    return { success: false, error: 'Unauthorized' };
   try {
     const sponsor = await prisma.sponsor.update({
       where: { id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
         ...(input.status !== undefined && { status: input.status }),
-        ...(input.contactName !== undefined && { contactName: input.contactName }),
-        ...(input.contactEmail !== undefined && { contactEmail: input.contactEmail }),
-        ...(input.billingReference !== undefined && { billingReference: input.billingReference }),
+        ...(input.contactName !== undefined && {
+          contactName: input.contactName,
+        }),
+        ...(input.contactEmail !== undefined && {
+          contactEmail: input.contactEmail,
+        }),
+        ...(input.billingReference !== undefined && {
+          billingReference: input.billingReference,
+        }),
       },
       include: { _count: { select: { placements: true } } },
     });
-    await writeAuditLog("Sponsor", id, "UPDATE", user.id, input);
-    revalidatePath("/admin/sponsorship");
+    await writeAuditLog('Sponsor', id, 'UPDATE', user.id, input);
+    revalidatePath('/admin/sponsorship');
     revalidatePath(`/admin/sponsorship/${id}`);
     return {
       success: true,
@@ -204,14 +224,16 @@ export async function updateSponsorAction(id: string, input: UpdateSponsorInput)
       },
     };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
+    const msg = e instanceof Error ? e.message : 'Unknown error';
     return { success: false, error: msg };
   }
 }
 
 // ── Placements ───────────────────────────────────────────────────────
 
-export async function listPlacementsForSponsorAction(sponsorId: string): Promise<PlacementDto[]> {
+export async function listPlacementsForSponsorAction(
+  sponsorId: string,
+): Promise<PlacementDto[]> {
   const placements = await prisma.sponsoredPlacement.findMany({
     where: { sponsorId },
     include: {
@@ -219,13 +241,16 @@ export async function listPlacementsForSponsorAction(sponsorId: string): Promise
       accessory: true,
       category: true,
     },
-    orderBy: { startsAt: "desc" },
+    orderBy: { startsAt: 'desc' },
   });
 
   return placements.map(mapPlacement);
 }
 
-export async function listAllPlacementsAction(fromDate?: Date, toDate?: Date): Promise<PlacementDto[]> {
+export async function listAllPlacementsAction(
+  fromDate?: Date,
+  toDate?: Date,
+): Promise<PlacementDto[]> {
   const now = fromDate ?? new Date();
   const end = toDate ?? new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
 
@@ -239,7 +264,7 @@ export async function listAllPlacementsAction(fromDate?: Date, toDate?: Date): P
       accessory: true,
       category: true,
     },
-    orderBy: [{ startsAt: "asc" }],
+    orderBy: [{ startsAt: 'asc' }],
   });
 
   return placements.map(mapPlacement);
@@ -279,15 +304,18 @@ function mapPlacement(p: {
   };
 }
 
-export async function createPlacementAction(input: CreatePlacementInput): Promise<ActionResult<PlacementDto>> {
+export async function createPlacementAction(
+  input: CreatePlacementInput,
+): Promise<ActionResult<PlacementDto>> {
   const user = await getAdminUser();
-  if (!user || user.role !== "ADMIN") return { success: false, error: "Unauthorized" };
+  if (!user || user.role !== 'ADMIN')
+    return { success: false, error: 'Unauthorized' };
 
   const startsAt = new Date(input.startsAt);
   const endsAt = new Date(input.endsAt);
 
   if (endsAt <= startsAt) {
-    return { success: false, error: "End date must be after start date" };
+    return { success: false, error: 'End date must be after start date' };
   }
 
   // Overlap validation: same tier + same scope + overlapping dates
@@ -331,7 +359,7 @@ export async function createPlacementAction(input: CreatePlacementInput): Promis
       },
     });
 
-    await writeAuditLog("SponsoredPlacement", placement.id, "CREATE", user.id, {
+    await writeAuditLog('SponsoredPlacement', placement.id, 'CREATE', user.id, {
       sponsorId: input.sponsorId,
       placementType: input.placementType,
       tier: input.tier,
@@ -339,32 +367,37 @@ export async function createPlacementAction(input: CreatePlacementInput): Promis
       endsAt: input.endsAt,
     });
 
-    revalidatePath("/admin/sponsorship");
+    revalidatePath('/admin/sponsorship');
     revalidatePath(`/admin/sponsorship/${input.sponsorId}`);
-    revalidatePath("/admin/sponsorship/schedule");
+    revalidatePath('/admin/sponsorship/schedule');
 
     return { success: true, data: mapPlacement(placement) };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
+    const msg = e instanceof Error ? e.message : 'Unknown error';
     return { success: false, error: msg };
   }
 }
 
-export async function deletePlacementAction(id: string): Promise<ActionResult<void>> {
+export async function deletePlacementAction(
+  id: string,
+): Promise<ActionResult<void>> {
   const user = await getAdminUser();
-  if (!user || user.role !== "ADMIN") return { success: false, error: "Unauthorized" };
+  if (!user || user.role !== 'ADMIN')
+    return { success: false, error: 'Unauthorized' };
   try {
-    const placement = await prisma.sponsoredPlacement.findUnique({ where: { id } });
-    if (!placement) return { success: false, error: "Placement not found" };
+    const placement = await prisma.sponsoredPlacement.findUnique({
+      where: { id },
+    });
+    if (!placement) return { success: false, error: 'Placement not found' };
 
     await prisma.sponsoredPlacement.delete({ where: { id } });
-    await writeAuditLog("SponsoredPlacement", id, "DELETE", user.id, { id });
-    revalidatePath("/admin/sponsorship");
+    await writeAuditLog('SponsoredPlacement', id, 'DELETE', user.id, { id });
+    revalidatePath('/admin/sponsorship');
     revalidatePath(`/admin/sponsorship/${placement.sponsorId}`);
-    revalidatePath("/admin/sponsorship/schedule");
+    revalidatePath('/admin/sponsorship/schedule');
     return { success: true, data: undefined };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
+    const msg = e instanceof Error ? e.message : 'Unknown error';
     return { success: false, error: msg };
   }
 }
@@ -374,18 +407,20 @@ export async function deletePlacementAction(id: string): Promise<ActionResult<vo
 export async function listCategoryOptionsAction(): Promise<CategoryOption[]> {
   const cats = await prisma.accessoryCategory.findMany({
     select: { id: true, name: true, slug: true },
-    orderBy: { name: "asc" },
+    orderBy: { name: 'asc' },
   });
   return cats;
 }
 
-export async function listAccessoryOptionsAction(search?: string): Promise<AccessoryOption[]> {
+export async function listAccessoryOptionsAction(
+  search?: string,
+): Promise<AccessoryOption[]> {
   const accessories = await prisma.accessory.findMany({
     where: search
-      ? { name: { contains: search, mode: "insensitive" } }
+      ? { name: { contains: search, mode: 'insensitive' } }
       : undefined,
     select: { id: true, name: true, slug: true },
-    orderBy: { name: "asc" },
+    orderBy: { name: 'asc' },
     take: 50,
   });
   return accessories;

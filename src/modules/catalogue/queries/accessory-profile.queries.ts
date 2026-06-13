@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import type { MountingLocation, FitmentConfidence } from "@prisma/client";
+import { prisma } from '@/lib/db';
+import type { MountingLocation, FitmentConfidence } from '@prisma/client';
 
 export interface AccessoryFitmentRow {
   id: string;
@@ -49,16 +49,23 @@ export interface AccessoryProfileData {
     affiliateUrl: string | null;
   };
   brand: { id: string; name: string; slug: string; logoUrl: string | null };
-  category: { id: string; name: string; slug: string; description: string | null };
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+  };
   fitments: AccessoryFitmentRow[];
   relatedAccessories: RelatedAccessoryRow[];
 }
 
 export async function getAccessoryProfileData(
   brandSlug: string,
-  accessorySlug: string
+  accessorySlug: string,
 ): Promise<AccessoryProfileData | null> {
-  const brand = await prisma.accessoryBrand.findUnique({ where: { slug: brandSlug } });
+  const brand = await prisma.accessoryBrand.findUnique({
+    where: { slug: brandSlug },
+  });
   if (!brand) return null;
 
   const raw = await prisma.accessory.findUnique({
@@ -78,7 +85,7 @@ export async function getAccessoryProfileData(
         select: { id: true, name: true, slug: true, description: true },
       },
       fitments: {
-        orderBy: { createdAt: "asc" },
+        orderBy: { createdAt: 'asc' },
         select: {
           id: true,
           installedWeightKg: true,
@@ -123,12 +130,16 @@ export async function getAccessoryProfileData(
     },
   });
 
-  if (!raw || raw.status !== "ACTIVE") return null;
+  if (!raw || raw.status !== 'ACTIVE') return null;
 
   const relatedRaw = await prisma.accessory.findMany({
-    where: { categoryId: raw.category.id, status: "ACTIVE", NOT: { id: raw.id } },
+    where: {
+      categoryId: raw.category.id,
+      status: 'ACTIVE',
+      NOT: { id: raw.id },
+    },
     take: 6,
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
     select: {
       id: true,
       name: true,
@@ -152,11 +163,18 @@ export async function getAccessoryProfileData(
       currencyCode: raw.currencyCode,
       affiliateUrl: raw.affiliateUrl,
     },
-    brand: { id: brand.id, name: brand.name, slug: brand.slug, logoUrl: brand.logoUrl },
+    brand: {
+      id: brand.id,
+      name: brand.name,
+      slug: brand.slug,
+      logoUrl: brand.logoUrl,
+    },
     category: raw.category,
     fitments: raw.fitments.map((f) => ({
       id: f.id,
-      installedWeightKg: (f.installedWeightKg as unknown as { toNumber(): number }).toNumber(),
+      installedWeightKg: (
+        f.installedWeightKg as unknown as { toNumber(): number }
+      ).toNumber(),
       mountingLocation: f.mountingLocation,
       confidence: f.confidence,
       vehicleVariant: f.vehicleVariant,
@@ -167,8 +185,12 @@ export async function getAccessoryProfileData(
       name: r.name,
       slug: r.slug,
       brand: r.brand,
-      priceMin: r.priceMin ? (r.priceMin as unknown as { toNumber(): number }).toNumber() : null,
-      priceMax: r.priceMax ? (r.priceMax as unknown as { toNumber(): number }).toNumber() : null,
+      priceMin: r.priceMin
+        ? (r.priceMin as unknown as { toNumber(): number }).toNumber()
+        : null,
+      priceMax: r.priceMax
+        ? (r.priceMax as unknown as { toNumber(): number }).toNumber()
+        : null,
       currencyCode: r.currencyCode,
     })),
   };
@@ -178,12 +200,12 @@ export async function getAllActiveAccessorySlugsForSSG(): Promise<
   Array<{ brand: string; accessory: string }>
 > {
   const accessories = await prisma.accessory.findMany({
-    where: { status: "ACTIVE" },
+    where: { status: 'ACTIVE' },
     select: {
       slug: true,
       brand: { select: { slug: true } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
   return accessories.map((a) => ({ brand: a.brand.slug, accessory: a.slug }));
 }

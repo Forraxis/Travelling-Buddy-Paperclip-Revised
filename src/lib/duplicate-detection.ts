@@ -1,16 +1,19 @@
-import { createHash } from "crypto";
-import { prisma } from "@/lib/db";
+import { createHash } from 'crypto';
+import { prisma } from '@/lib/db';
 
 function normalise(val: unknown): string {
-  return String(val ?? "").toLowerCase().trim().replace(/\s+/g, " ");
+  return String(val ?? '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
 }
 
 // More aggressive normalisation: strips all non-alphanumeric characters.
 // Catches "LandCruiser" vs "Land Cruiser", "Jayco Journey" vs "jayco journey", etc.
 function normaliseStrict(val: unknown): string {
-  return String(val ?? "")
+  return String(val ?? '')
     .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
+    .replace(/[^a-z0-9]/g, '');
 }
 
 export function vehicleFingerprint(data: {
@@ -28,8 +31,8 @@ export function vehicleFingerprint(data: {
     normalise(data.bodyType),
     normalise(data.drivetrain),
     normalise(data.transmission),
-  ].join("|");
-  return createHash("sha256").update(key).digest("hex").slice(0, 16);
+  ].join('|');
+  return createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
 
 export function caravanFingerprint(data: {
@@ -45,19 +48,16 @@ export function caravanFingerprint(data: {
     data.year,
     normalise(data.bodyType),
     normalise(data.axleConfiguration),
-  ].join("|");
-  return createHash("sha256").update(key).digest("hex").slice(0, 16);
+  ].join('|');
+  return createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
 
 export function accessoryFingerprint(data: {
   brandName: string;
   modelName: string;
 }): string {
-  const key = [
-    normalise(data.brandName),
-    normalise(data.modelName),
-  ].join("|");
-  return createHash("sha256").update(key).digest("hex").slice(0, 16);
+  const key = [normalise(data.brandName), normalise(data.modelName)].join('|');
+  return createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
 
 export interface DuplicateCheckResult {
@@ -69,7 +69,7 @@ export interface DuplicateCheckResult {
 export interface DuplicateMatch {
   id: string;
   name: string;
-  kind: "canonical" | "community";
+  kind: 'canonical' | 'community';
   url: string;
 }
 
@@ -79,7 +79,7 @@ export interface DuplicateCheckResponse {
 }
 
 export async function checkVehicleDuplicate(
-  fingerprint: string
+  fingerprint: string,
 ): Promise<DuplicateCheckResult> {
   // Check against existing approved variants first
   const variant = await prisma.vehicleVariant.findFirst({
@@ -87,43 +87,68 @@ export async function checkVehicleDuplicate(
     select: { id: true, name: true },
   });
   if (variant) {
-    return { hasDuplicate: true, existingId: variant.id, existingName: variant.name };
+    return {
+      hasDuplicate: true,
+      existingId: variant.id,
+      existingName: variant.name,
+    };
   }
 
   // Then check pending submissions with the same fingerprint
   const pending = await prisma.vehicleSubmission.findFirst({
-    where: { duplicateFingerprint: fingerprint, status: { in: ["PENDING", "APPROVED"] } },
+    where: {
+      duplicateFingerprint: fingerprint,
+      status: { in: ['PENDING', 'APPROVED'] },
+    },
     select: { id: true },
   });
   if (pending) {
-    return { hasDuplicate: true, existingId: pending.id, existingName: "existing submission" };
+    return {
+      hasDuplicate: true,
+      existingId: pending.id,
+      existingName: 'existing submission',
+    };
   }
 
   return { hasDuplicate: false, existingId: null, existingName: null };
 }
 
 export async function checkCaravanDuplicate(
-  fingerprint: string
+  fingerprint: string,
 ): Promise<DuplicateCheckResult> {
   const pending = await prisma.caravanSubmission.findFirst({
-    where: { duplicateFingerprint: fingerprint, status: { in: ["PENDING", "APPROVED"] } },
+    where: {
+      duplicateFingerprint: fingerprint,
+      status: { in: ['PENDING', 'APPROVED'] },
+    },
     select: { id: true },
   });
   if (pending) {
-    return { hasDuplicate: true, existingId: pending.id, existingName: "existing submission" };
+    return {
+      hasDuplicate: true,
+      existingId: pending.id,
+      existingName: 'existing submission',
+    };
   }
   return { hasDuplicate: false, existingId: null, existingName: null };
 }
 
 export async function checkAccessoryDuplicate(
-  fingerprint: string
+  fingerprint: string,
 ): Promise<DuplicateCheckResult> {
   const existing = await prisma.accessorySubmission.findFirst({
-    where: { duplicateFingerprint: fingerprint, status: { in: ["PENDING", "APPROVED"] } },
+    where: {
+      duplicateFingerprint: fingerprint,
+      status: { in: ['PENDING', 'APPROVED'] },
+    },
     select: { id: true },
   });
   if (existing) {
-    return { hasDuplicate: true, existingId: existing.id, existingName: "existing submission" };
+    return {
+      hasDuplicate: true,
+      existingId: existing.id,
+      existingName: 'existing submission',
+    };
   }
   return { hasDuplicate: false, existingId: null, existingName: null };
 }
@@ -147,7 +172,7 @@ export async function checkVehicleDuplicateByText(params: {
     where: {
       yearFrom: { lte: params.year },
       yearTo: { gte: params.year },
-      status: "CATALOGUE",
+      status: 'CATALOGUE',
     },
     select: {
       id: true,
@@ -170,7 +195,7 @@ export async function checkVehicleDuplicateByText(params: {
       matches.push({
         id: v.id,
         name: `${v.model.make.name} ${v.model.name} ${params.year} — ${v.name}`,
-        kind: "canonical",
+        kind: 'canonical',
         url: `/vehicles/${v.model.make.slug}/${v.model.slug}`,
       });
     }
@@ -178,7 +203,7 @@ export async function checkVehicleDuplicateByText(params: {
 
   // Community: pending/approved submissions with matching names
   const communitySubmissions = await prisma.vehicleSubmission.findMany({
-    where: { status: { in: ["PENDING", "APPROVED"] } },
+    where: { status: { in: ['PENDING', 'APPROVED'] } },
     select: {
       id: true,
       submittedData: true,
@@ -187,8 +212,8 @@ export async function checkVehicleDuplicateByText(params: {
 
   for (const s of communitySubmissions) {
     const data = s.submittedData as Record<string, unknown>;
-    const submittedMake = String(data.newMakeName ?? data.makeId ?? "");
-    const submittedModel = String(data.newModelName ?? data.modelId ?? "");
+    const submittedMake = String(data.newMakeName ?? data.makeId ?? '');
+    const submittedModel = String(data.newModelName ?? data.modelId ?? '');
     const submittedYear = Number(data.year ?? 0);
     if (
       normaliseStrict(submittedMake) === makeNorm &&
@@ -198,7 +223,7 @@ export async function checkVehicleDuplicateByText(params: {
       matches.push({
         id: s.id,
         name: `${submittedMake} ${submittedModel} ${params.year} (community submission)`,
-        kind: "community",
+        kind: 'community',
         url: `/account/submissions`,
       });
     }
@@ -222,7 +247,7 @@ export async function checkCaravanDuplicateByText(params: {
     where: {
       yearFrom: { lte: params.year },
       yearTo: { gte: params.year },
-      status: "CATALOGUE",
+      status: 'CATALOGUE',
     },
     select: {
       id: true,
@@ -245,7 +270,7 @@ export async function checkCaravanDuplicateByText(params: {
       matches.push({
         id: v.id,
         name: `${v.model.make.name} ${v.model.name} ${params.year} — ${v.name}`,
-        kind: "canonical",
+        kind: 'canonical',
         url: `/caravans/${v.model.make.slug}/${v.model.slug}`,
       });
     }
@@ -253,14 +278,14 @@ export async function checkCaravanDuplicateByText(params: {
 
   // Community: pending caravan submissions
   const communitySubmissions = await prisma.caravanSubmission.findMany({
-    where: { status: { in: ["PENDING", "APPROVED"] } },
+    where: { status: { in: ['PENDING', 'APPROVED'] } },
     select: { id: true, submittedData: true },
   });
 
   for (const s of communitySubmissions) {
     const data = s.submittedData as Record<string, unknown>;
-    const submittedMake = String(data.newMakeName ?? data.makeId ?? "");
-    const submittedModel = String(data.newModelName ?? data.modelId ?? "");
+    const submittedMake = String(data.newMakeName ?? data.makeId ?? '');
+    const submittedModel = String(data.newModelName ?? data.modelId ?? '');
     const submittedYear = Number(data.year ?? 0);
     if (
       normaliseStrict(submittedMake) === makeNorm &&
@@ -270,7 +295,7 @@ export async function checkCaravanDuplicateByText(params: {
       matches.push({
         id: s.id,
         name: `${submittedMake} ${submittedModel} ${params.year} (community submission)`,
-        kind: "community",
+        kind: 'community',
         url: `/account/submissions`,
       });
     }
@@ -300,13 +325,13 @@ export async function checkAccessoryDuplicateByText(params: {
 
   for (const a of accessories) {
     if (
-      normaliseStrict(a.brand?.name ?? "") === brandNorm &&
+      normaliseStrict(a.brand?.name ?? '') === brandNorm &&
       normaliseStrict(a.name) === modelNorm
     ) {
       matches.push({
         id: a.id,
         name: `${a.brand?.name} ${a.name}`,
-        kind: "canonical",
+        kind: 'canonical',
         url: `/accessories/${a.brand?.slug}/${a.slug}`,
       });
     }
@@ -314,14 +339,14 @@ export async function checkAccessoryDuplicateByText(params: {
 
   // Community: pending accessory submissions
   const communitySubmissions = await prisma.accessorySubmission.findMany({
-    where: { status: { in: ["PENDING", "APPROVED"] } },
+    where: { status: { in: ['PENDING', 'APPROVED'] } },
     select: { id: true, submittedData: true },
   });
 
   for (const s of communitySubmissions) {
     const data = s.submittedData as Record<string, unknown>;
-    const submittedBrand = String(data.brandName ?? "");
-    const submittedModel = String(data.modelName ?? "");
+    const submittedBrand = String(data.brandName ?? '');
+    const submittedModel = String(data.modelName ?? '');
     if (
       normaliseStrict(submittedBrand) === brandNorm &&
       normaliseStrict(submittedModel) === modelNorm
@@ -329,7 +354,7 @@ export async function checkAccessoryDuplicateByText(params: {
       matches.push({
         id: s.id,
         name: `${submittedBrand} ${submittedModel} (community submission)`,
-        kind: "community",
+        kind: 'community',
         url: `/account/submissions`,
       });
     }

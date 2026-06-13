@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from '@prisma/client';
 import type {
   AccessoryDto,
   AccessoryDetailDto,
@@ -10,7 +10,7 @@ import type {
   PaginationOptions,
   PaginatedResult,
   AccessorySearchResult,
-} from "../types/accessory.types";
+} from '../types/accessory.types';
 
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -34,7 +34,7 @@ export function createAccessoryService(prisma: PrismaClient) {
 
   async function update(
     id: string,
-    input: UpdateAccessoryInput
+    input: UpdateAccessoryInput,
   ): Promise<AccessoryDto> {
     const raw = await prisma.accessory.update({
       where: { id },
@@ -54,7 +54,7 @@ export function createAccessoryService(prisma: PrismaClient) {
 
   async function getBySlug(
     brandId: string,
-    slug: string
+    slug: string,
   ): Promise<AccessoryDto | null> {
     const raw = await prisma.accessory.findUnique({
       where: { brandId_slug: { brandId, slug } },
@@ -64,7 +64,7 @@ export function createAccessoryService(prisma: PrismaClient) {
 
   async function list(
     filter: AccessoryFilter = {},
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<AccessoryDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const where: Record<string, unknown> = {};
@@ -84,7 +84,7 @@ export function createAccessoryService(prisma: PrismaClient) {
       where,
       take: limit + 1,
       ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
 
     const hasMore = items.length > limit;
@@ -99,12 +99,12 @@ export function createAccessoryService(prisma: PrismaClient) {
 
   async function search(
     query: string,
-    limit = 10
+    limit = 10,
   ): Promise<AccessorySearchResult> {
     const accessories = await prisma.accessory.findMany({
-      where: { name: { contains: query, mode: "insensitive" } },
+      where: { name: { contains: query, mode: 'insensitive' } },
       take: limit,
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
     return { accessories: accessories.map((r) => toDto(r as never)) };
   }
@@ -112,17 +112,15 @@ export function createAccessoryService(prisma: PrismaClient) {
   async function searchByBrand(
     brandId: string,
     query?: string,
-    limit = 10
+    limit = 10,
   ): Promise<AccessorySearchResult> {
     const accessories = await prisma.accessory.findMany({
       where: {
         brandId,
-        ...(query
-          ? { name: { contains: query, mode: "insensitive" } }
-          : {}),
+        ...(query ? { name: { contains: query, mode: 'insensitive' } } : {}),
       },
       take: limit,
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
     return { accessories: accessories.map((r) => toDto(r as never)) };
   }
@@ -130,17 +128,15 @@ export function createAccessoryService(prisma: PrismaClient) {
   async function searchByCategory(
     categoryId: string,
     query?: string,
-    limit = 10
+    limit = 10,
   ): Promise<AccessorySearchResult> {
     const accessories = await prisma.accessory.findMany({
       where: {
         categoryId,
-        ...(query
-          ? { name: { contains: query, mode: "insensitive" } }
-          : {}),
+        ...(query ? { name: { contains: query, mode: 'insensitive' } } : {}),
       },
       take: limit,
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
     return { accessories: accessories.map((r) => toDto(r as never)) };
   }
@@ -148,7 +144,7 @@ export function createAccessoryService(prisma: PrismaClient) {
   async function searchForPicker(
     query: string,
     limit = 15,
-    filter: { vehicleVariantId?: string; caravanVariantId?: string } = {}
+    filter: { vehicleVariantId?: string; caravanVariantId?: string } = {},
   ): Promise<AccessoryPickerDto[]> {
     const fitmentVariantFilter = filter.vehicleVariantId
       ? { vehicleVariantId: filter.vehicleVariantId }
@@ -158,17 +154,17 @@ export function createAccessoryService(prisma: PrismaClient) {
 
     const accessories = await prisma.accessory.findMany({
       where: {
-        status: "ACTIVE",
+        status: 'ACTIVE',
         OR: [
-          { name: { contains: query, mode: "insensitive" } },
-          { brand: { name: { contains: query, mode: "insensitive" } } },
+          { name: { contains: query, mode: 'insensitive' } },
+          { brand: { name: { contains: query, mode: 'insensitive' } } },
         ],
         ...(fitmentVariantFilter
           ? { fitments: { some: fitmentVariantFilter } }
           : {}),
       },
       take: limit,
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
       select: {
         id: true,
         name: true,
@@ -177,7 +173,7 @@ export function createAccessoryService(prisma: PrismaClient) {
         fitments: {
           where: fitmentVariantFilter ?? {},
           take: 1,
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: 'asc' },
           select: { installedWeightKg: true, mountingLocation: true },
         },
       },
@@ -188,7 +184,9 @@ export function createAccessoryService(prisma: PrismaClient) {
       name: a.name,
       brand: a.brand.name,
       massKg: a.fitments[0]
-        ? (a.fitments[0].installedWeightKg as unknown as { toNumber(): number }).toNumber()
+        ? (
+            a.fitments[0].installedWeightKg as unknown as { toNumber(): number }
+          ).toNumber()
         : null,
       mountingLocation: a.fitments[0]?.mountingLocation ?? null,
       categoryName: a.category.name,
@@ -197,10 +195,10 @@ export function createAccessoryService(prisma: PrismaClient) {
 
   async function listForPicker(
     filter: AccessoryPickerFilter = {},
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<AccessoryPickerDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
-    const where: Record<string, unknown> = { status: "ACTIVE" };
+    const where: Record<string, unknown> = { status: 'ACTIVE' };
 
     if (filter.categoryId) where.categoryId = filter.categoryId;
     if (filter.brandId) where.brandId = filter.brandId;
@@ -212,7 +210,7 @@ export function createAccessoryService(prisma: PrismaClient) {
       where,
       take: limit + 1,
       ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
       select: {
         id: true,
         name: true,
@@ -220,7 +218,7 @@ export function createAccessoryService(prisma: PrismaClient) {
         category: { select: { name: true } },
         fitments: {
           take: 1,
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: 'asc' },
           select: { installedWeightKg: true, mountingLocation: true },
         },
       },
@@ -235,7 +233,11 @@ export function createAccessoryService(prisma: PrismaClient) {
         name: a.name,
         brand: a.brand.name,
         massKg: a.fitments[0]
-          ? (a.fitments[0].installedWeightKg as unknown as { toNumber(): number }).toNumber()
+          ? (
+              a.fitments[0].installedWeightKg as unknown as {
+                toNumber(): number;
+              }
+            ).toNumber()
           : null,
         mountingLocation: a.fitments[0]?.mountingLocation ?? null,
         categoryName: a.category.name,
@@ -245,9 +247,11 @@ export function createAccessoryService(prisma: PrismaClient) {
     };
   }
 
-  async function getPickerDtoById(id: string): Promise<AccessoryPickerDto | null> {
+  async function getPickerDtoById(
+    id: string,
+  ): Promise<AccessoryPickerDto | null> {
     const a = await prisma.accessory.findUnique({
-      where: { id, status: "ACTIVE" },
+      where: { id, status: 'ACTIVE' },
       select: {
         id: true,
         name: true,
@@ -255,7 +259,7 @@ export function createAccessoryService(prisma: PrismaClient) {
         category: { select: { name: true } },
         fitments: {
           take: 1,
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: 'asc' },
           select: { installedWeightKg: true, mountingLocation: true },
         },
       },
@@ -266,7 +270,9 @@ export function createAccessoryService(prisma: PrismaClient) {
       name: a.name,
       brand: a.brand.name,
       massKg: a.fitments[0]
-        ? (a.fitments[0].installedWeightKg as unknown as { toNumber(): number }).toNumber()
+        ? (
+            a.fitments[0].installedWeightKg as unknown as { toNumber(): number }
+          ).toNumber()
         : null,
       mountingLocation: a.fitments[0]?.mountingLocation ?? null,
       categoryName: a.category.name,
@@ -275,12 +281,12 @@ export function createAccessoryService(prisma: PrismaClient) {
 
   async function getDetailBySlug(
     slug: string,
-    categorySlug?: string
+    categorySlug?: string,
   ): Promise<AccessoryDetailDto | null> {
     const raw = await prisma.accessory.findFirst({
       where: {
         slug,
-        status: "ACTIVE",
+        status: 'ACTIVE',
         ...(categorySlug ? { category: { slug: categorySlug } } : {}),
       },
       include: {
@@ -288,7 +294,7 @@ export function createAccessoryService(prisma: PrismaClient) {
         category: {
           select: { id: true, name: true, slug: true, description: true },
         },
-        fitments: { orderBy: { createdAt: "asc" } },
+        fitments: { orderBy: { createdAt: 'asc' } },
       },
     });
     if (!raw) return null;

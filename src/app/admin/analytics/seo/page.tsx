@@ -1,12 +1,12 @@
-import { redirect } from "next/navigation";
-import { getAdminUser } from "@/modules/admin/lib/auth";
-import { AnalyticsTabs } from "../_components/AnalyticsTabs";
+import { redirect } from 'next/navigation';
+import { getAdminUser } from '@/modules/admin/lib/auth';
+import { AnalyticsTabs } from '../_components/AnalyticsTabs';
 
-export const metadata = { title: "SEO Analytics — Admin" };
+export const metadata = { title: 'SEO Analytics — Admin' };
 
 export default async function SeoAnalyticsPage() {
   const user = await getAdminUser();
-  if (!user || user.role !== "ADMIN") redirect("/admin");
+  if (!user || user.role !== 'ADMIN') redirect('/admin');
 
   return (
     <div className="space-y-6">
@@ -19,8 +19,8 @@ export default async function SeoAnalyticsPage() {
       <AnalyticsTabs active="seo" />
       <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
         <div className="mx-auto max-w-sm">
-          <div className="text-4xl mb-4">🔍</div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+          <div className="mb-4 text-4xl">🔍</div>
+          <h3 className="mb-2 text-lg font-semibold text-gray-700">
             Search &amp; SEO Analytics
           </h3>
           <p className="text-sm text-gray-500">

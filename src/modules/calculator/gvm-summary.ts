@@ -1,4 +1,4 @@
-export type FuelType = "DIESEL" | "PETROL" | "HYBRID" | "ELECTRIC";
+export type FuelType = 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC';
 
 const FUEL_DENSITY_KG_PER_L: Record<FuelType, number> = {
   DIESEL: 0.84,
@@ -45,19 +45,24 @@ export interface GvmSummaryResult {
   payloadRemainingKg: number;
 }
 
-export function calculateGvmSummary(inputs: GvmSummaryInputs): GvmSummaryResult {
+export function calculateGvmSummary(
+  inputs: GvmSummaryInputs,
+): GvmSummaryResult {
   const fuelMassKg =
     (Math.max(0, inputs.fuelPercent) / 100) *
     Math.max(0, inputs.fuelTankCapacityL) *
     FUEL_DENSITY_KG_PER_L[inputs.fuelType];
 
   const freshWaterMassKg =
-    (Math.max(0, inputs.freshWaterPercent) / 100) * Math.max(0, inputs.freshWaterCapacityL);
+    (Math.max(0, inputs.freshWaterPercent) / 100) *
+    Math.max(0, inputs.freshWaterCapacityL);
 
   const greyWaterMassKg =
-    (Math.max(0, inputs.greyWaterPercent) / 100) * Math.max(0, inputs.greyWaterCapacityL);
+    (Math.max(0, inputs.greyWaterPercent) / 100) *
+    Math.max(0, inputs.greyWaterCapacityL);
 
-  const passengerMassKg = Math.max(0, inputs.passengers) * Math.max(0, inputs.passengerWeightKg);
+  const passengerMassKg =
+    Math.max(0, inputs.passengers) * Math.max(0, inputs.passengerWeightKg);
 
   const cargoKg = Math.max(0, inputs.cargoKg);
   const accessoriesMassKg = Math.max(0, inputs.accessoriesMassKg);

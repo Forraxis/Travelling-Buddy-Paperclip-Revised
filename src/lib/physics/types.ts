@@ -1,72 +1,72 @@
 // Physics engine input/output contracts.
 // This module has no imports from React, Next.js, Prisma, or any I/O library.
 
-export type FuelType = "DIESEL" | "PETROL" | "HYBRID" | "ELECTRIC";
+export type FuelType = 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC';
 
 export type AxleConfiguration =
-  | "SINGLE_AXLE"
-  | "DUAL_AXLE_CLOSE_COUPLED"
-  | "DUAL_AXLE_SPREAD"
-  | "TRIPLE_AXLE";
+  | 'SINGLE_AXLE'
+  | 'DUAL_AXLE_CLOSE_COUPLED'
+  | 'DUAL_AXLE_SPREAD'
+  | 'TRIPLE_AXLE';
 
 export type MountingLocation =
-  | "CHASSIS_FRONT"
-  | "CHASSIS_MID"
-  | "CHASSIS_REAR"
-  | "BULL_BAR"
-  | "ROOF_RACK"
-  | "ROOF_RAILS"
-  | "TRAY_FLOOR"
-  | "TRAY_SIDE_LEFT"
-  | "TRAY_SIDE_RIGHT"
-  | "TRAY_HEADBOARD"
-  | "TRAY_TAILGATE"
-  | "CANOPY_EXTERIOR"
-  | "CANOPY_INTERIOR"
-  | "CANOPY_ROOF"
-  | "TUB_INTERIOR"
-  | "TUB_EXTERIOR"
-  | "BONNET"
-  | "REAR_BAR"
-  | "TOW_HITCH"
-  | "WHEEL_ARCH_LEFT"
-  | "WHEEL_ARCH_RIGHT"
-  | "UNDERBODY_FRONT"
-  | "UNDERBODY_MID"
-  | "UNDERBODY_REAR"
-  | "A_PILLAR_LEFT"
-  | "A_PILLAR_RIGHT"
-  | "WINDSCREEN"
-  | "CABIN_INTERIOR"
-  | "CABIN_ROOF"
-  | "CABIN_DASH"
-  | "DOOR_LEFT"
-  | "DOOR_RIGHT"
-  | "SNORKEL"
-  | "FENDER_LEFT"
-  | "FENDER_RIGHT"
-  | "CARAVAN_DRAWBAR"
-  | "CARAVAN_A_FRAME"
-  | "CARAVAN_CHASSIS_FRONT"
-  | "CARAVAN_CHASSIS_MID"
-  | "CARAVAN_CHASSIS_REAR"
-  | "CARAVAN_UNDERBODY"
-  | "CARAVAN_ROOF"
-  | "CARAVAN_WALL_LEFT"
-  | "CARAVAN_WALL_RIGHT"
-  | "CARAVAN_WALL_FRONT"
-  | "CARAVAN_WALL_REAR"
-  | "CARAVAN_BUMPER_BAR"
-  | "CARAVAN_BOOT"
-  | "CARAVAN_TUNNEL_BOOT"
-  | "CARAVAN_TOOLBAR_EXTERNAL"
-  | "CARAVAN_TOOLBAR_INTERNAL";
+  | 'CHASSIS_FRONT'
+  | 'CHASSIS_MID'
+  | 'CHASSIS_REAR'
+  | 'BULL_BAR'
+  | 'ROOF_RACK'
+  | 'ROOF_RAILS'
+  | 'TRAY_FLOOR'
+  | 'TRAY_SIDE_LEFT'
+  | 'TRAY_SIDE_RIGHT'
+  | 'TRAY_HEADBOARD'
+  | 'TRAY_TAILGATE'
+  | 'CANOPY_EXTERIOR'
+  | 'CANOPY_INTERIOR'
+  | 'CANOPY_ROOF'
+  | 'TUB_INTERIOR'
+  | 'TUB_EXTERIOR'
+  | 'BONNET'
+  | 'REAR_BAR'
+  | 'TOW_HITCH'
+  | 'WHEEL_ARCH_LEFT'
+  | 'WHEEL_ARCH_RIGHT'
+  | 'UNDERBODY_FRONT'
+  | 'UNDERBODY_MID'
+  | 'UNDERBODY_REAR'
+  | 'A_PILLAR_LEFT'
+  | 'A_PILLAR_RIGHT'
+  | 'WINDSCREEN'
+  | 'CABIN_INTERIOR'
+  | 'CABIN_ROOF'
+  | 'CABIN_DASH'
+  | 'DOOR_LEFT'
+  | 'DOOR_RIGHT'
+  | 'SNORKEL'
+  | 'FENDER_LEFT'
+  | 'FENDER_RIGHT'
+  | 'CARAVAN_DRAWBAR'
+  | 'CARAVAN_A_FRAME'
+  | 'CARAVAN_CHASSIS_FRONT'
+  | 'CARAVAN_CHASSIS_MID'
+  | 'CARAVAN_CHASSIS_REAR'
+  | 'CARAVAN_UNDERBODY'
+  | 'CARAVAN_ROOF'
+  | 'CARAVAN_WALL_LEFT'
+  | 'CARAVAN_WALL_RIGHT'
+  | 'CARAVAN_WALL_FRONT'
+  | 'CARAVAN_WALL_REAR'
+  | 'CARAVAN_BUMPER_BAR'
+  | 'CARAVAN_BOOT'
+  | 'CARAVAN_TUNNEL_BOOT'
+  | 'CARAVAN_TOOLBAR_EXTERNAL'
+  | 'CARAVAN_TOOLBAR_INTERNAL';
 
-export type RegulationSetCode = "AU_ADR";
+export type RegulationSetCode = 'AU_ADR';
 
-export type MetricStatus = "ok" | "warn" | "fail";
-export type OverallStatus = "pass" | "warn" | "fail";
-export type RecommendationSeverity = "info" | "warn" | "critical";
+export type MetricStatus = 'ok' | 'warn' | 'fail';
+export type OverallStatus = 'pass' | 'warn' | 'fail';
+export type RecommendationSeverity = 'info' | 'warn' | 'critical';
 
 export interface VehicleInput {
   gvmKg: number;
@@ -126,7 +126,7 @@ export interface PhysicsInput {
 
 export interface RecommendationAction {
   label: string;
-  type: "affiliate_search" | "internal_link" | "advice";
+  type: 'affiliate_search' | 'internal_link' | 'advice';
   payload?: string;
 }
 

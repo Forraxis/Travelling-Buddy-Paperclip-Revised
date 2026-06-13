@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
+import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
 import {
   previewVehicleUploadAction,
   commitVehicleUploadAction,
-} from "@/modules/catalogue/actions/vehicle-upload.actions";
+} from '@/modules/catalogue/actions/vehicle-upload.actions';
 import type {
   VehicleCsvPreviewResult,
   VehicleCsvRowResult,
-} from "@/modules/catalogue/csv/vehicle-csv";
+} from '@/modules/catalogue/csv/vehicle-csv';
 
-type Step = "upload" | "preview" | "done";
+type Step = 'upload' | 'preview' | 'done';
 
 export function VehicleUploadClient() {
   const router = useRouter();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<Step>("upload");
+  const [step, setStep] = useState<Step>('upload');
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [csvText, setCsvText] = useState<string>("");
+  const [csvText, setCsvText] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<VehicleCsvPreviewResult | null>(null);
   const [importResult, setImportResult] = useState<{
@@ -30,8 +30,8 @@ export function VehicleUploadClient() {
   } | null>(null);
 
   async function processFile(file: File) {
-    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-      toast("Please upload a .csv file", "error");
+    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+      toast('Please upload a .csv file', 'error');
       return;
     }
     setFileName(file.name);
@@ -43,12 +43,12 @@ export function VehicleUploadClient() {
     setLoading(false);
 
     if (!result.success) {
-      toast(result.error, "error");
+      toast(result.error, 'error');
       return;
     }
 
     setPreview(result.data);
-    setStep("preview");
+    setStep('preview');
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -70,24 +70,24 @@ export function VehicleUploadClient() {
     setLoading(false);
 
     if (!result.success) {
-      toast(result.error, "error");
+      toast(result.error, 'error');
       return;
     }
 
     setImportResult(result.data);
-    setStep("done");
+    setStep('done');
   }
 
   function handleReset() {
-    setStep("upload");
+    setStep('upload');
     setFileName(null);
-    setCsvText("");
+    setCsvText('');
     setPreview(null);
     setImportResult(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  if (step === "done") {
+  if (step === 'done') {
     return (
       <div className="rounded-lg border border-green-200 bg-green-50 p-8 text-center">
         <div className="mb-3 text-4xl">✓</div>
@@ -102,13 +102,13 @@ export function VehicleUploadClient() {
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={handleReset}
-            className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
           >
             Upload another file
           </button>
           <button
-            onClick={() => router.push("/admin/catalogue/vehicles")}
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+            onClick={() => router.push('/admin/catalogue/vehicles')}
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
           >
             Back to vehicles
           </button>
@@ -117,7 +117,7 @@ export function VehicleUploadClient() {
     );
   }
 
-  if (step === "preview" && preview) {
+  if (step === 'preview' && preview) {
     return (
       <div className="space-y-6">
         <PreviewSummary preview={preview} />
@@ -125,17 +125,17 @@ export function VehicleUploadClient() {
         <div className="flex items-center justify-end gap-3">
           <button
             onClick={handleReset}
-            className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
           >
             Cancel
           </button>
           <button
             onClick={handleCommit}
             disabled={preview.errorRows > 0 || loading}
-            className="rounded-lg bg-tb-primary px-6 py-2 text-sm font-medium text-white hover:bg-tb-primary-light disabled:cursor-not-allowed disabled:opacity-50"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-6 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading
-              ? "Importing…"
+              ? 'Importing…'
               : `Import ${preview.deduplicated.length} variant(s)`}
           </button>
         </div>
@@ -149,7 +149,7 @@ export function VehicleUploadClient() {
         <a
           href="/api/templates/vehicles"
           download="vehicles-template.csv"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+          className="border-tb-neutral-200 hover:bg-tb-neutral-50 inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
         >
           ↓ Download CSV template
         </a>
@@ -168,8 +168,8 @@ export function VehicleUploadClient() {
         onClick={() => fileInputRef.current?.click()}
         className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed py-16 transition-colors ${
           dragging
-            ? "border-tb-primary bg-blue-50"
-            : "border-tb-neutral-200 hover:border-tb-primary hover:bg-tb-neutral-50"
+            ? 'border-tb-primary bg-blue-50'
+            : 'border-tb-neutral-200 hover:border-tb-primary hover:bg-tb-neutral-50'
         }`}
       >
         <input
@@ -185,14 +185,14 @@ export function VehicleUploadClient() {
           <>
             <div className="mb-3 text-4xl text-gray-300">📄</div>
             <p className="mb-1 text-sm font-medium text-gray-700">
-              {fileName ?? "Drop a CSV file here, or click to browse"}
+              {fileName ?? 'Drop a CSV file here, or click to browse'}
             </p>
             <p className="text-xs text-gray-400">Supports .csv files only</p>
           </>
         )}
       </div>
 
-      <div className="rounded-lg border border-tb-neutral-200 bg-tb-neutral-50 p-4 text-xs text-gray-500">
+      <div className="border-tb-neutral-200 bg-tb-neutral-50 rounded-lg border p-4 text-xs text-gray-500">
         <p className="mb-1 font-medium text-gray-700">Required columns:</p>
         <p>
           make_name, model_name, body_type, variant_name, year_from, year_to,
@@ -207,12 +207,10 @@ export function VehicleUploadClient() {
           total_length_mm
         </p>
         <p className="mt-1">
-          body_type values: DUAL_CAB_UTE, SINGLE_CAB_UTE, EXTRA_CAB_UTE,
-          WAGON, SUV, VAN, TROOPCARRIER, OTHER
+          body_type values: DUAL_CAB_UTE, SINGLE_CAB_UTE, EXTRA_CAB_UTE, WAGON,
+          SUV, VAN, TROOPCARRIER, OTHER
         </p>
-        <p>
-          fuel_type values: DIESEL, PETROL, HYBRID, ELECTRIC
-        </p>
+        <p>fuel_type values: DIESEL, PETROL, HYBRID, ELECTRIC</p>
       </div>
     </div>
   );
@@ -222,15 +220,11 @@ function PreviewSummary({ preview }: { preview: VehicleCsvPreviewResult }) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       <StatCard label="Input rows" value={preview.totalInputRows} />
-      <StatCard
-        label="Valid rows"
-        value={preview.validRows}
-        color="green"
-      />
+      <StatCard label="Valid rows" value={preview.validRows} color="green" />
       <StatCard
         label="Error rows"
         value={preview.errorRows}
-        color={preview.errorRows > 0 ? "red" : "gray"}
+        color={preview.errorRows > 0 ? 'red' : 'gray'}
       />
       <StatCard
         label="After dedup"
@@ -249,23 +243,23 @@ function PreviewSummary({ preview }: { preview: VehicleCsvPreviewResult }) {
 function StatCard({
   label,
   value,
-  color = "gray",
+  color = 'gray',
   note,
 }: {
   label: string;
   value: number;
-  color?: "gray" | "green" | "red" | "blue";
+  color?: 'gray' | 'green' | 'red' | 'blue';
   note?: string;
 }) {
   const colorMap = {
-    gray: "text-gray-800",
-    green: "text-green-700",
-    red: "text-red-700",
-    blue: "text-blue-700",
+    gray: 'text-gray-800',
+    green: 'text-green-700',
+    red: 'text-red-700',
+    blue: 'text-blue-700',
   };
   return (
-    <div className="rounded-lg border border-tb-neutral-200 bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+    <div className="border-tb-neutral-200 rounded-lg border bg-white p-4">
+      <p className="text-xs font-medium tracking-wide text-gray-500 uppercase">
         {label}
       </p>
       <p className={`mt-1 text-2xl font-bold ${colorMap[color]}`}>{value}</p>
@@ -276,34 +270,34 @@ function StatCard({
 
 function PreviewTable({ rows }: { rows: VehicleCsvRowResult[] }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-tb-neutral-200">
+    <div className="border-tb-neutral-200 overflow-x-auto rounded-lg border">
       <table className="w-full text-sm">
-        <thead className="border-b border-tb-neutral-200 bg-tb-neutral-50">
+        <thead className="border-tb-neutral-200 bg-tb-neutral-50 border-b">
           <tr>
-            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th className="px-3 py-2 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
               Row
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th className="px-3 py-2 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
               Make
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th className="px-3 py-2 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
               Model
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th className="px-3 py-2 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
               Variant
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th className="px-3 py-2 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
               Years
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th className="px-3 py-2 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
               Fuel
             </th>
-            <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+            <th className="px-3 py-2 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
               Status
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-tb-neutral-100">
+        <tbody className="divide-tb-neutral-100 divide-y">
           {rows.map((row) => (
             <PreviewRow key={row.rowNumber} row={row} />
           ))}
@@ -318,31 +312,31 @@ function PreviewRow({ row }: { row: VehicleCsvRowResult }) {
   const errorMessages = row.errors
     ? Object.entries(row.errors)
         .map(([k, v]) => `${k}: ${v}`)
-        .join("; ")
+        .join('; ')
     : null;
 
   return (
     <tr
-      className={isValid ? "bg-white" : "bg-red-50"}
+      className={isValid ? 'bg-white' : 'bg-red-50'}
       title={errorMessages ?? undefined}
     >
       <td className="px-3 py-2 text-gray-400">{row.rowNumber}</td>
       <td className="px-3 py-2 font-medium text-gray-900">
-        {row.parsed?.makeName ?? row.raw.make_name ?? "—"}
+        {row.parsed?.makeName ?? row.raw.make_name ?? '—'}
       </td>
       <td className="px-3 py-2 text-gray-700">
-        {row.parsed?.modelName ?? row.raw.model_name ?? "—"}
+        {row.parsed?.modelName ?? row.raw.model_name ?? '—'}
       </td>
       <td className="px-3 py-2 text-gray-700">
-        {row.parsed?.variantName ?? row.raw.variant_name ?? "—"}
+        {row.parsed?.variantName ?? row.raw.variant_name ?? '—'}
       </td>
       <td className="px-3 py-2 text-gray-600">
         {row.parsed
           ? `${row.parsed.yearFrom}–${row.parsed.yearTo}`
-          : `${row.raw.year_from ?? "?"}–${row.raw.year_to ?? "?"}`}
+          : `${row.raw.year_from ?? '?'}–${row.raw.year_to ?? '?'}`}
       </td>
       <td className="px-3 py-2 text-gray-600">
-        {row.parsed?.fuelType ?? row.raw.fuel_type ?? "—"}
+        {row.parsed?.fuelType ?? row.raw.fuel_type ?? '—'}
       </td>
       <td className="px-3 py-2">
         {isValid ? (
@@ -352,7 +346,7 @@ function PreviewRow({ row }: { row: VehicleCsvRowResult }) {
         ) : (
           <span
             className="inline-flex max-w-[200px] cursor-help items-center truncate rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800"
-            title={errorMessages ?? ""}
+            title={errorMessages ?? ''}
           >
             {errorMessages}
           </span>

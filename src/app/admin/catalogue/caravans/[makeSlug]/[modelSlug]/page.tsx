@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { getCaravanModelBySlugAction } from "@/modules/catalogue/actions/caravan.actions";
-import { CaravanVariantsList } from "./CaravanVariantsList";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getCaravanModelBySlugAction } from '@/modules/catalogue/actions/caravan.actions';
+import { CaravanVariantsList } from './CaravanVariantsList';
 
 export default async function CaravanModelVariantsPage({
   params,
@@ -16,7 +16,7 @@ export default async function CaravanModelVariantsPage({
     <div>
       <AdminPageHeader
         title={`${model.make.name} ${model.name}`}
-        description={`Variants — ${model.variants.length} variant${model.variants.length !== 1 ? "s" : ""}`}
+        description={`Variants — ${model.variants.length} variant${model.variants.length !== 1 ? 's' : ''}`}
       />
       <CaravanVariantsList model={model} makeSlug={makeSlug} />
     </div>

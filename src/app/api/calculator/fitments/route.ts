@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { withRateLimit, serverError } from "@/lib/api-helpers";
-import { z } from "zod";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { withRateLimit, serverError } from '@/lib/api-helpers';
+import { z } from 'zod';
 
 const schema = z.object({
   accessoryIds: z.array(z.string()).min(1).max(50),
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
     const { accessoryIds } = parsed.data;
@@ -25,7 +25,9 @@ export async function POST(request: Request) {
       select: { id: true, name: true },
     });
 
-    return NextResponse.json(accessories.map((a) => ({ accessoryId: a.id, name: a.name })));
+    return NextResponse.json(
+      accessories.map((a) => ({ accessoryId: a.id, name: a.name })),
+    );
   } catch (err) {
     return serverError(err);
   }

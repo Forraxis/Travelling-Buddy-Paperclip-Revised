@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { serverError } from '@/lib/api-helpers';
 
 const sharedSetupInclude = {
   vehicleVariant: { include: { model: { include: { make: true } } } },
@@ -28,7 +28,7 @@ const sharedSetupInclude = {
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: { params: Promise<{ token: string }> },
 ) {
   try {
     const { token } = await params;
@@ -39,13 +39,13 @@ export async function GET(
     });
 
     if (!setup) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
     const { userId, ...publicSetup } = setup;
 
     return NextResponse.json(publicSetup, {
-      headers: { "X-Robots-Tag": "noindex" },
+      headers: { 'X-Robots-Tag': 'noindex' },
     });
   } catch (err) {
     return serverError(err);

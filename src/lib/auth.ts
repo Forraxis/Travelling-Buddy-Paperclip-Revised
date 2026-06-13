@@ -1,12 +1,12 @@
-import NextAuth from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import Credentials from "next-auth/providers/credentials";
-import Google from "next-auth/providers/google";
-import { prisma } from "@/lib/db";
-import { verifyPassword } from "@/lib/password";
-import type { UserRole, TrustTier, AustralianState } from "@prisma/client";
+import NextAuth from 'next-auth';
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import Credentials from 'next-auth/providers/credentials';
+import Google from 'next-auth/providers/google';
+import { prisma } from '@/lib/db';
+import { verifyPassword } from '@/lib/password';
+import type { UserRole, TrustTier, AustralianState } from '@prisma/client';
 
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
@@ -26,7 +26,7 @@ declare module "next-auth" {
   }
 }
 
-declare module "@auth/core/jwt" {
+declare module '@auth/core/jwt' {
   interface JWT {
     id: string;
     role: UserRole;
@@ -38,9 +38,9 @@ declare module "@auth/core/jwt" {
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
-  session: { strategy: "jwt" },
+  session: { strategy: 'jwt' },
   pages: {
-    signIn: "/auth/signin",
+    signIn: '/auth/signin',
   },
   providers: [
     Google({
@@ -48,15 +48,15 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     Credentials({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (
-          typeof credentials?.email !== "string" ||
-          typeof credentials?.password !== "string"
+          typeof credentials?.email !== 'string' ||
+          typeof credentials?.password !== 'string'
         ) {
           return null;
         }
@@ -77,7 +77,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         });
 
         if (!user?.password) return null;
-        if (user.deletedAt) throw new Error("ACCOUNT_DELETED");
+        if (user.deletedAt) throw new Error('ACCOUNT_DELETED');
 
         const valid = await verifyPassword(credentials.password, user.password);
         if (!valid) return null;
@@ -101,7 +101,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           where: { id: user.id },
           select: { deletedAt: true },
         });
-        if (dbUser?.deletedAt) return "/auth/signin?error=ACCOUNT_DELETED";
+        if (dbUser?.deletedAt) return '/auth/signin?error=ACCOUNT_DELETED';
       }
       return true;
     },
@@ -120,8 +120,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             where: { id: user.id! },
             select: { role: true, trustTier: true, homeState: true },
           });
-          token.role = dbUser?.role ?? "VIEWER";
-          token.trustTier = dbUser?.trustTier ?? "NEW";
+          token.role = dbUser?.role ?? 'VIEWER';
+          token.trustTier = dbUser?.trustTier ?? 'NEW';
           token.homeState = dbUser?.homeState ?? null;
         }
       }

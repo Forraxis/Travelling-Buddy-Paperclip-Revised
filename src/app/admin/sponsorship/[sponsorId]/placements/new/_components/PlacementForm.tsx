@@ -1,47 +1,74 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
-import { FormField, inputClassName, selectClassName } from "@/modules/admin/components/FormField";
-import { createPlacementAction } from "@/modules/sponsorship/actions/sponsor-admin.actions";
-import type { CategoryOption, AccessoryOption } from "@/modules/sponsorship/actions/sponsor-admin.actions";
-import type { PlacementType, PlacementTier, VehicleBodyType } from "@prisma/client";
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
+import {
+  FormField,
+  inputClassName,
+  selectClassName,
+} from '@/modules/admin/components/FormField';
+import { createPlacementAction } from '@/modules/sponsorship/actions/sponsor-admin.actions';
+import type {
+  CategoryOption,
+  AccessoryOption,
+} from '@/modules/sponsorship/actions/sponsor-admin.actions';
+import type {
+  PlacementType,
+  PlacementTier,
+  VehicleBodyType,
+} from '@prisma/client';
 
-type Scope = "accessory" | "category" | "vehicle_type" | "recommendation";
+type Scope = 'accessory' | 'category' | 'vehicle_type' | 'recommendation';
 
 const SCOPE_OPTIONS: { value: Scope; label: string; description: string }[] = [
-  { value: "accessory", label: "Specific Accessory", description: "Featured placement for a single accessory item" },
-  { value: "category", label: "Accessory Category", description: "Top placement within an accessory category" },
-  { value: "vehicle_type", label: "Vehicle Type", description: "Featured placement on a vehicle type page" },
-  { value: "recommendation", label: "Upgrade Pathway", description: "Pinned placement in recommendation results" },
+  {
+    value: 'accessory',
+    label: 'Specific Accessory',
+    description: 'Featured placement for a single accessory item',
+  },
+  {
+    value: 'category',
+    label: 'Accessory Category',
+    description: 'Top placement within an accessory category',
+  },
+  {
+    value: 'vehicle_type',
+    label: 'Vehicle Type',
+    description: 'Featured placement on a vehicle type page',
+  },
+  {
+    value: 'recommendation',
+    label: 'Upgrade Pathway',
+    description: 'Pinned placement in recommendation results',
+  },
 ];
 
 const SCOPE_TO_PLACEMENT_TYPE: Record<Scope, PlacementType> = {
-  accessory: "ACCESSORY_FEATURED",
-  category: "CATEGORY_TOP",
-  vehicle_type: "VEHICLE_TYPE_FEATURED",
-  recommendation: "RECOMMENDATION_PINNED",
+  accessory: 'ACCESSORY_FEATURED',
+  category: 'CATEGORY_TOP',
+  vehicle_type: 'VEHICLE_TYPE_FEATURED',
+  recommendation: 'RECOMMENDATION_PINNED',
 };
 
 const TIER_OPTIONS: { value: PlacementTier; label: string }[] = [
-  { value: "FEATURED_FIT", label: "Featured Fit" },
-  { value: "CATEGORY_TOP", label: "Category Top" },
-  { value: "RECOMMENDATION_PINNED", label: "Recommendation Pinned" },
+  { value: 'FEATURED_FIT', label: 'Featured Fit' },
+  { value: 'CATEGORY_TOP', label: 'Category Top' },
+  { value: 'RECOMMENDATION_PINNED', label: 'Recommendation Pinned' },
 ];
 
 const VEHICLE_BODY_TYPES: { value: VehicleBodyType; label: string }[] = [
-  { value: "DUAL_CAB_UTE", label: "Dual Cab Ute" },
-  { value: "SINGLE_CAB_UTE", label: "Single Cab Ute" },
-  { value: "EXTRA_CAB_UTE", label: "Extra Cab Ute" },
-  { value: "WAGON", label: "Wagon" },
-  { value: "SUV", label: "SUV" },
-  { value: "VAN", label: "Van" },
-  { value: "TROOPCARRIER", label: "Troopcarrier" },
-  { value: "OTHER", label: "Other" },
+  { value: 'DUAL_CAB_UTE', label: 'Dual Cab Ute' },
+  { value: 'SINGLE_CAB_UTE', label: 'Single Cab Ute' },
+  { value: 'EXTRA_CAB_UTE', label: 'Extra Cab Ute' },
+  { value: 'WAGON', label: 'Wagon' },
+  { value: 'SUV', label: 'SUV' },
+  { value: 'VAN', label: 'Van' },
+  { value: 'TROOPCARRIER', label: 'Troopcarrier' },
+  { value: 'OTHER', label: 'Other' },
 ];
 
-const STEPS = ["Scope", "Tier", "Dates", "Review"] as const;
+const STEPS = ['Scope', 'Tier', 'Dates', 'Review'] as const;
 
 export function PlacementForm({
   sponsorId,
@@ -61,33 +88,40 @@ export function PlacementForm({
   const [isPending, startTransition] = useTransition();
   const [step, setStep] = useState(0);
 
-  const [scope, setScope] = useState<Scope>("accessory");
-  const [accessoryId, setAccessoryId] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [vehicleBodyType, setVehicleBodyType] = useState<VehicleBodyType>("SUV");
-  const [tier, setTier] = useState<PlacementTier>("FEATURED_FIT");
-  const [startsAt, setStartsAt] = useState("");
-  const [endsAt, setEndsAt] = useState("");
-  const [notes, setNotes] = useState("");
-  const [stepError, setStepError] = useState("");
+  const [scope, setScope] = useState<Scope>('accessory');
+  const [accessoryId, setAccessoryId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [vehicleBodyType, setVehicleBodyType] =
+    useState<VehicleBodyType>('SUV');
+  const [tier, setTier] = useState<PlacementTier>('FEATURED_FIT');
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
+  const [notes, setNotes] = useState('');
+  const [stepError, setStepError] = useState('');
 
   function validateStep(): boolean {
-    setStepError("");
+    setStepError('');
     if (step === 0) {
-      if (scope === "accessory" && !accessoryId) {
-        setStepError("Please select an accessory");
+      if (scope === 'accessory' && !accessoryId) {
+        setStepError('Please select an accessory');
         return false;
       }
-      if (scope === "category" && !categoryId) {
-        setStepError("Please select a category");
+      if (scope === 'category' && !categoryId) {
+        setStepError('Please select a category');
         return false;
       }
     }
     if (step === 2) {
-      if (!startsAt) { setStepError("Start date is required"); return false; }
-      if (!endsAt) { setStepError("End date is required"); return false; }
+      if (!startsAt) {
+        setStepError('Start date is required');
+        return false;
+      }
+      if (!endsAt) {
+        setStepError('End date is required');
+        return false;
+      }
       if (new Date(endsAt) <= new Date(startsAt)) {
-        setStepError("End date must be after start date");
+        setStepError('End date must be after start date');
         return false;
       }
     }
@@ -100,7 +134,7 @@ export function PlacementForm({
   }
 
   function handleBack() {
-    setStepError("");
+    setStepError('');
     setStep((s) => Math.max(s - 1, 0));
   }
 
@@ -114,18 +148,18 @@ export function PlacementForm({
         tier,
         startsAt,
         endsAt,
-        accessoryId: scope === "accessory" ? accessoryId : null,
-        categoryId: scope === "category" ? categoryId : null,
-        vehicleBodyType: scope === "vehicle_type" ? vehicleBodyType : null,
+        accessoryId: scope === 'accessory' ? accessoryId : null,
+        categoryId: scope === 'category' ? categoryId : null,
+        vehicleBodyType: scope === 'vehicle_type' ? vehicleBodyType : null,
         notes: notes.trim() || null,
       });
 
       if (result.success) {
-        toast("Placement created");
+        toast('Placement created');
         router.push(backHref);
         router.refresh();
       } else {
-        toast(result.error, "error");
+        toast(result.error, 'error');
       }
     });
   }
@@ -133,7 +167,9 @@ export function PlacementForm({
   const selectedAccessory = accessories.find((a) => a.id === accessoryId);
   const selectedCategory = categories.find((c) => c.id === categoryId);
   const selectedTier = TIER_OPTIONS.find((t) => t.value === tier);
-  const selectedVehicle = VEHICLE_BODY_TYPES.find((v) => v.value === vehicleBodyType);
+  const selectedVehicle = VEHICLE_BODY_TYPES.find(
+    (v) => v.value === vehicleBodyType,
+  );
 
   return (
     <div className="max-w-xl">
@@ -144,19 +180,21 @@ export function PlacementForm({
             <div
               className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
                 i < step
-                  ? "bg-tb-primary text-white"
+                  ? 'bg-tb-primary text-white'
                   : i === step
-                  ? "border-2 border-tb-primary text-tb-primary"
-                  : "border border-tb-neutral-200 text-gray-400"
+                    ? 'border-tb-primary text-tb-primary border-2'
+                    : 'border-tb-neutral-200 border text-gray-400'
               }`}
             >
-              {i < step ? "✓" : i + 1}
+              {i < step ? '✓' : i + 1}
             </div>
-            <span className={`text-sm ${i === step ? "font-medium text-gray-900" : "text-gray-500"}`}>
+            <span
+              className={`text-sm ${i === step ? 'font-medium text-gray-900' : 'text-gray-500'}`}
+            >
               {label}
             </span>
             {i < STEPS.length - 1 && (
-              <div className="h-px w-8 bg-tb-neutral-200" />
+              <div className="bg-tb-neutral-200 h-px w-8" />
             )}
           </div>
         ))}
@@ -164,14 +202,18 @@ export function PlacementForm({
 
       {/* Step 0: Scope */}
       {step === 0 && (
-        <div className="rounded-lg border border-tb-neutral-200 p-6 space-y-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Select Scope</h2>
+        <div className="border-tb-neutral-200 space-y-5 rounded-lg border p-6">
+          <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase">
+            Select Scope
+          </h2>
           <div className="space-y-3">
             {SCOPE_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
                 className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
-                  scope === opt.value ? "border-tb-primary bg-blue-50" : "border-tb-neutral-200 hover:bg-tb-neutral-50"
+                  scope === opt.value
+                    ? 'border-tb-primary bg-blue-50'
+                    : 'border-tb-neutral-200 hover:bg-tb-neutral-50'
                 }`}
               >
                 <input
@@ -190,7 +232,7 @@ export function PlacementForm({
             ))}
           </div>
 
-          {scope === "accessory" && (
+          {scope === 'accessory' && (
             <FormField label="Select Accessory" name="accessoryId">
               <select
                 id="accessoryId"
@@ -200,13 +242,15 @@ export function PlacementForm({
               >
                 <option value="">— Select accessory —</option>
                 {accessories.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
                 ))}
               </select>
             </FormField>
           )}
 
-          {scope === "category" && (
+          {scope === 'category' && (
             <FormField label="Select Category" name="categoryId">
               <select
                 id="categoryId"
@@ -216,22 +260,28 @@ export function PlacementForm({
               >
                 <option value="">— Select category —</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </FormField>
           )}
 
-          {scope === "vehicle_type" && (
+          {scope === 'vehicle_type' && (
             <FormField label="Select Vehicle Type" name="vehicleBodyType">
               <select
                 id="vehicleBodyType"
                 value={vehicleBodyType}
-                onChange={(e) => setVehicleBodyType(e.target.value as VehicleBodyType)}
+                onChange={(e) =>
+                  setVehicleBodyType(e.target.value as VehicleBodyType)
+                }
                 className={selectClassName}
               >
                 {VEHICLE_BODY_TYPES.map((v) => (
-                  <option key={v.value} value={v.value}>{v.label}</option>
+                  <option key={v.value} value={v.value}>
+                    {v.label}
+                  </option>
                 ))}
               </select>
             </FormField>
@@ -241,14 +291,18 @@ export function PlacementForm({
 
       {/* Step 1: Tier */}
       {step === 1 && (
-        <div className="rounded-lg border border-tb-neutral-200 p-6 space-y-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Select Tier</h2>
+        <div className="border-tb-neutral-200 space-y-5 rounded-lg border p-6">
+          <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase">
+            Select Tier
+          </h2>
           <div className="space-y-3">
             {TIER_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
                 className={`flex cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors ${
-                  tier === opt.value ? "border-tb-primary bg-blue-50" : "border-tb-neutral-200 hover:bg-tb-neutral-50"
+                  tier === opt.value
+                    ? 'border-tb-primary bg-blue-50'
+                    : 'border-tb-neutral-200 hover:bg-tb-neutral-50'
                 }`}
               >
                 <input
@@ -267,8 +321,10 @@ export function PlacementForm({
 
       {/* Step 2: Dates */}
       {step === 2 && (
-        <div className="rounded-lg border border-tb-neutral-200 p-6 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Date Range</h2>
+        <div className="border-tb-neutral-200 space-y-4 rounded-lg border p-6">
+          <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase">
+            Date Range
+          </h2>
 
           <FormField label="Start Date" name="startsAt">
             <input
@@ -305,8 +361,10 @@ export function PlacementForm({
 
       {/* Step 3: Review */}
       {step === 3 && (
-        <div className="rounded-lg border border-tb-neutral-200 p-6 space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Review Placement</h2>
+        <div className="border-tb-neutral-200 space-y-4 rounded-lg border p-6">
+          <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase">
+            Review Placement
+          </h2>
           <dl className="space-y-3 text-sm">
             <div className="flex gap-4">
               <dt className="w-36 text-gray-500">Sponsor</dt>
@@ -315,15 +373,17 @@ export function PlacementForm({
             <div className="flex gap-4">
               <dt className="w-36 text-gray-500">Scope</dt>
               <dd className="font-medium text-gray-900">
-                {scope === "accessory" && selectedAccessory?.name}
-                {scope === "category" && selectedCategory?.name}
-                {scope === "vehicle_type" && selectedVehicle?.label}
-                {scope === "recommendation" && "Upgrade Pathway (global)"}
+                {scope === 'accessory' && selectedAccessory?.name}
+                {scope === 'category' && selectedCategory?.name}
+                {scope === 'vehicle_type' && selectedVehicle?.label}
+                {scope === 'recommendation' && 'Upgrade Pathway (global)'}
               </dd>
             </div>
             <div className="flex gap-4">
               <dt className="w-36 text-gray-500">Tier</dt>
-              <dd className="font-medium text-gray-900">{selectedTier?.label}</dd>
+              <dd className="font-medium text-gray-900">
+                {selectedTier?.label}
+              </dd>
             </div>
             <div className="flex gap-4">
               <dt className="w-36 text-gray-500">Date range</dt>
@@ -338,32 +398,31 @@ export function PlacementForm({
               </div>
             )}
           </dl>
-          <p className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
-            ACCC compliance: sponsored labels are enforced at the rendering layer and cannot be hidden by admin configuration.
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            ACCC compliance: sponsored labels are enforced at the rendering
+            layer and cannot be hidden by admin configuration.
           </p>
         </div>
       )}
 
       {/* Error */}
-      {stepError && (
-        <p className="mt-3 text-sm text-red-600">{stepError}</p>
-      )}
+      {stepError && <p className="mt-3 text-sm text-red-600">{stepError}</p>}
 
       {/* Navigation */}
       <div className="mt-6 flex items-center justify-between">
         <button
           type="button"
           onClick={step === 0 ? () => router.push(backHref) : handleBack}
-          className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+          className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
         >
-          {step === 0 ? "Cancel" : "← Back"}
+          {step === 0 ? 'Cancel' : '← Back'}
         </button>
 
         {step < STEPS.length - 1 ? (
           <button
             type="button"
             onClick={handleNext}
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
           >
             Next →
           </button>
@@ -372,9 +431,9 @@ export function PlacementForm({
             type="button"
             onClick={handleSubmit}
             disabled={isPending}
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light disabled:opacity-50"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {isPending ? "Creating..." : "Create Placement"}
+            {isPending ? 'Creating...' : 'Create Placement'}
           </button>
         )}
       </div>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   createContext,
@@ -6,11 +6,17 @@ import {
   useContext,
   useEffect,
   useReducer,
-} from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import type { CalculatorState, CalculatorAction, JourneyAssumptions, CaravanAssumptions, AccessorySelection } from "./types";
-import { calculatorReducer, INITIAL_STATE } from "./types";
-import { paramsToState, stateToParams } from "./url-params";
+} from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import type {
+  CalculatorState,
+  CalculatorAction,
+  JourneyAssumptions,
+  CaravanAssumptions,
+  AccessorySelection,
+} from './types';
+import { calculatorReducer, INITIAL_STATE } from './types';
+import { paramsToState, stateToParams } from './url-params';
 
 interface CalculatorContextValue {
   state: CalculatorState;
@@ -31,7 +37,9 @@ const CalculatorContext = createContext<CalculatorContextValue | null>(null);
 export function useCalculatorState(): CalculatorContextValue {
   const ctx = useContext(CalculatorContext);
   if (!ctx) {
-    throw new Error("useCalculatorState must be used within CalculatorProvider");
+    throw new Error(
+      'useCalculatorState must be used within CalculatorProvider',
+    );
   }
   return ctx;
 }
@@ -64,38 +72,44 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
   }, [state, router, searchParams]);
 
   const setVehicleVariant = useCallback(
-    (id: string | null) => dispatch({ type: "SET_VEHICLE_VARIANT", id }),
+    (id: string | null) => dispatch({ type: 'SET_VEHICLE_VARIANT', id }),
     [],
   );
   const setCaravanVariant = useCallback(
-    (id: string | null) => dispatch({ type: "SET_CARAVAN_VARIANT", id }),
+    (id: string | null) => dispatch({ type: 'SET_CARAVAN_VARIANT', id }),
     [],
   );
   const setJourney = useCallback(
-    (patch: Partial<JourneyAssumptions>) => dispatch({ type: "SET_JOURNEY", patch }),
+    (patch: Partial<JourneyAssumptions>) =>
+      dispatch({ type: 'SET_JOURNEY', patch }),
     [],
   );
   const setCaravanAssumptions = useCallback(
-    (patch: Partial<CaravanAssumptions>) => dispatch({ type: "SET_CARAVAN_ASSUMPTIONS", patch }),
+    (patch: Partial<CaravanAssumptions>) =>
+      dispatch({ type: 'SET_CARAVAN_ASSUMPTIONS', patch }),
     [],
   );
   const addAccessory = useCallback(
-    (accessory: AccessorySelection) => dispatch({ type: "ADD_ACCESSORY", accessory }),
+    (accessory: AccessorySelection) =>
+      dispatch({ type: 'ADD_ACCESSORY', accessory }),
     [],
   );
   const removeAccessory = useCallback(
-    (accessoryId: string) => dispatch({ type: "REMOVE_ACCESSORY", accessoryId }),
+    (accessoryId: string) =>
+      dispatch({ type: 'REMOVE_ACCESSORY', accessoryId }),
     [],
   );
   const addCaravanAccessory = useCallback(
-    (accessory: AccessorySelection) => dispatch({ type: "ADD_CARAVAN_ACCESSORY", accessory }),
+    (accessory: AccessorySelection) =>
+      dispatch({ type: 'ADD_CARAVAN_ACCESSORY', accessory }),
     [],
   );
   const removeCaravanAccessory = useCallback(
-    (accessoryId: string) => dispatch({ type: "REMOVE_CARAVAN_ACCESSORY", accessoryId }),
+    (accessoryId: string) =>
+      dispatch({ type: 'REMOVE_CARAVAN_ACCESSORY', accessoryId }),
     [],
   );
-  const reset = useCallback(() => dispatch({ type: "RESET" }), []);
+  const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
   return (
     <CalculatorContext

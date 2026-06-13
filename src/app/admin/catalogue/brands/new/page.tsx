@@ -1,5 +1,5 @@
-import { AdminPageHeader } from "@/modules/admin/components";
-import { BrandForm } from "../BrandForm";
+import { AdminPageHeader } from '@/modules/admin/components';
+import { BrandForm } from '../BrandForm';
 
 export default function NewBrandPage() {
   return (

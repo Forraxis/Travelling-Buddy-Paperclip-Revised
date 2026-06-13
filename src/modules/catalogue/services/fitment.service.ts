@@ -1,58 +1,58 @@
-import type { PrismaClient, MountingLocation } from "@prisma/client";
+import type { PrismaClient, MountingLocation } from '@prisma/client';
 import type {
   AccessoryFitmentDto,
   CreateAccessoryFitmentInput,
   UpdateAccessoryFitmentInput,
   ResolvedPositionChain,
   MountingCompatibilityResult,
-} from "../types/fitment.types";
+} from '../types/fitment.types';
 
 // Mounting locations available on a bare vehicle (no accessories required).
 const VEHICLE_BASE_LOCATIONS = new Set<MountingLocation>([
-  "CHASSIS_FRONT",
-  "CHASSIS_MID",
-  "CHASSIS_REAR",
-  "BONNET",
-  "ROOF_RACK",
-  "ROOF_RAILS",
-  "TUB_INTERIOR",
-  "TUB_EXTERIOR",
-  "CABIN_INTERIOR",
-  "CABIN_ROOF",
-  "CABIN_DASH",
-  "DOOR_LEFT",
-  "DOOR_RIGHT",
-  "WHEEL_ARCH_LEFT",
-  "WHEEL_ARCH_RIGHT",
-  "UNDERBODY_FRONT",
-  "UNDERBODY_MID",
-  "UNDERBODY_REAR",
-  "A_PILLAR_LEFT",
-  "A_PILLAR_RIGHT",
-  "WINDSCREEN",
-  "FENDER_LEFT",
-  "FENDER_RIGHT",
-  "REAR_BAR",
-  "TOW_HITCH",
+  'CHASSIS_FRONT',
+  'CHASSIS_MID',
+  'CHASSIS_REAR',
+  'BONNET',
+  'ROOF_RACK',
+  'ROOF_RAILS',
+  'TUB_INTERIOR',
+  'TUB_EXTERIOR',
+  'CABIN_INTERIOR',
+  'CABIN_ROOF',
+  'CABIN_DASH',
+  'DOOR_LEFT',
+  'DOOR_RIGHT',
+  'WHEEL_ARCH_LEFT',
+  'WHEEL_ARCH_RIGHT',
+  'UNDERBODY_FRONT',
+  'UNDERBODY_MID',
+  'UNDERBODY_REAR',
+  'A_PILLAR_LEFT',
+  'A_PILLAR_RIGHT',
+  'WINDSCREEN',
+  'FENDER_LEFT',
+  'FENDER_RIGHT',
+  'REAR_BAR',
+  'TOW_HITCH',
 ]);
 
 const CARAVAN_BASE_LOCATIONS = new Set<MountingLocation>([
-  "CARAVAN_DRAWBAR",
-  "CARAVAN_A_FRAME",
-  "CARAVAN_CHASSIS_FRONT",
-  "CARAVAN_CHASSIS_MID",
-  "CARAVAN_CHASSIS_REAR",
-  "CARAVAN_UNDERBODY",
-  "CARAVAN_ROOF",
-  "CARAVAN_WALL_LEFT",
-  "CARAVAN_WALL_RIGHT",
-  "CARAVAN_WALL_FRONT",
-  "CARAVAN_WALL_REAR",
-  "CARAVAN_BUMPER_BAR",
-  "CARAVAN_BOOT",
-  "CARAVAN_TUNNEL_BOOT",
-  "CARAVAN_TOOLBAR_EXTERNAL",
-  "CARAVAN_TOOLBAR_INTERNAL",
+  'CARAVAN_DRAWBAR',
+  'CARAVAN_A_FRAME',
+  'CARAVAN_CHASSIS_FRONT',
+  'CARAVAN_CHASSIS_MID',
+  'CARAVAN_CHASSIS_REAR',
+  'CARAVAN_UNDERBODY',
+  'CARAVAN_ROOF',
+  'CARAVAN_WALL_LEFT',
+  'CARAVAN_WALL_RIGHT',
+  'CARAVAN_WALL_FRONT',
+  'CARAVAN_WALL_REAR',
+  'CARAVAN_BUMPER_BAR',
+  'CARAVAN_BOOT',
+  'CARAVAN_TUNNEL_BOOT',
+  'CARAVAN_TOOLBAR_EXTERNAL',
+  'CARAVAN_TOOLBAR_INTERNAL',
 ]);
 
 function toDto(raw: {
@@ -73,7 +73,7 @@ function toDto(raw: {
 
 export function createFitmentService(prisma: PrismaClient) {
   async function create(
-    input: CreateAccessoryFitmentInput
+    input: CreateAccessoryFitmentInput,
   ): Promise<AccessoryFitmentDto> {
     const raw = await prisma.accessoryFitment.create({ data: input as never });
     return toDto(raw as never);
@@ -81,7 +81,7 @@ export function createFitmentService(prisma: PrismaClient) {
 
   async function update(
     id: string,
-    input: UpdateAccessoryFitmentInput
+    input: UpdateAccessoryFitmentInput,
   ): Promise<AccessoryFitmentDto> {
     const raw = await prisma.accessoryFitment.update({
       where: { id },
@@ -100,31 +100,31 @@ export function createFitmentService(prisma: PrismaClient) {
   }
 
   async function getFitmentsForVehicleVariant(
-    vehicleVariantId: string
+    vehicleVariantId: string,
   ): Promise<AccessoryFitmentDto[]> {
     const rows = await prisma.accessoryFitment.findMany({
       where: { vehicleVariantId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: 'asc' },
     });
     return rows.map((r) => toDto(r as never));
   }
 
   async function getFitmentsForCaravanVariant(
-    caravanVariantId: string
+    caravanVariantId: string,
   ): Promise<AccessoryFitmentDto[]> {
     const rows = await prisma.accessoryFitment.findMany({
       where: { caravanVariantId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: 'asc' },
     });
     return rows.map((r) => toDto(r as never));
   }
 
   async function getFitmentsForAccessory(
-    accessoryId: string
+    accessoryId: string,
   ): Promise<AccessoryFitmentDto[]> {
     const rows = await prisma.accessoryFitment.findMany({
       where: { accessoryId },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: 'asc' },
     });
     return rows.map((r) => toDto(r as never));
   }
@@ -133,7 +133,7 @@ export function createFitmentService(prisma: PrismaClient) {
   // factoring in which fitments are already installed.
   async function getAvailableMountingLocations(
     vehicleVariantId: string,
-    fittedFitmentIds: string[]
+    fittedFitmentIds: string[],
   ): Promise<MountingLocation[]> {
     const available = new Set<MountingLocation>(VEHICLE_BASE_LOCATIONS);
 
@@ -160,7 +160,7 @@ export function createFitmentService(prisma: PrismaClient) {
   // to a parent fitment that it mounts onto.
   async function resolvePositionChain(
     fitmentId: string,
-    parentFitmentId?: string | null
+    parentFitmentId?: string | null,
   ): Promise<ResolvedPositionChain> {
     const fitment = await prisma.accessoryFitment.findUniqueOrThrow({
       where: { id: fitmentId },
@@ -199,7 +199,7 @@ export function createFitmentService(prisma: PrismaClient) {
   // by fitment. Returns a structured result rather than throwing.
   async function validateMountingCompatibility(
     fitmentId: string,
-    parentFitmentId: string
+    parentFitmentId: string,
   ): Promise<MountingCompatibilityResult> {
     const [fitment, parent] = await Promise.all([
       prisma.accessoryFitment.findUniqueOrThrow({
@@ -214,7 +214,7 @@ export function createFitmentService(prisma: PrismaClient) {
 
     return {
       compatible: parent.providesMountingLocations.includes(
-        fitment.mountingLocation
+        fitment.mountingLocation,
       ),
       requiredLocation: fitment.mountingLocation,
       parentProvides: parent.providesMountingLocations,

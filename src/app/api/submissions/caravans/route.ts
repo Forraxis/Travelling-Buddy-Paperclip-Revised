@@ -1,26 +1,30 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { submissionVlmQueue } from "@/lib/queue";
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { submissionVlmQueue } from '@/lib/queue';
 import {
   caravanFingerprint,
   checkCaravanDuplicate,
-} from "@/lib/duplicate-detection";
+} from '@/lib/duplicate-detection';
 
 const CaravanSubmissionSchema = z.object({
   makeId: z.string().min(1),
   newMakeName: z.string().optional(),
   modelId: z.string().min(1),
   newModelName: z.string().optional(),
-  year: z.number().int().min(1950).max(new Date().getFullYear() + 2),
+  year: z
+    .number()
+    .int()
+    .min(1950)
+    .max(new Date().getFullYear() + 2),
   variantName: z.string().min(1),
   bodyType: z.string().min(1),
   axleConfiguration: z.enum([
-    "SINGLE_AXLE",
-    "DUAL_AXLE_CLOSE_COUPLED",
-    "DUAL_AXLE_SPREAD",
-    "TRIPLE_AXLE",
+    'SINGLE_AXLE',
+    'DUAL_AXLE_CLOSE_COUPLED',
+    'DUAL_AXLE_SPREAD',
+    'TRIPLE_AXLE',
   ]),
   // Weights — required for useful calculations
   atmKg: z.number().int().positive(),
@@ -50,41 +54,55 @@ function toSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 function bodyTypeEnum(
-  bodyType: string
-): "CARAVAN_POP_TOP" | "CARAVAN_FULL_HEIGHT" | "OFF_ROAD_CARAVAN" | "CAMPER_TRAILER" | "FIFTH_WHEELER" | "OTHER" {
-  const map: Record<string, "CARAVAN_POP_TOP" | "CARAVAN_FULL_HEIGHT" | "OFF_ROAD_CARAVAN" | "CAMPER_TRAILER" | "FIFTH_WHEELER" | "OTHER"> = {
-    "caravan (pop-top)": "CARAVAN_POP_TOP",
-    "caravan (full-height)": "CARAVAN_FULL_HEIGHT",
-    "off-road caravan": "OFF_ROAD_CARAVAN",
-    "camper trailer": "CAMPER_TRAILER",
-    "fifth-wheeler": "FIFTH_WHEELER",
+  bodyType: string,
+):
+  | 'CARAVAN_POP_TOP'
+  | 'CARAVAN_FULL_HEIGHT'
+  | 'OFF_ROAD_CARAVAN'
+  | 'CAMPER_TRAILER'
+  | 'FIFTH_WHEELER'
+  | 'OTHER' {
+  const map: Record<
+    string,
+    | 'CARAVAN_POP_TOP'
+    | 'CARAVAN_FULL_HEIGHT'
+    | 'OFF_ROAD_CARAVAN'
+    | 'CAMPER_TRAILER'
+    | 'FIFTH_WHEELER'
+    | 'OTHER'
+  > = {
+    'caravan (pop-top)': 'CARAVAN_POP_TOP',
+    'caravan (full-height)': 'CARAVAN_FULL_HEIGHT',
+    'off-road caravan': 'OFF_ROAD_CARAVAN',
+    'camper trailer': 'CAMPER_TRAILER',
+    'fifth-wheeler': 'FIFTH_WHEELER',
   };
-  return map[bodyType.toLowerCase()] ?? "OTHER";
+  return map[bodyType.toLowerCase()] ?? 'OTHER';
 }
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   const parsed = CaravanSubmissionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", issues: parsed.error.issues },
-      { status: 422 }
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
     );
   }
 
@@ -108,9 +126,9 @@ export async function POST(request: Request) {
           existingId: dupCheck.existingId,
           existingName: dupCheck.existingName,
           message:
-            "We may already have this caravan. Is yours different from the existing one?",
+            'We may already have this caravan. Is yours different from the existing one?',
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
   }
@@ -140,90 +158,104 @@ export async function POST(request: Request) {
   };
 
   // Create community variant + submission atomically
-  const [submission, communityVariant] = await prisma.$transaction(async (tx) => {
-    // Resolve or create CaravanMake
-    let resolvedMakeId = data.makeId !== "new" ? data.makeId : null;
-    if (!resolvedMakeId && data.newMakeName) {
-      const makeSlug = toSlug(data.newMakeName);
-      const make = await tx.caravanMake.upsert({
-        where: { slug: makeSlug },
-        update: {},
-        create: { name: data.newMakeName, slug: makeSlug },
-        select: { id: true },
-      });
-      resolvedMakeId = make.id;
-    }
-    if (!resolvedMakeId) throw new Error("Make is required");
+  const [submission, communityVariant] = await prisma.$transaction(
+    async (tx) => {
+      // Resolve or create CaravanMake
+      let resolvedMakeId = data.makeId !== 'new' ? data.makeId : null;
+      if (!resolvedMakeId && data.newMakeName) {
+        const makeSlug = toSlug(data.newMakeName);
+        const make = await tx.caravanMake.upsert({
+          where: { slug: makeSlug },
+          update: {},
+          create: { name: data.newMakeName, slug: makeSlug },
+          select: { id: true },
+        });
+        resolvedMakeId = make.id;
+      }
+      if (!resolvedMakeId) throw new Error('Make is required');
 
-    // Resolve or create CaravanModel
-    let resolvedModelId = data.modelId !== "new" ? data.modelId : null;
-    if (!resolvedModelId && data.newModelName) {
-      const modelSlug = toSlug(
-        `${data.newModelName}-${Math.random().toString(36).slice(2, 6)}`
+      // Resolve or create CaravanModel
+      let resolvedModelId = data.modelId !== 'new' ? data.modelId : null;
+      if (!resolvedModelId && data.newModelName) {
+        const modelSlug = toSlug(
+          `${data.newModelName}-${Math.random().toString(36).slice(2, 6)}`,
+        );
+        const model = await tx.caravanModel.upsert({
+          where: { makeId_slug: { makeId: resolvedMakeId, slug: modelSlug } },
+          update: {},
+          create: {
+            makeId: resolvedMakeId,
+            name: data.newModelName,
+            slug: modelSlug,
+            bodyType: bodyTypeEnum(data.bodyType),
+          },
+          select: { id: true },
+        });
+        resolvedModelId = model.id;
+      }
+      if (!resolvedModelId) throw new Error('Model is required');
+
+      // Create community CaravanVariant — immediately usable by the submitter
+      const variantSlug = toSlug(
+        `${data.variantName}-${data.year}-${Math.random().toString(36).slice(2, 6)}`,
       );
-      const model = await tx.caravanModel.upsert({
-        where: { makeId_slug: { makeId: resolvedMakeId, slug: modelSlug } },
-        update: {},
-        create: {
-          makeId: resolvedMakeId,
-          name: data.newModelName,
-          slug: modelSlug,
-          bodyType: bodyTypeEnum(data.bodyType),
+
+      const newVariant = await tx.caravanVariant.create({
+        data: {
+          modelId: resolvedModelId,
+          status: 'COMMUNITY',
+          communitySubmitterId: userId,
+          yearFrom: data.year,
+          yearTo: data.year,
+          isCurrentProduction: false,
+          name: `${data.variantName} (Community)`,
+          slug: variantSlug,
+          axleConfiguration: data.axleConfiguration,
+          atmKg: data.atmKg,
+          gtmKg: data.gtmKg,
+          tareKg: data.tareKg,
+          tbmKg: data.tbmKg,
+          couplingToAxleMm: data.couplingToAxleMm
+            ? Math.round(data.couplingToAxleMm)
+            : null,
+          axleSpacingMm: data.axleSpacingMm
+            ? Math.round(data.axleSpacingMm)
+            : null,
+          bodyLengthMm: data.bodyLengthMm
+            ? Math.round(data.bodyLengthMm)
+            : null,
+          overallLengthMm: data.overallLengthMm
+            ? Math.round(data.overallLengthMm)
+            : null,
+          freshWaterCapacityL: data.freshWaterLitres
+            ? Math.round(data.freshWaterLitres)
+            : null,
+          greyWaterCapacityL: data.greyWaterLitres
+            ? Math.round(data.greyWaterLitres)
+            : null,
+          gasBottleConfig: data.gasBottleConfig ?? null,
+          market: 'AU',
         },
-        select: { id: true },
       });
-      resolvedModelId = model.id;
-    }
-    if (!resolvedModelId) throw new Error("Model is required");
 
-    // Create community CaravanVariant — immediately usable by the submitter
-    const variantSlug = toSlug(
-      `${data.variantName}-${data.year}-${Math.random().toString(36).slice(2, 6)}`
-    );
+      const newSubmission = await tx.caravanSubmission.create({
+        data: {
+          submitterId: userId,
+          status: 'PENDING',
+          submittedData,
+          compliancePlatePhotoUrl: data.compliancePlatePhotoUrl,
+          additionalPhotoUrls: data.additionalPhotoUrls,
+          notes: data.notes,
+          duplicateFingerprint: fingerprint,
+          dupSuspected: data.dupSuspected,
+          draftExpiresAt,
+          resultingVariantId: newVariant.id,
+        },
+      });
 
-    const newVariant = await tx.caravanVariant.create({
-      data: {
-        modelId: resolvedModelId,
-        status: "COMMUNITY",
-        communitySubmitterId: userId,
-        yearFrom: data.year,
-        yearTo: data.year,
-        isCurrentProduction: false,
-        name: `${data.variantName} (Community)`,
-        slug: variantSlug,
-        axleConfiguration: data.axleConfiguration,
-        atmKg: data.atmKg,
-        gtmKg: data.gtmKg,
-        tareKg: data.tareKg,
-        tbmKg: data.tbmKg,
-        couplingToAxleMm: data.couplingToAxleMm ? Math.round(data.couplingToAxleMm) : null,
-        axleSpacingMm: data.axleSpacingMm ? Math.round(data.axleSpacingMm) : null,
-        bodyLengthMm: data.bodyLengthMm ? Math.round(data.bodyLengthMm) : null,
-        overallLengthMm: data.overallLengthMm ? Math.round(data.overallLengthMm) : null,
-        freshWaterCapacityL: data.freshWaterLitres ? Math.round(data.freshWaterLitres) : null,
-        greyWaterCapacityL: data.greyWaterLitres ? Math.round(data.greyWaterLitres) : null,
-        gasBottleConfig: data.gasBottleConfig ?? null,
-        market: "AU",
-      },
-    });
-
-    const newSubmission = await tx.caravanSubmission.create({
-      data: {
-        submitterId: userId,
-        status: "PENDING",
-        submittedData,
-        compliancePlatePhotoUrl: data.compliancePlatePhotoUrl,
-        additionalPhotoUrls: data.additionalPhotoUrls,
-        notes: data.notes,
-        duplicateFingerprint: fingerprint,
-        dupSuspected: data.dupSuspected,
-        draftExpiresAt,
-        resultingVariantId: newVariant.id,
-      },
-    });
-
-    return [newSubmission, newVariant];
-  });
+      return [newSubmission, newVariant];
+    },
+  );
 
   const photoKeys = [
     data.compliancePlatePhotoKey,
@@ -231,17 +263,21 @@ export async function POST(request: Request) {
   ].filter(Boolean) as string[];
 
   if (photoKeys.length > 0) {
-    const job = await submissionVlmQueue.add("analyse-caravan", {
-      submissionType: "caravan",
-      submissionId: submission.id,
-      photoKeys,
-      submittedData: submittedData as Record<string, unknown>,
-    }, {
-      attempts: 3,
-      backoff: { type: "exponential", delay: 10_000 },
-      removeOnComplete: { count: 200 },
-      removeOnFail: { count: 500 },
-    });
+    const job = await submissionVlmQueue.add(
+      'analyse-caravan',
+      {
+        submissionType: 'caravan',
+        submissionId: submission.id,
+        photoKeys,
+        submittedData: submittedData as Record<string, unknown>,
+      },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 10_000 },
+        removeOnComplete: { count: 200 },
+        removeOnFail: { count: 500 },
+      },
+    );
 
     await prisma.caravanSubmission.update({
       where: { id: submission.id },
@@ -255,8 +291,8 @@ export async function POST(request: Request) {
       variantId: communityVariant.id,
       status: submission.status,
       message:
-        "Caravan submitted for review. You can use it in your own calculations while it awaits approval.",
+        'Caravan submitted for review. You can use it in your own calculations while it awaits approval.',
     },
-    { status: 201 }
+    { status: 201 },
   );
 }

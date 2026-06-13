@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { redis, queues } from "@/lib/queue";
+import { NextResponse } from 'next/server';
+import { redis, queues } from '@/lib/queue';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -10,23 +10,23 @@ export async function GET() {
       queues.map(async (q) => ({
         name: q.name,
         counts: await q.getJobCounts(
-          "active",
-          "waiting",
-          "completed",
-          "failed"
+          'active',
+          'waiting',
+          'completed',
+          'failed',
         ),
-      }))
+      })),
     );
 
     return NextResponse.json({
-      status: "ok",
-      redis: ping === "PONG" ? "connected" : "error",
+      status: 'ok',
+      redis: ping === 'PONG' ? 'connected' : 'error',
       queues: queueCounts,
     });
   } catch (err) {
     return NextResponse.json(
-      { status: "error", message: String(err) },
-      { status: 500 }
+      { status: 'error', message: String(err) },
+      { status: 500 },
     );
   }
 }

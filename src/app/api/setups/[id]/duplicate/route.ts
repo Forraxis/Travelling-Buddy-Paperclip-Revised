@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { generateShareToken } from "@/lib/share-token";
-import { serverError, notFound } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { generateShareToken } from '@/lib/share-token';
+import { serverError, notFound } from '@/lib/api-helpers';
 
 export async function POST(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -24,9 +24,9 @@ export async function POST(
       },
     });
 
-    if (!source) return notFound("Setup");
+    if (!source) return notFound('Setup');
     if (source.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const copy = await prisma.setup.create({

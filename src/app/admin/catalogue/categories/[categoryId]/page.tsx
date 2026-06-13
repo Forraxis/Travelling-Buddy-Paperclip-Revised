@@ -1,10 +1,10 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   getCategoryByIdAction,
   listCategoriesAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import { CategoryForm } from "../CategoryForm";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import { CategoryForm } from '../CategoryForm';
 
 export default async function CategoryDetailPage({
   params,

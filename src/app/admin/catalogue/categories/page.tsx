@@ -1,7 +1,7 @@
-import { AdminPageHeader } from "@/modules/admin/components";
-import { listCategoriesAction } from "@/modules/catalogue/actions/accessory-admin.actions";
-import { CategoriesList } from "./CategoriesList";
-import Link from "next/link";
+import { AdminPageHeader } from '@/modules/admin/components';
+import { listCategoriesAction } from '@/modules/catalogue/actions/accessory-admin.actions';
+import { CategoriesList } from './CategoriesList';
+import Link from 'next/link';
 
 export default async function CategoriesPage({
   searchParams,
@@ -9,7 +9,7 @@ export default async function CategoriesPage({
   searchParams: Promise<{ q?: string; cursor?: string }>;
 }) {
   const params = await searchParams;
-  const search = params.q ?? "";
+  const search = params.q ?? '';
   const cursor = params.cursor;
   const result = await listCategoriesAction(cursor, search || undefined);
 
@@ -21,7 +21,7 @@ export default async function CategoriesPage({
         actions={
           <Link
             href="/admin/catalogue/categories/new"
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
           >
             + Add Category
           </Link>

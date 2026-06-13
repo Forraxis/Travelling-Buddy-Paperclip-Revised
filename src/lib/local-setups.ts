@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { CalculatorState } from "@/modules/calculator/types";
+import type { CalculatorState } from '@/modules/calculator/types';
 
 export interface LocalSetup {
   id: string;
@@ -12,14 +12,14 @@ export interface LocalSetup {
   v: 1;
 }
 
-const STORAGE_PREFIX = "tb:setup:";
+const STORAGE_PREFIX = 'tb:setup:';
 
 function key(id: string): string {
   return `${STORAGE_PREFIX}${id}`;
 }
 
 export function listLocalSetups(): LocalSetup[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === 'undefined') return [];
   const setups: LocalSetup[] = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -31,12 +31,15 @@ export function listLocalSetups(): LocalSetup[] {
       // skip corrupted entries
     }
   }
-  setups.sort((a, b) => new Date(b.lastEditedAt).getTime() - new Date(a.lastEditedAt).getTime());
+  setups.sort(
+    (a, b) =>
+      new Date(b.lastEditedAt).getTime() - new Date(a.lastEditedAt).getTime(),
+  );
   return setups;
 }
 
 export function getLocalSetup(id: string): LocalSetup | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(key(id));
     return raw ? (JSON.parse(raw) as LocalSetup) : null;

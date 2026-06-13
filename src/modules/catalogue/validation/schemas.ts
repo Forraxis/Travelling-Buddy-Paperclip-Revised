@@ -1,4 +1,4 @@
-import { z } from "zod/v4";
+import { z } from 'zod/v4';
 
 export const paginationSchema = z.object({
   cursor: z.string().optional(),
@@ -13,43 +13,43 @@ export const searchSchema = z.object({
 export const vehicleFilterSchema = paginationSchema.extend({
   bodyType: z
     .enum([
-      "DUAL_CAB_UTE",
-      "SINGLE_CAB_UTE",
-      "EXTRA_CAB_UTE",
-      "WAGON",
-      "SUV",
-      "VAN",
-      "TROOPCARRIER",
-      "OTHER",
+      'DUAL_CAB_UTE',
+      'SINGLE_CAB_UTE',
+      'EXTRA_CAB_UTE',
+      'WAGON',
+      'SUV',
+      'VAN',
+      'TROOPCARRIER',
+      'OTHER',
     ])
     .optional(),
-  fuelType: z.enum(["DIESEL", "PETROL", "HYBRID", "ELECTRIC"]).optional(),
+  fuelType: z.enum(['DIESEL', 'PETROL', 'HYBRID', 'ELECTRIC']).optional(),
   year: z.coerce.number().int().min(1900).max(2100).optional(),
-  market: z.enum(["AU", "NZ", "US", "EU", "GB"]).optional(),
+  market: z.enum(['AU', 'NZ', 'US', 'EU', 'GB']).optional(),
 });
 
 export const caravanFilterSchema = paginationSchema.extend({
   bodyType: z
     .enum([
-      "CARAVAN_POP_TOP",
-      "CARAVAN_FULL_HEIGHT",
-      "OFF_ROAD_CARAVAN",
-      "CAMPER_TRAILER",
-      "HYBRID",
-      "FIFTH_WHEELER",
-      "OTHER",
+      'CARAVAN_POP_TOP',
+      'CARAVAN_FULL_HEIGHT',
+      'OFF_ROAD_CARAVAN',
+      'CAMPER_TRAILER',
+      'HYBRID',
+      'FIFTH_WHEELER',
+      'OTHER',
     ])
     .optional(),
   axleConfiguration: z
     .enum([
-      "SINGLE_AXLE",
-      "DUAL_AXLE_CLOSE_COUPLED",
-      "DUAL_AXLE_SPREAD",
-      "TRIPLE_AXLE",
+      'SINGLE_AXLE',
+      'DUAL_AXLE_CLOSE_COUPLED',
+      'DUAL_AXLE_SPREAD',
+      'TRIPLE_AXLE',
     ])
     .optional(),
   year: z.coerce.number().int().min(1900).max(2100).optional(),
-  market: z.enum(["AU", "NZ", "US", "EU", "GB"]).optional(),
+  market: z.enum(['AU', 'NZ', 'US', 'EU', 'GB']).optional(),
 });
 
 export const makeIdSchema = z.object({

@@ -4,7 +4,9 @@ import type { PickerVariant, PickerConfig } from './types';
 import { useBrowse } from './hooks/useBrowse';
 
 function yearSpan(v: PickerVariant) {
-  return v.isCurrentProduction ? `${v.yearFrom}–present` : `${v.yearFrom}–${v.yearTo}`;
+  return v.isCurrentProduction
+    ? `${v.yearFrom}–present`
+    : `${v.yearFrom}–${v.yearTo}`;
 }
 
 // ── Filter chip helpers ────────────────────────────────────────────────────
@@ -30,18 +32,28 @@ function BackBreadcrumb({ parts, onBack }: BackBreadcrumbProps) {
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-1 rounded p-1 text-tb-primary transition-colors hover:bg-tb-primary-lighter"
+        className="text-tb-primary hover:bg-tb-primary-lighter flex items-center gap-1 rounded p-1 transition-colors"
         aria-label="Go back"
       >
         <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+          <path
+            fillRule="evenodd"
+            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+            clipRule="evenodd"
+          />
         </svg>
       </button>
       <span className="text-xs text-gray-500">
         {parts.map((p, i) => (
           <span key={i}>
             {i > 0 && <span className="mx-1 text-gray-300">/</span>}
-            <span className={i === parts.length - 1 ? 'font-medium text-gray-700' : ''}>{p}</span>
+            <span
+              className={
+                i === parts.length - 1 ? 'font-medium text-gray-700' : ''
+              }
+            >
+              {p}
+            </span>
           </span>
         ))}
       </span>
@@ -61,19 +73,25 @@ function MakesGrid({ makes, popularMakeNames, onSelect }: MakesGridProps) {
   const popular = makes.filter((m) => popularMakeNames.includes(m.name));
   const others = makes.filter((m) => !popularMakeNames.includes(m.name));
 
-  function MakeCard({ make }: { make: typeof makes[0] }) {
+  function MakeCard({ make }: { make: (typeof makes)[0] }) {
     return (
       <button
         type="button"
         onClick={() => onSelect(make)}
-        className="flex flex-col items-center gap-1.5 rounded-lg border border-tb-neutral-200 bg-white p-3 text-center transition-colors hover:border-tb-primary-light hover:bg-tb-primary-lighter"
+        className="border-tb-neutral-200 hover:border-tb-primary-light hover:bg-tb-primary-lighter flex flex-col items-center gap-1.5 rounded-lg border bg-white p-3 text-center transition-colors"
       >
         <div className="flex h-10 w-10 items-center justify-center">
           {make.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={make.logoUrl} alt={make.name} className="h-8 w-8 object-contain" />
+            <img
+              src={make.logoUrl}
+              alt={make.name}
+              className="h-8 w-8 object-contain"
+            />
           ) : (
-            <span className="text-base font-bold text-tb-primary">{make.name.slice(0, 2)}</span>
+            <span className="text-tb-primary text-base font-bold">
+              {make.name.slice(0, 2)}
+            </span>
           )}
         </div>
         <span className="text-xs font-medium text-gray-700">{make.name}</span>
@@ -85,19 +103,27 @@ function MakesGrid({ makes, popularMakeNames, onSelect }: MakesGridProps) {
     <div className="px-4">
       {popular.length > 0 && (
         <>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">Popular</p>
+          <p className="mb-2 text-xs font-medium tracking-wide text-gray-400 uppercase">
+            Popular
+          </p>
           <div className="mb-4 grid grid-cols-4 gap-2">
-            {popular.map((m) => <MakeCard key={m.id} make={m} />)}
+            {popular.map((m) => (
+              <MakeCard key={m.id} make={m} />
+            ))}
           </div>
         </>
       )}
       {others.length > 0 && (
         <>
           {popular.length > 0 && (
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">All makes</p>
+            <p className="mb-2 text-xs font-medium tracking-wide text-gray-400 uppercase">
+              All makes
+            </p>
           )}
           <div className="grid grid-cols-4 gap-2">
-            {others.map((m) => <MakeCard key={m.id} make={m} />)}
+            {others.map((m) => (
+              <MakeCard key={m.id} make={m} />
+            ))}
           </div>
         </>
       )}
@@ -114,20 +140,32 @@ interface ModelsListProps {
 
 function ModelsList({ models, onSelect }: ModelsListProps) {
   return (
-    <div className="divide-y divide-tb-neutral-200 px-2">
+    <div className="divide-tb-neutral-200 divide-y px-2">
       {models.map((model) => (
         <button
           key={model.id}
           type="button"
           onClick={() => onSelect(model)}
-          className="flex w-full items-center justify-between rounded px-3 py-3 text-left transition-colors hover:bg-tb-neutral-50"
+          className="hover:bg-tb-neutral-50 flex w-full items-center justify-between rounded px-3 py-3 text-left transition-colors"
         >
           <div>
-            <span className="text-sm font-medium text-gray-900">{model.name}</span>
-            <span className="ml-2 text-xs text-gray-400">{labelCase(model.bodyType)}</span>
+            <span className="text-sm font-medium text-gray-900">
+              {model.name}
+            </span>
+            <span className="ml-2 text-xs text-gray-400">
+              {labelCase(model.bodyType)}
+            </span>
           </div>
-          <svg className="h-4 w-4 flex-none text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          <svg
+            className="h-4 w-4 flex-none text-gray-400"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
       ))}
@@ -146,11 +184,20 @@ interface VariantsListProps {
   onSelect: (v: PickerVariant) => void;
 }
 
-function VariantsList({ config, variants, allVariants, filters, onFilter, onSelect }: VariantsListProps) {
+function VariantsList({
+  config,
+  variants,
+  allVariants,
+  filters,
+  onFilter,
+  onSelect,
+}: VariantsListProps) {
   // Derive non-empty filter options from allVariants
   const bodyTypes = uniqueNonEmpty(allVariants.map((v) => v.bodyType));
   const fuelTypes = uniqueNonEmpty(allVariants.map((v) => v.fuelType));
-  const axleConfigs = uniqueNonEmpty(allVariants.map((v) => v.axleConfiguration));
+  const axleConfigs = uniqueNonEmpty(
+    allVariants.map((v) => v.axleConfiguration),
+  );
 
   function SpecStrip({ v }: { v: PickerVariant }) {
     if (v.entityType === 'vehicle') {
@@ -158,9 +205,12 @@ function VariantsList({ config, variants, allVariants, filters, onFilter, onSele
         <p className="mt-0.5 text-xs text-gray-400">
           {[
             v.gvmKg && `GVM ${v.gvmKg.toLocaleString()} kg`,
-            v.maxTowingCapacityKg && `Tow ${v.maxTowingCapacityKg.toLocaleString()} kg`,
+            v.maxTowingCapacityKg &&
+              `Tow ${v.maxTowingCapacityKg.toLocaleString()} kg`,
             v.kerbWeightKg && `Kerb ${v.kerbWeightKg.toLocaleString()} kg`,
-          ].filter(Boolean).join(' · ')}
+          ]
+            .filter(Boolean)
+            .join(' · ')}
         </p>
       );
     }
@@ -170,7 +220,9 @@ function VariantsList({ config, variants, allVariants, filters, onFilter, onSele
           v.atmKg && `ATM ${v.atmKg.toLocaleString()} kg`,
           v.tbmKg && `TBM ${v.tbmKg} kg`,
           v.axleConfiguration && labelCase(v.axleConfiguration),
-        ].filter(Boolean).join(' · ')}
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </p>
     );
   }
@@ -178,65 +230,89 @@ function VariantsList({ config, variants, allVariants, filters, onFilter, onSele
   return (
     <div>
       {/* Filter chips */}
-      {(bodyTypes.length > 1 || fuelTypes.length > 1 || axleConfigs.length > 1) && (
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3 pt-1 scrollbar-none">
-          {bodyTypes.length > 1 && bodyTypes.map((bt) => (
-            <button
-              key={bt}
-              type="button"
-              onClick={() => onFilter({ bodyType: filters.bodyType === bt ? undefined : bt })}
-              className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                filters.bodyType === bt
-                  ? 'border-tb-primary bg-tb-primary text-white'
-                  : 'border-tb-neutral-200 bg-white text-gray-600 hover:border-tb-primary-light'
-              }`}
-            >
-              {labelCase(bt)}
-            </button>
-          ))}
-          {config.entityType === 'vehicle' && fuelTypes.length > 1 && fuelTypes.map((ft) => (
-            <button
-              key={ft}
-              type="button"
-              onClick={() => onFilter({ fuelType: filters.fuelType === ft ? undefined : ft })}
-              className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                filters.fuelType === ft
-                  ? 'border-tb-primary bg-tb-primary text-white'
-                  : 'border-tb-neutral-200 bg-white text-gray-600 hover:border-tb-primary-light'
-              }`}
-            >
-              {labelCase(ft)}
-            </button>
-          ))}
-          {config.entityType === 'caravan' && axleConfigs.length > 1 && axleConfigs.map((ac) => (
-            <button
-              key={ac}
-              type="button"
-              onClick={() => onFilter({ axleConfiguration: filters.axleConfiguration === ac ? undefined : ac })}
-              className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                filters.axleConfiguration === ac
-                  ? 'border-tb-primary bg-tb-primary text-white'
-                  : 'border-tb-neutral-200 bg-white text-gray-600 hover:border-tb-primary-light'
-              }`}
-            >
-              {labelCase(ac)}
-            </button>
-          ))}
+      {(bodyTypes.length > 1 ||
+        fuelTypes.length > 1 ||
+        axleConfigs.length > 1) && (
+        <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pt-1 pb-3">
+          {bodyTypes.length > 1 &&
+            bodyTypes.map((bt) => (
+              <button
+                key={bt}
+                type="button"
+                onClick={() =>
+                  onFilter({
+                    bodyType: filters.bodyType === bt ? undefined : bt,
+                  })
+                }
+                className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  filters.bodyType === bt
+                    ? 'border-tb-primary bg-tb-primary text-white'
+                    : 'border-tb-neutral-200 hover:border-tb-primary-light bg-white text-gray-600'
+                }`}
+              >
+                {labelCase(bt)}
+              </button>
+            ))}
+          {config.entityType === 'vehicle' &&
+            fuelTypes.length > 1 &&
+            fuelTypes.map((ft) => (
+              <button
+                key={ft}
+                type="button"
+                onClick={() =>
+                  onFilter({
+                    fuelType: filters.fuelType === ft ? undefined : ft,
+                  })
+                }
+                className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  filters.fuelType === ft
+                    ? 'border-tb-primary bg-tb-primary text-white'
+                    : 'border-tb-neutral-200 hover:border-tb-primary-light bg-white text-gray-600'
+                }`}
+              >
+                {labelCase(ft)}
+              </button>
+            ))}
+          {config.entityType === 'caravan' &&
+            axleConfigs.length > 1 &&
+            axleConfigs.map((ac) => (
+              <button
+                key={ac}
+                type="button"
+                onClick={() =>
+                  onFilter({
+                    axleConfiguration:
+                      filters.axleConfiguration === ac ? undefined : ac,
+                  })
+                }
+                className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  filters.axleConfiguration === ac
+                    ? 'border-tb-primary bg-tb-primary text-white'
+                    : 'border-tb-neutral-200 hover:border-tb-primary-light bg-white text-gray-600'
+                }`}
+              >
+                {labelCase(ac)}
+              </button>
+            ))}
         </div>
       )}
 
       {/* Variant rows */}
-      <div className="divide-y divide-tb-neutral-200 px-2">
+      <div className="divide-tb-neutral-200 divide-y px-2">
         {variants.map((v) => (
           <button
             key={v.id}
             type="button"
             onClick={() => onSelect(v)}
-            className="flex w-full flex-col rounded px-3 py-3 text-left transition-colors hover:bg-tb-neutral-50"
+            className="hover:bg-tb-neutral-50 flex w-full flex-col rounded px-3 py-3 text-left transition-colors"
           >
             <div className="flex items-start justify-between gap-2">
-              <span className="text-sm font-medium text-gray-900">{v.name}</span>
-              <span className="flex-none text-xs text-gray-500">{yearSpan(v)}</span>
+              <span className="text-sm font-medium text-gray-900">
+                {v.name}
+              </span>
+              <span className="flex-none text-xs text-gray-500">
+                {yearSpan(v)}
+              </span>
             </div>
             <SpecStrip v={v} />
           </button>
@@ -293,16 +369,31 @@ export function BrowseTab({ config, onSelect }: BrowseTabProps) {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-8">
-          <svg className="h-5 w-5 animate-spin text-tb-primary" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          <svg
+            className="text-tb-primary h-5 w-5 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8H4z"
+            />
           </svg>
         </div>
       )}
 
       {/* Error */}
       {error && !isLoading && (
-        <p className="px-4 py-4 text-sm text-tb-danger">{error}</p>
+        <p className="text-tb-danger px-4 py-4 text-sm">{error}</p>
       )}
 
       {/* Step content */}

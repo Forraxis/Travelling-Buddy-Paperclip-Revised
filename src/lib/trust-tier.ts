@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import type { TrustTier } from "@prisma/client";
+import { prisma } from '@/lib/db';
+import type { TrustTier } from '@prisma/client';
 
 // Fallback defaults matching original hardcoded constants (spec 7.8)
 const DEFAULTS = {
@@ -29,7 +29,7 @@ export async function getTrustTierConfig(): Promise<TrustTierConfig> {
   const config = { ...DEFAULTS };
   for (const row of rows) {
     const key = row.key as keyof TrustTierConfig;
-    if (key in DEFAULTS && typeof row.value === "number") {
+    if (key in DEFAULTS && typeof row.value === 'number') {
       (config as Record<string, number>)[key] = row.value as number;
     }
   }
@@ -46,7 +46,7 @@ export function invalidateTrustTierConfigCache(): void {
 
 // Returns the new tier if promotion occurred, null otherwise
 export async function promoteUserTrustTier(
-  userId: string
+  userId: string,
 ): Promise<TrustTier | null> {
   const [user, config] = await Promise.all([
     prisma.user.findUnique({
@@ -56,41 +56,41 @@ export async function promoteUserTrustTier(
     getTrustTierConfig(),
   ]);
 
-  if (!user || user.trustTier === "EXPERT") return null;
+  if (!user || user.trustTier === 'EXPERT') return null;
 
   const now = new Date();
   const accountAgeDays =
     (now.getTime() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24);
 
-  if (user.trustTier === "NEW") {
+  if (user.trustTier === 'NEW') {
     const approvedCount = await countApprovedSubmissions(userId);
     if (approvedCount >= config.contributorApprovedCount) {
       await prisma.user.update({
         where: { id: userId },
-        data: { trustTier: "BASIC" },
+        data: { trustTier: 'BASIC' },
       });
-      return "BASIC";
+      return 'BASIC';
     }
-  } else if (user.trustTier === "BASIC") {
+  } else if (user.trustTier === 'BASIC') {
     if (accountAgeDays < config.trustedMinAccountAgeDays) return null;
 
     const approvedCount = await countApprovedSubmissions(userId);
     if (approvedCount < config.trustedApprovedCount) return null;
 
     const windowStart = new Date(
-      now.getTime() - config.trustedRejectionWindowDays * 24 * 60 * 60 * 1000
+      now.getTime() - config.trustedRejectionWindowDays * 24 * 60 * 60 * 1000,
     );
     const recentRejections = await countRejectedSubmissionsAfter(
       userId,
-      windowStart
+      windowStart,
     );
     if (recentRejections > 0) return null;
 
     await prisma.user.update({
       where: { id: userId },
-      data: { trustTier: "TRUSTED" },
+      data: { trustTier: 'TRUSTED' },
     });
-    return "TRUSTED";
+    return 'TRUSTED';
   }
 
   return null;
@@ -99,13 +99,13 @@ export async function promoteUserTrustTier(
 async function countApprovedSubmissions(userId: string): Promise<number> {
   const [v, c, a] = await Promise.all([
     prisma.vehicleSubmission.count({
-      where: { submitterId: userId, status: "APPROVED" },
+      where: { submitterId: userId, status: 'APPROVED' },
     }),
     prisma.caravanSubmission.count({
-      where: { submitterId: userId, status: "APPROVED" },
+      where: { submitterId: userId, status: 'APPROVED' },
     }),
     prisma.accessorySubmission.count({
-      where: { submitterId: userId, status: "APPROVED" },
+      where: { submitterId: userId, status: 'APPROVED' },
     }),
   ]);
   return v + c + a;
@@ -113,27 +113,27 @@ async function countApprovedSubmissions(userId: string): Promise<number> {
 
 async function countRejectedSubmissionsAfter(
   userId: string,
-  after: Date
+  after: Date,
 ): Promise<number> {
   const [v, c, a] = await Promise.all([
     prisma.vehicleSubmission.count({
       where: {
         submitterId: userId,
-        status: "REJECTED",
+        status: 'REJECTED',
         decidedAt: { gte: after },
       },
     }),
     prisma.caravanSubmission.count({
       where: {
         submitterId: userId,
-        status: "REJECTED",
+        status: 'REJECTED',
         decidedAt: { gte: after },
       },
     }),
     prisma.accessorySubmission.count({
       where: {
         submitterId: userId,
-        status: "REJECTED",
+        status: 'REJECTED',
         decidedAt: { gte: after },
       },
     }),
@@ -143,9 +143,9 @@ async function countRejectedSubmissionsAfter(
 
 export async function submissionsUntilTrusted(
   approvedCount: number,
-  tier: TrustTier
+  tier: TrustTier,
 ): Promise<number | null> {
-  if (tier !== "BASIC") return null;
+  if (tier !== 'BASIC') return null;
   const config = await getTrustTierConfig();
   return Math.max(0, config.trustedApprovedCount - approvedCount);
 }

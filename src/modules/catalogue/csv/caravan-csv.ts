@@ -1,75 +1,79 @@
-import { z } from "zod";
-import type { CaravanBodyType, AxleConfiguration, Market } from "@prisma/client";
-import { parseCsvToRecords } from "./csv-parser";
+import { z } from 'zod';
+import type {
+  CaravanBodyType,
+  AxleConfiguration,
+  Market,
+} from '@prisma/client';
+import { parseCsvToRecords } from './csv-parser';
 
 // ── Constants ──────────────────────────────────────
 
 export const CARAVAN_CSV_HEADERS = [
-  "make_name",
-  "make_country_of_origin",
-  "model_name",
-  "body_type",
-  "variant_name",
-  "year_from",
-  "year_to",
-  "is_current_production",
-  "axle_configuration",
-  "market",
-  "atm_kg",
-  "gtm_kg",
-  "tare_kg",
-  "tbm_kg",
-  "coupling_to_axle_mm",
-  "axle_spacing_mm",
-  "body_length_mm",
-  "overall_length_mm",
-  "fresh_water_capacity_l",
-  "grey_water_capacity_l",
-  "gas_bottle_config",
+  'make_name',
+  'make_country_of_origin',
+  'model_name',
+  'body_type',
+  'variant_name',
+  'year_from',
+  'year_to',
+  'is_current_production',
+  'axle_configuration',
+  'market',
+  'atm_kg',
+  'gtm_kg',
+  'tare_kg',
+  'tbm_kg',
+  'coupling_to_axle_mm',
+  'axle_spacing_mm',
+  'body_length_mm',
+  'overall_length_mm',
+  'fresh_water_capacity_l',
+  'grey_water_capacity_l',
+  'gas_bottle_config',
 ] as const;
 
 export const CARAVAN_CSV_EXAMPLE_ROW = [
-  "Jayco",
-  "AU",
-  "Journey",
-  "CARAVAN_FULL_HEIGHT",
-  "17.55-3",
-  "2020",
-  "2023",
-  "false",
-  "SINGLE_AXLE",
-  "AU",
-  "2195",
-  "2195",
-  "1450",
-  "130",
-  "3200",
-  "",
-  "5280",
-  "7650",
-  "95",
-  "70",
-  "2x9kg",
+  'Jayco',
+  'AU',
+  'Journey',
+  'CARAVAN_FULL_HEIGHT',
+  '17.55-3',
+  '2020',
+  '2023',
+  'false',
+  'SINGLE_AXLE',
+  'AU',
+  '2195',
+  '2195',
+  '1450',
+  '130',
+  '3200',
+  '',
+  '5280',
+  '7650',
+  '95',
+  '70',
+  '2x9kg',
 ];
 
 const CARAVAN_BODY_TYPES = [
-  "CARAVAN_POP_TOP",
-  "CARAVAN_FULL_HEIGHT",
-  "OFF_ROAD_CARAVAN",
-  "CAMPER_TRAILER",
-  "HYBRID",
-  "FIFTH_WHEELER",
-  "OTHER",
+  'CARAVAN_POP_TOP',
+  'CARAVAN_FULL_HEIGHT',
+  'OFF_ROAD_CARAVAN',
+  'CAMPER_TRAILER',
+  'HYBRID',
+  'FIFTH_WHEELER',
+  'OTHER',
 ] as const;
 
 const AXLE_CONFIGURATIONS = [
-  "SINGLE_AXLE",
-  "DUAL_AXLE_CLOSE_COUPLED",
-  "DUAL_AXLE_SPREAD",
-  "TRIPLE_AXLE",
+  'SINGLE_AXLE',
+  'DUAL_AXLE_CLOSE_COUPLED',
+  'DUAL_AXLE_SPREAD',
+  'TRIPLE_AXLE',
 ] as const;
 
-const MARKETS = ["AU", "NZ", "US", "EU", "GB"] as const;
+const MARKETS = ['AU', 'NZ', 'US', 'EU', 'GB'] as const;
 
 // ── Parsed row type ────────────────────────────────
 
@@ -104,10 +108,10 @@ function optionalIntField() {
     .string()
     .optional()
     .transform((v, ctx) => {
-      if (!v || v.trim() === "") return null;
+      if (!v || v.trim() === '') return null;
       const n = Number(v.trim());
       if (!Number.isInteger(n) || n <= 0) {
-        ctx.addIssue({ code: "custom", message: "Must be a positive integer" });
+        ctx.addIssue({ code: 'custom', message: 'Must be a positive integer' });
         return z.NEVER;
       }
       return n;
@@ -117,12 +121,12 @@ function optionalIntField() {
 function requiredIntField(min = 0) {
   return z
     .string()
-    .min(1, "Required")
+    .min(1, 'Required')
     .transform((v, ctx) => {
       const n = Number(v.trim());
       if (!Number.isInteger(n) || n < min) {
         ctx.addIssue({
-          code: "custom",
+          code: 'custom',
           message: `Must be an integer >= ${min}`,
         });
         return z.NEVER;
@@ -132,33 +136,33 @@ function requiredIntField(min = 0) {
 }
 
 const caravanCsvRowSchema = z.object({
-  make_name: z.string().min(1, "Required"),
+  make_name: z.string().min(1, 'Required'),
   make_country_of_origin: z.string().optional(),
-  model_name: z.string().min(1, "Required"),
+  model_name: z.string().min(1, 'Required'),
   body_type: z.enum(CARAVAN_BODY_TYPES, {
-    error: `Must be one of: ${CARAVAN_BODY_TYPES.join(", ")}`,
+    error: `Must be one of: ${CARAVAN_BODY_TYPES.join(', ')}`,
   }),
-  variant_name: z.string().min(1, "Required"),
+  variant_name: z.string().min(1, 'Required'),
   year_from: requiredIntField(1900),
   year_to: requiredIntField(1900),
   is_current_production: z
     .string()
     .optional()
     .transform((v) =>
-      ["true", "1", "yes"].includes((v ?? "").toLowerCase().trim())
+      ['true', '1', 'yes'].includes((v ?? '').toLowerCase().trim()),
     ),
   axle_configuration: z.enum(AXLE_CONFIGURATIONS, {
-    error: `Must be one of: ${AXLE_CONFIGURATIONS.join(", ")}`,
+    error: `Must be one of: ${AXLE_CONFIGURATIONS.join(', ')}`,
   }),
   market: z
     .string()
     .optional()
     .transform((v, ctx) => {
-      const val = (v ?? "AU").trim().toUpperCase();
+      const val = (v ?? 'AU').trim().toUpperCase();
       if (!MARKETS.includes(val as Market)) {
         ctx.addIssue({
-          code: "custom",
-          message: `Must be one of: ${MARKETS.join(", ")}`,
+          code: 'custom',
+          message: `Must be one of: ${MARKETS.join(', ')}`,
         });
         return z.NEVER;
       }
@@ -199,14 +203,14 @@ export interface CaravanCsvPreviewResult {
 
 function validateRow(
   raw: Record<string, string>,
-  rowNumber: number
+  rowNumber: number,
 ): CaravanCsvRowResult {
   const result = caravanCsvRowSchema.safeParse(raw);
 
   if (!result.success) {
     const errors: Record<string, string> = {};
     for (const issue of result.error.issues) {
-      const path = issue.path.length > 0 ? String(issue.path[0]) : "_";
+      const path = issue.path.length > 0 ? String(issue.path[0]) : '_';
       if (!errors[path]) errors[path] = issue.message;
     }
     return { rowNumber, raw, errors };
@@ -241,7 +245,7 @@ function validateRow(
     return {
       rowNumber,
       raw,
-      errors: { year_to: "year_to must be >= year_from" },
+      errors: { year_to: 'year_to must be >= year_from' },
     };
   }
 
@@ -272,7 +276,7 @@ function variantSignature(r: CaravanCsvRowParsed): string {
 }
 
 function deduplicateCaravanRows(
-  rows: CaravanCsvRowParsed[]
+  rows: CaravanCsvRowParsed[],
 ): CaravanCsvRowParsed[] {
   const groups = new Map<string, CaravanCsvRowParsed[]>();
   for (const row of rows) {
@@ -307,20 +311,18 @@ function deduplicateCaravanRows(
 // ── Main entry point ───────────────────────────────
 
 export function validateAndPreviewCaravanCsv(
-  csvText: string
+  csvText: string,
 ): CaravanCsvPreviewResult {
   const { records } = parseCsvToRecords(csvText);
 
   const rows: CaravanCsvRowResult[] = records.map((raw, i) =>
-    validateRow(raw, i + 2)
+    validateRow(raw, i + 2),
   );
 
   const validRows = rows.filter((r) => r.parsed);
   const errorRows = rows.filter((r) => r.errors);
 
-  const deduplicated = deduplicateCaravanRows(
-    validRows.map((r) => r.parsed!)
-  );
+  const deduplicated = deduplicateCaravanRows(validRows.map((r) => r.parsed!));
 
   const mergedRows = validRows.length - deduplicated.length;
 

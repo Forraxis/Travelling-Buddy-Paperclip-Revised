@@ -1,10 +1,8 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import {
-  getCaravanModelBySlugAction,
-} from "@/modules/catalogue/actions/caravan.actions";
-import { CaravanVariantForm } from "../CaravanVariantForm";
-import { CaravanVariantAdminActions } from "./CaravanVariantAdminActions";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getCaravanModelBySlugAction } from '@/modules/catalogue/actions/caravan.actions';
+import { CaravanVariantForm } from '../CaravanVariantForm';
+import { CaravanVariantAdminActions } from './CaravanVariantAdminActions';
 
 export default async function CaravanVariantDetailPage({
   params,
@@ -13,7 +11,7 @@ export default async function CaravanVariantDetailPage({
 }) {
   const { makeSlug, modelSlug, variantSlug } = await params;
 
-  if (variantSlug === "new") {
+  if (variantSlug === 'new') {
     const model = await getCaravanModelBySlugAction(makeSlug, modelSlug);
     if (!model) notFound();
     return (

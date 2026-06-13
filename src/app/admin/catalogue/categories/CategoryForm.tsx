@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
 import {
   FormField,
   inputClassName,
   selectClassName,
-} from "@/modules/admin/components/FormField";
+} from '@/modules/admin/components/FormField';
 import {
   createCategoryAction,
   updateCategoryAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import type { AccessoryCategoryDto } from "@/modules/catalogue/types/accessory-category.types";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import type { AccessoryCategoryDto } from '@/modules/catalogue/types/accessory-category.types';
 
 interface CategoryFormProps {
   category?: AccessoryCategoryDto;
@@ -29,19 +29,19 @@ export function CategoryForm({
   const { toast } = useToast();
   const isEdit = !!category;
 
-  const [name, setName] = useState(category?.name ?? "");
-  const [description, setDescription] = useState(category?.description ?? "");
-  const [parentId, setParentId] = useState(category?.parentId ?? "");
+  const [name, setName] = useState(category?.name ?? '');
+  const [description, setDescription] = useState(category?.description ?? '');
+  const [parentId, setParentId] = useState(category?.parentId ?? '');
   const [displayOrder, setDisplayOrder] = useState(
-    category?.displayOrder?.toString() ?? "0"
+    category?.displayOrder?.toString() ?? '0',
   );
-  const [iconName, setIconName] = useState(category?.iconName ?? "");
+  const [iconName, setIconName] = useState(category?.iconName ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = "Name is required";
+    if (!name.trim()) errs.name = 'Name is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -66,22 +66,22 @@ export function CategoryForm({
     setSubmitting(false);
 
     if (result.success) {
-      toast(isEdit ? "Category updated" : "Category created");
+      toast(isEdit ? 'Category updated' : 'Category created');
       router.push(backHref);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
   const availableParents = parentOptions.filter(
-    (p) => !isEdit || p.id !== category?.id
+    (p) => !isEdit || p.id !== category?.id,
   );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Identity
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -150,20 +150,20 @@ export function CategoryForm({
         <button
           type="button"
           onClick={() => router.push(backHref)}
-          className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+          className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-tb-primary px-6 py-2 text-sm font-medium text-white hover:bg-tb-primary-light disabled:opacity-50"
+          className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-6 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {submitting
-            ? "Saving..."
+            ? 'Saving...'
             : isEdit
-              ? "Update Category"
-              : "Create Category"}
+              ? 'Update Category'
+              : 'Create Category'}
         </button>
       </div>
     </form>

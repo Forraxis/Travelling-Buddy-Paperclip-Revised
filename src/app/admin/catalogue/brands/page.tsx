@@ -1,7 +1,7 @@
-import { AdminPageHeader } from "@/modules/admin/components";
-import { listBrandsAction } from "@/modules/catalogue/actions/accessory-admin.actions";
-import { BrandsList } from "./BrandsList";
-import Link from "next/link";
+import { AdminPageHeader } from '@/modules/admin/components';
+import { listBrandsAction } from '@/modules/catalogue/actions/accessory-admin.actions';
+import { BrandsList } from './BrandsList';
+import Link from 'next/link';
 
 export default async function BrandsPage({
   searchParams,
@@ -9,7 +9,7 @@ export default async function BrandsPage({
   searchParams: Promise<{ q?: string; cursor?: string }>;
 }) {
   const params = await searchParams;
-  const search = params.q ?? "";
+  const search = params.q ?? '';
   const cursor = params.cursor;
   const result = await listBrandsAction(cursor, search || undefined);
 
@@ -21,7 +21,7 @@ export default async function BrandsPage({
         actions={
           <Link
             href="/admin/catalogue/brands/new"
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
           >
             + Add Brand
           </Link>

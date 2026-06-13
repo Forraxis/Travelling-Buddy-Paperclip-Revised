@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
 export default function AnalyticsPage() {
-  redirect("/admin/analytics/submissions");
+  redirect('/admin/analytics/submissions');
 }

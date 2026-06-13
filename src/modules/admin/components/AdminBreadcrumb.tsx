@@ -28,7 +28,10 @@ export function AdminBreadcrumb() {
   }));
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-gray-500">
+    <nav
+      aria-label="Breadcrumb"
+      className="flex items-center gap-1 text-sm text-gray-500"
+    >
       {crumbs.map((crumb, i) => (
         <span key={crumb.href} className="flex items-center gap-1">
           {i > 0 && <span className="text-gray-300">/</span>}

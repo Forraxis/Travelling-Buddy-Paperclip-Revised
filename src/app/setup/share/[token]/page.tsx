@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { SharedSetupView } from "./SharedSetupView";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { prisma } from '@/lib/db';
+import { SharedSetupView } from './SharedSetupView';
 
 export const metadata: Metadata = {
-  title: "Shared Setup | TravellingBuddy",
+  title: 'Shared Setup | TravellingBuddy',
   robots: { index: false, follow: false },
 };
 
@@ -46,5 +46,7 @@ export default async function SharedSetupPage({ params }: Props) {
     notFound();
   }
 
-  return <SharedSetupView setup={JSON.parse(JSON.stringify(setup))} token={token} />;
+  return (
+    <SharedSetupView setup={JSON.parse(JSON.stringify(setup))} token={token} />
+  );
 }

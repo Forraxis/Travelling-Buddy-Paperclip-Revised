@@ -1,45 +1,52 @@
-import { NextResponse } from "next/server";
-import { z } from "zod/v4";
-import { prisma } from "@/lib/db";
-import { parseSearchParams, withRateLimit, notFound, serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { z } from 'zod/v4';
+import { prisma } from '@/lib/db';
+import {
+  parseSearchParams,
+  withRateLimit,
+  notFound,
+  serverError,
+} from '@/lib/api-helpers';
 
 const filterSchema = z.object({
   bodyType: z
     .enum([
-      "DUAL_CAB_UTE",
-      "SINGLE_CAB_UTE",
-      "EXTRA_CAB_UTE",
-      "WAGON",
-      "SUV",
-      "VAN",
-      "TROOPCARRIER",
-      "OTHER",
+      'DUAL_CAB_UTE',
+      'SINGLE_CAB_UTE',
+      'EXTRA_CAB_UTE',
+      'WAGON',
+      'SUV',
+      'VAN',
+      'TROOPCARRIER',
+      'OTHER',
     ])
     .optional(),
 });
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ makeId: string }> }
+  { params }: { params: Promise<{ makeId: string }> },
 ) {
   const limited = withRateLimit(request);
   if (limited) return limited;
 
   const { makeId } = await params;
   const parsed = parseSearchParams(request, filterSchema);
-  if ("error" in parsed) return parsed.error;
+  if ('error' in parsed) return parsed.error;
 
   try {
     const make = await prisma.vehicleMake.findUnique({ where: { id: makeId } });
-    if (!make) return notFound("Vehicle make");
+    if (!make) return notFound('Vehicle make');
 
     const allModels = await prisma.vehicleModel.findMany({
       where: { makeId },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
       include: { _count: { select: { variants: true } } },
     });
 
-    const bodyTypeFacets = [...new Set(allModels.map((m) => m.bodyType))].sort();
+    const bodyTypeFacets = [
+      ...new Set(allModels.map((m) => m.bodyType)),
+    ].sort();
 
     const items = parsed.data.bodyType
       ? allModels.filter((m) => m.bodyType === parsed.data.bodyType)

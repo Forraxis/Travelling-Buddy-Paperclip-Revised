@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
 
 const preferencesSchema = z.object({
   submissionApproved: z.boolean(),
@@ -13,7 +13,7 @@ const preferencesSchema = z.object({
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
@@ -29,7 +29,7 @@ export async function GET() {
   };
 
   const stored =
-    typeof user?.notificationPreferences === "object" &&
+    typeof user?.notificationPreferences === 'object' &&
     user.notificationPreferences !== null
       ? user.notificationPreferences
       : {};
@@ -40,7 +40,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const body = await request.json();
@@ -48,8 +48,8 @@ export async function PATCH(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid preferences", details: parsed.error.flatten() },
-      { status: 400 }
+      { error: 'Invalid preferences', details: parsed.error.flatten() },
+      { status: 400 },
     );
   }
 

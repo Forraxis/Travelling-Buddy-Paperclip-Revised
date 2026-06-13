@@ -1,16 +1,16 @@
-import { Worker, type Job } from "bullmq";
-import { redis } from "@/lib/queue";
-import { prisma } from "@/lib/db";
+import { Worker, type Job } from 'bullmq';
+import { redis } from '@/lib/queue';
+import { prisma } from '@/lib/db';
 import {
   analyseVehicleSubmission,
   analyseCaravanSubmission,
   analyseAccessorySubmission,
-} from "@/lib/vlm";
-import { promoteUserTrustTier } from "@/lib/trust-tier";
-import type { TrustTier } from "@prisma/client";
+} from '@/lib/vlm';
+import { promoteUserTrustTier } from '@/lib/trust-tier';
+import type { TrustTier } from '@prisma/client';
 
 export interface SubmissionVlmJobData {
-  submissionType: "vehicle" | "caravan" | "accessory";
+  submissionType: 'vehicle' | 'caravan' | 'accessory';
   submissionId: string;
   // R2 keys for photos (used to fetch base64 for VLM)
   photoKeys: string[];
@@ -18,17 +18,17 @@ export interface SubmissionVlmJobData {
 }
 
 async function fetchPhotoAsBase64(
-  key: string
+  key: string,
 ): Promise<{ base64: string; mimeType: string } | null> {
   const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
   if (!publicUrl || !key) return null;
   try {
-    const url = `${publicUrl.replace(/\/$/, "")}/${key}`;
+    const url = `${publicUrl.replace(/\/$/, '')}/${key}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
     if (!res.ok) return null;
     const buf = await res.arrayBuffer();
-    const base64 = Buffer.from(buf).toString("base64");
-    const mimeType = res.headers.get("content-type") ?? "image/jpeg";
+    const base64 = Buffer.from(buf).toString('base64');
+    const mimeType = res.headers.get('content-type') ?? 'image/jpeg';
     return { base64, mimeType };
   } catch {
     return null;
@@ -37,18 +37,18 @@ async function fetchPhotoAsBase64(
 
 function isAutoApproveEligible(
   trustTier: TrustTier,
-  recommendedAction: string
+  recommendedAction: string,
 ): boolean {
   // Auto-approve gate: VLM clean AND Trusted+ tier (spec 7.8)
   return (
-    recommendedAction === "auto_approve" &&
-    (trustTier === "TRUSTED" || trustTier === "EXPERT")
+    recommendedAction === 'auto_approve' &&
+    (trustTier === 'TRUSTED' || trustTier === 'EXPERT')
   );
 }
 
 export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
   return new Worker<SubmissionVlmJobData>(
-    "submission-vlm",
+    'submission-vlm',
     async (job: Job<SubmissionVlmJobData>) => {
       const { submissionType, submissionId, photoKeys, submittedData } =
         job.data;
@@ -59,11 +59,11 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
         : null;
 
       try {
-        if (submissionType === "vehicle") {
+        if (submissionType === 'vehicle') {
           const analysis = await analyseVehicleSubmission(
             photoData?.base64 ?? null,
-            photoData?.mimeType ?? "image/jpeg",
-            submittedData
+            photoData?.mimeType ?? 'image/jpeg',
+            submittedData,
           );
 
           const submission = await prisma.vehicleSubmission.findUnique({
@@ -75,7 +75,7 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
 
           const autoApprove = isAutoApproveEligible(
             submission.submitter.trustTier,
-            analysis.gatekeeper.recommendedAction
+            analysis.gatekeeper.recommendedAction,
           );
 
           await prisma.vehicleSubmission.update({
@@ -83,7 +83,7 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
             data: {
               vlmExtractionResult: analysis.extraction as object,
               vlmGatekeeperResult: analysis.gatekeeper as object,
-              status: autoApprove ? "APPROVED" : "PENDING",
+              status: autoApprove ? 'APPROVED' : 'PENDING',
               decidedAt: autoApprove ? new Date() : undefined,
             },
           });
@@ -93,16 +93,16 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
             if (submission.resultingVariantId) {
               await prisma.vehicleVariant.update({
                 where: { id: submission.resultingVariantId },
-                data: { status: "CATALOGUE" },
+                data: { status: 'CATALOGUE' },
               });
             }
             await promoteUserTrustTier(submission.submitterId);
           }
-        } else if (submissionType === "caravan") {
+        } else if (submissionType === 'caravan') {
           const analysis = await analyseCaravanSubmission(
             photoData?.base64 ?? null,
-            photoData?.mimeType ?? "image/jpeg",
-            submittedData
+            photoData?.mimeType ?? 'image/jpeg',
+            submittedData,
           );
 
           const submission = await prisma.caravanSubmission.findUnique({
@@ -114,7 +114,7 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
 
           const autoApprove = isAutoApproveEligible(
             submission.submitter.trustTier,
-            analysis.gatekeeper.recommendedAction
+            analysis.gatekeeper.recommendedAction,
           );
 
           await prisma.caravanSubmission.update({
@@ -122,7 +122,7 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
             data: {
               vlmExtractionResult: analysis.extraction as object,
               vlmGatekeeperResult: analysis.gatekeeper as object,
-              status: autoApprove ? "APPROVED" : "PENDING",
+              status: autoApprove ? 'APPROVED' : 'PENDING',
               decidedAt: autoApprove ? new Date() : undefined,
             },
           });
@@ -132,16 +132,16 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
             if (submission.resultingVariantId) {
               await prisma.caravanVariant.update({
                 where: { id: submission.resultingVariantId },
-                data: { status: "CATALOGUE" },
+                data: { status: 'CATALOGUE' },
               });
             }
             await promoteUserTrustTier(submission.submitterId);
           }
-        } else if (submissionType === "accessory") {
+        } else if (submissionType === 'accessory') {
           const result = await analyseAccessorySubmission(
             photoData?.base64 ?? null,
-            photoData?.mimeType ?? "image/jpeg",
-            submittedData
+            photoData?.mimeType ?? 'image/jpeg',
+            submittedData,
           );
 
           await prisma.accessorySubmission.update({
@@ -158,7 +158,7 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
         // The user already received a success confirmation and sees nothing.
         console.error(
           `[vlm-worker] Error processing ${submissionType}/${submissionId}:`,
-          err
+          err,
         );
         throw err;
       }
@@ -166,6 +166,6 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
     {
       connection: redis,
       concurrency: 2,
-    }
+    },
   );
 }

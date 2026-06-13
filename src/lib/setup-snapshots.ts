@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
+import { prisma } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
 
 export interface VehicleSnapshot {
   id: string;
@@ -187,8 +187,8 @@ export async function buildSnapshots(data: {
     accessorySnapshot:
       accSnaps.length > 0 || caravanAccSnaps.length > 0
         ? ([
-            ...accSnaps.map((s) => ({ ...s, target: "vehicle" })),
-            ...caravanAccSnaps.map((s) => ({ ...s, target: "caravan" })),
+            ...accSnaps.map((s) => ({ ...s, target: 'vehicle' })),
+            ...caravanAccSnaps.map((s) => ({ ...s, target: 'caravan' })),
           ] as unknown as Prisma.InputJsonValue)
         : undefined,
   };

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { z } from "zod/v4";
-import { rateLimit } from "./rate-limit";
+import { NextResponse } from 'next/server';
+import { z } from 'zod/v4';
+import { rateLimit } from './rate-limit';
 
 export function parseSearchParams<T extends z.ZodType>(
   request: Request,
-  schema: T
+  schema: T,
 ): { data: z.infer<T> } | { error: NextResponse } {
   const url = new URL(request.url);
   const raw: Record<string, string> = {};
@@ -17,13 +17,13 @@ export function parseSearchParams<T extends z.ZodType>(
     return {
       error: NextResponse.json(
         {
-          error: "Invalid request parameters",
+          error: 'Invalid request parameters',
           details: result.error.issues.map((i) => ({
-            field: i.path.join("."),
+            field: i.path.join('.'),
             message: i.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       ),
     };
   }
@@ -40,8 +40,5 @@ export function notFound(entity: string) {
 
 export function serverError(err: unknown) {
   console.error(err);
-  return NextResponse.json(
-    { error: "Internal server error" },
-    { status: 500 }
-  );
+  return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 }

@@ -1,15 +1,15 @@
-import { prisma } from "@/lib/db";
-import type { VehicleBodyType } from "@prisma/client";
-import { parseComboSlug } from "./combo.queries";
+import { prisma } from '@/lib/db';
+import type { VehicleBodyType } from '@prisma/client';
+import { parseComboSlug } from './combo.queries';
 
 export const TOURING_BODY_TYPES: VehicleBodyType[] = [
-  "DUAL_CAB_UTE",
-  "EXTRA_CAB_UTE",
-  "SINGLE_CAB_UTE",
-  "WAGON",
-  "SUV",
-  "VAN",
-  "TROOPCARRIER",
+  'DUAL_CAB_UTE',
+  'EXTRA_CAB_UTE',
+  'SINGLE_CAB_UTE',
+  'WAGON',
+  'SUV',
+  'VAN',
+  'TROOPCARRIER',
 ];
 
 // Body types that are NOT suitable for touring rig pages
@@ -57,7 +57,7 @@ export interface TouringRigPageData {
   gvmUpgradeAccessories: TouringAccessoryRow[];
 }
 
-const GVM_KEYWORDS = ["gvm", "gross vehicle mass upgrade", "upgrade kit"];
+const GVM_KEYWORDS = ['gvm', 'gross vehicle mass upgrade', 'upgrade kit'];
 
 function isGvmUpgrade(accessoryName: string, categoryName: string): boolean {
   const n = accessoryName.toLowerCase();
@@ -101,12 +101,12 @@ export async function getTouringRigPageData(
       rearAxleLimitKg: true,
     },
   });
-  if (!variant || variant.status !== "CATALOGUE") return null;
+  if (!variant || variant.status !== 'CATALOGUE') return null;
 
   const fitmentsRaw = await prisma.accessoryFitment.findMany({
     where: { vehicleVariantId: variant.id },
     take: 60,
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
     select: {
       id: true,
       installedWeightKg: true,
@@ -125,7 +125,7 @@ export async function getTouringRigPageData(
   });
 
   const activeFitments = fitmentsRaw.filter(
-    (f) => f.accessory.status === "ACTIVE",
+    (f) => f.accessory.status === 'ACTIVE',
   );
 
   const toRow = (f: (typeof activeFitments)[0]): TouringAccessoryRow => ({
@@ -183,14 +183,14 @@ export async function getAllTouringRigSlugsForSSG(): Promise<
 > {
   const variants = await prisma.vehicleVariant.findMany({
     where: {
-      status: "CATALOGUE",
+      status: 'CATALOGUE',
       model: { bodyType: { in: TOURING_BODY_TYPES } },
     },
     select: {
       slug: true,
       model: { select: { slug: true, make: { select: { slug: true } } } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
 
   return variants.map((v) => ({

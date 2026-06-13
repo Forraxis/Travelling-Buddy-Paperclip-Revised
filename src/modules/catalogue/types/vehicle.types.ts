@@ -1,4 +1,4 @@
-import type { VehicleBodyType, FuelType, Market } from "@prisma/client";
+import type { VehicleBodyType, FuelType, Market } from '@prisma/client';
 
 // --- Domain types (decoupled from Prisma) ---
 

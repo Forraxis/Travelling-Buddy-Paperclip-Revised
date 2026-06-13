@@ -8,9 +8,13 @@ export const metadata: Metadata = {
     'Check your GVM, GCM, axle loads, and tow ball mass. The most comprehensive rig compliance calculator for Australian road travellers.',
 };
 
-export default function CalculatorLayout({ children }: { children: React.ReactNode }) {
+export default function CalculatorLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex h-full min-h-screen flex-col bg-tb-neutral-50">
+    <div className="bg-tb-neutral-50 flex h-full min-h-screen flex-col">
       <CalculatorShell>
         <CalculatorHeader />
         {children}

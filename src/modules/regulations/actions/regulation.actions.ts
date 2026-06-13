@@ -1,10 +1,10 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
-import { createRegulationService } from "../services/regulation.service";
-import { getAdminUser } from "@/modules/admin/lib/auth";
-import type { RegulationData } from "../types/regulation.types";
+import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db';
+import { createRegulationService } from '../services/regulation.service';
+import { getAdminUser } from '@/modules/admin/lib/auth';
+import type { RegulationData } from '../types/regulation.types';
 
 const regulationService = createRegulationService(prisma);
 
@@ -15,9 +15,9 @@ type ActionResult<T = unknown> =
 async function writeAuditLog(
   entityType: string,
   entityId: string,
-  action: "CREATE" | "UPDATE" | "DELETE",
+  action: 'CREATE' | 'UPDATE' | 'DELETE',
   changedBy: string,
-  changes: object
+  changes: object,
 ) {
   await prisma.auditLog.create({
     data: {
@@ -58,17 +58,19 @@ export async function saveRegulationVersionAction(
   code: string,
   data: RegulationData,
   effectiveDateStr: string,
-  changeSummary: string
+  changeSummary: string,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
-  if (user.role !== "ADMIN") return { success: false, error: "ADMIN role required" };
-  if (!changeSummary.trim()) return { success: false, error: "Change summary is required" };
+  if (!user) return { success: false, error: 'Unauthorized' };
+  if (user.role !== 'ADMIN')
+    return { success: false, error: 'ADMIN role required' };
+  if (!changeSummary.trim())
+    return { success: false, error: 'Change summary is required' };
 
   try {
     const effectiveDate = new Date(effectiveDateStr);
     if (isNaN(effectiveDate.getTime())) {
-      return { success: false, error: "Invalid effective date" };
+      return { success: false, error: 'Invalid effective date' };
     }
 
     const version = await regulationService.saveVersion(
@@ -76,10 +78,10 @@ export async function saveRegulationVersionAction(
       data,
       effectiveDate,
       changeSummary.trim(),
-      user.id
+      user.id,
     );
 
-    await writeAuditLog("RegulationSetVersion", version.id, "CREATE", user.id, {
+    await writeAuditLog('RegulationSetVersion', version.id, 'CREATE', user.id, {
       code,
       effectiveDate: effectiveDateStr,
       changeSummary: changeSummary.trim(),
@@ -88,11 +90,11 @@ export async function saveRegulationVersionAction(
 
     revalidatePath(`/admin/regulations/${code}`);
     revalidatePath(`/admin/regulations/${code}/versions`);
-    revalidatePath("/admin/regulations");
+    revalidatePath('/admin/regulations');
 
     return { success: true, data: version };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Unknown error";
+    const msg = e instanceof Error ? e.message : 'Unknown error';
     return { success: false, error: msg };
   }
 }

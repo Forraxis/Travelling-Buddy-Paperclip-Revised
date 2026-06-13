@@ -1,6 +1,6 @@
-import { AdminPageHeader } from "@/modules/admin/components";
-import { listCategoriesAction } from "@/modules/catalogue/actions/accessory-admin.actions";
-import { CategoryForm } from "../CategoryForm";
+import { AdminPageHeader } from '@/modules/admin/components';
+import { listCategoriesAction } from '@/modules/catalogue/actions/accessory-admin.actions';
+import { CategoryForm } from '../CategoryForm';
 
 export default async function NewCategoryPage() {
   const result = await listCategoriesAction(undefined, undefined);
@@ -12,7 +12,10 @@ export default async function NewCategoryPage() {
         title="New Category"
         description="Add a new accessory category."
       />
-      <CategoryForm parentOptions={parentOptions} backHref="/admin/catalogue/categories" />
+      <CategoryForm
+        parentOptions={parentOptions}
+        backHref="/admin/catalogue/categories"
+      />
     </div>
   );
 }

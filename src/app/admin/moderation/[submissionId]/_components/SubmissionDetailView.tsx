@@ -1,34 +1,38 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import type { SubmissionType } from "../../actions";
-import { approveSubmission, rejectSubmission, editAndApproveSubmission } from "../../actions";
-import type { VlmVerdict } from "../../_components/types";
-import { verdictLabel } from "../../_components/types";
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import type { SubmissionType } from '../../actions';
+import {
+  approveSubmission,
+  rejectSubmission,
+  editAndApproveSubmission,
+} from '../../actions';
+import type { VlmVerdict } from '../../_components/types';
+import { verdictLabel } from '../../_components/types';
 
 const VERDICT_COLORS: Record<string, string> = {
-  AUTO_APPROVE: "bg-green-100 text-green-700",
-  QUEUE_FOR_REVIEW: "bg-yellow-100 text-yellow-700",
-  AUTO_REJECT: "bg-red-100 text-red-700",
-  none: "bg-gray-100 text-gray-500",
+  AUTO_APPROVE: 'bg-green-100 text-green-700',
+  QUEUE_FOR_REVIEW: 'bg-yellow-100 text-yellow-700',
+  AUTO_REJECT: 'bg-red-100 text-red-700',
+  none: 'bg-gray-100 text-gray-500',
 };
 
 const TRUST_COLORS: Record<string, string> = {
-  NEW: "bg-gray-100 text-gray-600",
-  BASIC: "bg-blue-50 text-blue-600",
-  TRUSTED: "bg-green-50 text-green-700",
-  EXPERT: "bg-purple-50 text-purple-700",
+  NEW: 'bg-gray-100 text-gray-600',
+  BASIC: 'bg-blue-50 text-blue-600',
+  TRUSTED: 'bg-green-50 text-green-700',
+  EXPERT: 'bg-purple-50 text-purple-700',
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-700",
-  APPROVED: "bg-green-100 text-green-700",
-  REJECTED: "bg-red-100 text-red-700",
-  DEFERRED: "bg-orange-100 text-orange-700",
-  DRAFT: "bg-gray-100 text-gray-500",
+  PENDING: 'bg-yellow-100 text-yellow-700',
+  APPROVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+  DEFERRED: 'bg-orange-100 text-orange-700',
+  DRAFT: 'bg-gray-100 text-gray-500',
 };
 
 interface Props {
@@ -57,17 +61,19 @@ interface Props {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("en-AU", {
-    dateStyle: "medium",
-    timeStyle: "short",
+  return new Date(iso).toLocaleString('en-AU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
   });
 }
 
 function FieldRow({ label, value }: { label: string; value: unknown }) {
-  if (value === null || value === undefined || value === "") return null;
+  if (value === null || value === undefined || value === '') return null;
   return (
-    <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-50 last:border-0">
-      <dt className="text-sm text-gray-500 capitalize">{label.replace(/_/g, " ")}</dt>
+    <div className="grid grid-cols-3 gap-4 border-b border-gray-50 py-2 last:border-0">
+      <dt className="text-sm text-gray-500 capitalize">
+        {label.replace(/_/g, ' ')}
+      </dt>
       <dd className="col-span-2 text-sm text-gray-900">{String(value)}</dd>
     </div>
   );
@@ -76,11 +82,15 @@ function FieldRow({ label, value }: { label: string; value: unknown }) {
 function PhotoGallery({ urls }: { urls: string[] }) {
   const [selected, setSelected] = useState(0);
   if (urls.length === 0) {
-    return <div className="h-48 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-sm">No photos</div>;
+    return (
+      <div className="flex h-48 items-center justify-center rounded-lg bg-gray-100 text-sm text-gray-400">
+        No photos
+      </div>
+    );
   }
   return (
     <div className="space-y-2">
-      <div className="relative h-64 w-full overflow-hidden rounded-lg bg-gray-100 cursor-zoom-in group">
+      <div className="group relative h-64 w-full cursor-zoom-in overflow-hidden rounded-lg bg-gray-100">
         <Image
           src={urls[selected]}
           alt="submission photo"
@@ -92,9 +102,11 @@ function PhotoGallery({ urls }: { urls: string[] }) {
           href={urls[selected]}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute inset-0 flex items-end justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute inset-0 flex items-end justify-end p-2 opacity-0 transition-opacity group-hover:opacity-100"
         >
-          <span className="rounded bg-black/50 px-2 py-1 text-xs text-white">View full</span>
+          <span className="rounded bg-black/50 px-2 py-1 text-xs text-white">
+            View full
+          </span>
         </a>
       </div>
       {urls.length > 1 && (
@@ -103,9 +115,15 @@ function PhotoGallery({ urls }: { urls: string[] }) {
             <button
               key={url}
               onClick={() => setSelected(i)}
-              className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border-2 transition-colors ${i === selected ? "border-tb-primary" : "border-gray-200"}`}
+              className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border-2 transition-colors ${i === selected ? 'border-tb-primary' : 'border-gray-200'}`}
             >
-              <Image src={url} alt="" fill className="object-cover" unoptimized />
+              <Image
+                src={url}
+                alt=""
+                fill
+                className="object-cover"
+                unoptimized
+              />
             </button>
           ))}
         </div>
@@ -126,13 +144,15 @@ function VlmSection({
   extractionResult: Record<string, unknown> | null;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const verdictKey = verdict ?? "none";
+  const verdictKey = verdict ?? 'none';
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+    <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-700">VLM Assessment</h3>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${VERDICT_COLORS[verdictKey] ?? VERDICT_COLORS.none}`}>
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${VERDICT_COLORS[verdictKey] ?? VERDICT_COLORS.none}`}
+        >
           {verdictLabel(verdict)}
         </span>
       </div>
@@ -140,15 +160,17 @@ function VlmSection({
       {summary && <p className="text-sm text-gray-600">{summary}</p>}
 
       {!gatekeeperResult && !extractionResult && (
-        <p className="text-sm text-gray-400 italic">No VLM data available yet.</p>
+        <p className="text-sm text-gray-400 italic">
+          No VLM data available yet.
+        </p>
       )}
 
       {(gatekeeperResult || extractionResult) && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="text-xs text-tb-primary hover:underline"
+          className="text-tb-primary text-xs hover:underline"
         >
-          {expanded ? "Hide raw data ▲" : "Show raw data ▼"}
+          {expanded ? 'Hide raw data ▲' : 'Show raw data ▼'}
         </button>
       )}
 
@@ -156,16 +178,20 @@ function VlmSection({
         <div className="space-y-3">
           {gatekeeperResult && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Gatekeeper / Similarity Result</p>
-              <pre className="rounded bg-gray-50 p-3 text-xs text-gray-700 overflow-auto max-h-48 whitespace-pre-wrap">
+              <p className="mb-1 text-xs font-medium text-gray-500">
+                Gatekeeper / Similarity Result
+              </p>
+              <pre className="max-h-48 overflow-auto rounded bg-gray-50 p-3 text-xs whitespace-pre-wrap text-gray-700">
                 {JSON.stringify(gatekeeperResult, null, 2)}
               </pre>
             </div>
           )}
           {extractionResult && (
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Extraction Result</p>
-              <pre className="rounded bg-gray-50 p-3 text-xs text-gray-700 overflow-auto max-h-48 whitespace-pre-wrap">
+              <p className="mb-1 text-xs font-medium text-gray-500">
+                Extraction Result
+              </p>
+              <pre className="max-h-48 overflow-auto rounded bg-gray-50 p-3 text-xs whitespace-pre-wrap text-gray-700">
                 {JSON.stringify(extractionResult, null, 2)}
               </pre>
             </div>
@@ -183,20 +209,26 @@ function RejectModal({
   onSubmit: (reason: string) => Promise<void>;
   onClose: () => void;
 }) {
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!reason.trim()) { setError("Reason is required"); return; }
+    if (!reason.trim()) {
+      setError('Reason is required');
+      return;
+    }
     setBusy(true);
     await onSubmit(reason.trim());
     setBusy(false);
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
@@ -207,20 +239,31 @@ function RejectModal({
           Reason <span className="text-red-500">*</span>
         </label>
         <textarea
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-tb-primary"
+          className="focus:ring-tb-primary w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:outline-none"
           rows={4}
           value={reason}
-          onChange={(e) => { setReason(e.target.value); setError(null); }}
+          onChange={(e) => {
+            setReason(e.target.value);
+            setError(null);
+          }}
           placeholder="Explain why this submission is being rejected…"
           autoFocus
         />
         {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-        <div className="mt-4 flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={busy} className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60">
-            {busy ? "Rejecting…" : "Reject"}
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+          >
+            {busy ? 'Rejecting…' : 'Reject'}
           </button>
         </div>
       </form>
@@ -237,7 +280,18 @@ function EditApproveModal({
   onSubmit: (edits: Record<string, unknown>) => Promise<void>;
   onClose: () => void;
 }) {
-  const editableKeys = ["variantName", "year", "notes", "gvmKg", "gcmKg", "wheelbaseMm", "name", "fuelType", "transmission", "drivetrain"];
+  const editableKeys = [
+    'variantName',
+    'year',
+    'notes',
+    'gvmKg',
+    'gcmKg',
+    'wheelbaseMm',
+    'name',
+    'fuelType',
+    'transmission',
+    'drivetrain',
+  ];
   const initial: Record<string, string> = {};
   for (const k of editableKeys) {
     if (submittedData[k] !== undefined && submittedData[k] !== null) {
@@ -253,8 +307,8 @@ function EditApproveModal({
     setBusy(true);
     const edits: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(fields)) {
-      if (v !== String(submittedData[k] ?? "")) {
-        edits[k] = v === "" ? null : v;
+      if (v !== String(submittedData[k] ?? '')) {
+        edits[k] = v === '' ? null : v;
       }
     }
     await onSubmit(edits);
@@ -262,32 +316,50 @@ function EditApproveModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl max-h-[80vh] overflow-y-auto"
+        className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6 shadow-xl"
       >
         <h3 className="mb-4 text-base font-semibold">Edit and Approve</h3>
-        <p className="mb-4 text-sm text-gray-500">Make minor corrections before approving. Only changed fields are saved.</p>
+        <p className="mb-4 text-sm text-gray-500">
+          Make minor corrections before approving. Only changed fields are
+          saved.
+        </p>
         <div className="space-y-3">
           {Object.entries(fields).map(([key, val]) => (
             <div key={key}>
-              <label className="block text-xs font-medium text-gray-600 mb-0.5 capitalize">{key.replace(/_/g, " ")}</label>
+              <label className="mb-0.5 block text-xs font-medium text-gray-600 capitalize">
+                {key.replace(/_/g, ' ')}
+              </label>
               <input
-                className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-tb-primary"
+                className="focus:ring-tb-primary w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:ring-2 focus:outline-none"
                 value={val}
-                onChange={(e) => setFields({ ...fields, [key]: e.target.value })}
+                onChange={(e) =>
+                  setFields({ ...fields, [key]: e.target.value })
+                }
               />
             </div>
           ))}
         </div>
-        <div className="mt-4 flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
             Cancel
           </button>
-          <button type="submit" disabled={busy} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60">
-            {busy ? "Saving…" : "Save and Approve"}
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
+          >
+            {busy ? 'Saving…' : 'Save and Approve'}
           </button>
         </div>
       </form>
@@ -319,45 +391,61 @@ export function SubmissionDetailView({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isPending = status === "PENDING";
+  const isPending = status === 'PENDING';
 
   async function handleApprove() {
     setBusy(true);
     setError(null);
     const result = await approveSubmission(id, type);
     setBusy(false);
-    if (!result.success) { setError(result.error); return; }
-    router.push("/admin/moderation");
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+    router.push('/admin/moderation');
     router.refresh();
   }
 
   async function handleReject(reason: string) {
     setError(null);
     const result = await rejectSubmission(id, type, reason);
-    if (!result.success) { setError(result.error); setShowReject(false); return; }
+    if (!result.success) {
+      setError(result.error);
+      setShowReject(false);
+      return;
+    }
     setShowReject(false);
-    router.push("/admin/moderation");
+    router.push('/admin/moderation');
     router.refresh();
   }
 
   async function handleEditApprove(edits: Record<string, unknown>) {
     setError(null);
     const result = await editAndApproveSubmission(id, type, edits);
-    if (!result.success) { setError(result.error); setShowEditApprove(false); return; }
+    if (!result.success) {
+      setError(result.error);
+      setShowEditApprove(false);
+      return;
+    }
     setShowEditApprove(false);
-    router.push("/admin/moderation");
+    router.push('/admin/moderation');
     router.refresh();
   }
 
   const TYPE_COLORS: Record<SubmissionType, string> = {
-    vehicle: "bg-blue-100 text-blue-700",
-    caravan: "bg-purple-100 text-purple-700",
-    accessory: "bg-teal-100 text-teal-700",
+    vehicle: 'bg-blue-100 text-blue-700',
+    caravan: 'bg-purple-100 text-purple-700',
+    accessory: 'bg-teal-100 text-teal-700',
   };
 
   return (
     <>
-      {showReject && <RejectModal onSubmit={handleReject} onClose={() => setShowReject(false)} />}
+      {showReject && (
+        <RejectModal
+          onSubmit={handleReject}
+          onClose={() => setShowReject(false)}
+        />
+      )}
       {showEditApprove && (
         <EditApproveModal
           submittedData={submittedData}
@@ -366,34 +454,49 @@ export function SubmissionDetailView({
         />
       )}
 
-      <div className="space-y-6 max-w-5xl">
+      <div className="max-w-5xl space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <Link href="/admin/moderation" className="text-xs text-gray-500 hover:text-tb-primary mb-2 block">
+            <Link
+              href="/admin/moderation"
+              className="hover:text-tb-primary mb-2 block text-xs text-gray-500"
+            >
               ← Back to queue
             </Link>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`rounded px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[type]}`}>{type}</span>
-              <h1 className="text-xl font-semibold text-gray-900">{entityName}</h1>
-              <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] ?? "bg-gray-100 text-gray-500"}`}>{status}</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[type]}`}
+              >
+                {type}
+              </span>
+              <h1 className="text-xl font-semibold text-gray-900">
+                {entityName}
+              </h1>
+              <span
+                className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-500'}`}
+              >
+                {status}
+              </span>
             </div>
-            <p className="mt-1 text-sm text-gray-500">Submitted {formatDate(createdAt)}</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Submitted {formatDate(createdAt)}
+            </p>
             {dupSuspected && (
-              <span className="mt-1 inline-block rounded bg-orange-50 border border-orange-200 px-2 py-0.5 text-xs text-orange-700">
+              <span className="mt-1 inline-block rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs text-orange-700">
                 Submitter flagged as possible duplicate
               </span>
             )}
           </div>
 
           {isPending && (
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center gap-2">
               {error && <span className="text-xs text-red-600">{error}</span>}
               <button
                 onClick={handleApprove}
                 disabled={busy}
                 className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
               >
-                {busy ? "Approving…" : "Approve"}
+                {busy ? 'Approving…' : 'Approve'}
               </button>
               <button
                 onClick={() => setShowEditApprove(true)}
@@ -412,41 +515,59 @@ export function SubmissionDetailView({
         </div>
 
         {!isPending && decidedBy && (
-          <div className={`rounded-lg border px-4 py-3 text-sm ${status === "APPROVED" ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}>
-            <strong>{status === "APPROVED" ? "Approved" : "Rejected"}</strong> by {decidedBy.name ?? decidedBy.id} on {decidedAt ? formatDate(decidedAt) : "unknown date"}
-            {decisionNotes && <p className="mt-1 text-gray-700">{decisionNotes}</p>}
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm ${status === 'APPROVED' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}
+          >
+            <strong>{status === 'APPROVED' ? 'Approved' : 'Rejected'}</strong>{' '}
+            by {decidedBy.name ?? decidedBy.id} on{' '}
+            {decidedAt ? formatDate(decidedAt) : 'unknown date'}
+            {decisionNotes && (
+              <p className="mt-1 text-gray-700">{decisionNotes}</p>
+            )}
           </div>
         )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="space-y-4">
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700">Photos</h3>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700">
+                Photos
+              </h3>
               <PhotoGallery urls={photoUrls} />
             </div>
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700">Submitter</h3>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700">
+                Submitter
+              </h3>
               <dl className="space-y-1">
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Name</dt>
-                  <dd className="text-sm text-gray-900">{submitter.name ?? "—"}</dd>
+                  <dd className="text-sm text-gray-900">
+                    {submitter.name ?? '—'}
+                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Email</dt>
-                  <dd className="text-sm text-gray-900">{submitter.email ?? "—"}</dd>
+                  <dd className="text-sm text-gray-900">
+                    {submitter.email ?? '—'}
+                  </dd>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <dt className="text-sm text-gray-500">Trust tier</dt>
                   <dd>
-                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${TRUST_COLORS[submitter.trustTier] ?? "bg-gray-100 text-gray-500"}`}>
+                    <span
+                      className={`rounded px-2 py-0.5 text-xs font-medium ${TRUST_COLORS[submitter.trustTier] ?? 'bg-gray-100 text-gray-500'}`}
+                    >
                       {submitter.trustTier}
                     </span>
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-500">Member since</dt>
-                  <dd className="text-sm text-gray-900">{formatDate(submitter.memberSince)}</dd>
+                  <dd className="text-sm text-gray-900">
+                    {formatDate(submitter.memberSince)}
+                  </dd>
                 </div>
               </dl>
             </div>
@@ -461,7 +582,9 @@ export function SubmissionDetailView({
             />
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700">Submitted Fields</h3>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700">
+                Submitted Fields
+              </h3>
               <dl>
                 {Object.entries(submittedData).map(([key, value]) => (
                   <FieldRow key={key} label={key} value={value} />

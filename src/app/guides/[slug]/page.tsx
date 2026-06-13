@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { MDXRemote } from "next-mdx-remote/rsc";
-import {
-  getAllGuideSlugs,
-  getGuideBySlug,
-} from "@/lib/content/guides";
-import type { GuideCategory } from "@/lib/content/guides";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { MDXRemote } from 'next-mdx-remote/rsc';
+import { getAllGuideSlugs, getGuideBySlug } from '@/lib/content/guides';
+import type { GuideCategory } from '@/lib/content/guides';
 
 // Revalidate once per day
 export const revalidate = 86400;
@@ -44,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       url: canonical,
-      type: "article",
+      type: 'article',
     },
   };
 }
@@ -52,31 +49,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // ── Category label ────────────────────────────────────────────────────────────
 
 const CATEGORY_LABELS: Record<GuideCategory, string> = {
-  regulatory: "Regulatory",
-  "state-guidance": "State Guidance",
-  "accessory-category": "Accessory Guide",
-  decision: "Decision Guide",
+  regulatory: 'Regulatory',
+  'state-guidance': 'State Guidance',
+  'accessory-category': 'Accessory Guide',
+  decision: 'Decision Guide',
 };
 
 // ── MDX custom components ────────────────────────────────────────────────────
 
 const mdxComponents = {
   Callout: ({
-    type = "info",
+    type = 'info',
     children,
   }: {
-    type?: "info" | "warning" | "danger";
+    type?: 'info' | 'warning' | 'danger';
     children: React.ReactNode;
   }) => {
     const styles: Record<string, string> = {
-      info: "border-blue-400 bg-blue-50 text-blue-900",
-      warning: "border-amber-400 bg-amber-50 text-amber-900",
-      danger: "border-red-400 bg-red-50 text-red-900",
+      info: 'border-blue-400 bg-blue-50 text-blue-900',
+      warning: 'border-amber-400 bg-amber-50 text-amber-900',
+      danger: 'border-red-400 bg-red-50 text-red-900',
     };
     return (
       <aside
         role="note"
-        className={`my-6 border-l-4 rounded-r px-4 py-3 text-sm ${styles[type] ?? styles.info}`}
+        className={`my-6 rounded-r border-l-4 px-4 py-3 text-sm ${styles[type] ?? styles.info}`}
       >
         {children}
       </aside>
@@ -85,7 +82,7 @@ const mdxComponents = {
   DisclaimerBox: ({ children }: { children: React.ReactNode }) => (
     <aside
       role="note"
-      className="my-6 border border-gray-300 rounded bg-gray-50 px-4 py-3 text-xs text-gray-600"
+      className="my-6 rounded border border-gray-300 bg-gray-50 px-4 py-3 text-xs text-gray-600"
     >
       {children}
     </aside>
@@ -102,17 +99,17 @@ function articleJsonLd(params: {
   dateModified: string;
 }) {
   return {
-    "@context": "https://schema.org",
-    "@type": "Article",
+    '@context': 'https://schema.org',
+    '@type': 'Article',
     headline: params.title,
     description: params.description,
     author: {
-      "@type": "Organization",
-      name: "TowingBuddy",
+      '@type': 'Organization',
+      name: 'TowingBuddy',
     },
     publisher: {
-      "@type": "Organization",
-      name: "TowingBuddy",
+      '@type': 'Organization',
+      name: 'TowingBuddy',
     },
     datePublished: params.datePublished,
     dateModified: params.dateModified,
@@ -125,18 +122,22 @@ function articleJsonLd(params: {
 function relatedLinks(tags: string[]) {
   // Map known tags to relevant internal pages
   const links: { label: string; href: string }[] = [];
-  if (tags.includes("gvm") || tags.includes("towing")) {
-    links.push({ label: "Calculate your tow capacity", href: "/calculator" });
-    links.push({ label: "Browse tow vehicles", href: "/vehicles" });
+  if (tags.includes('gvm') || tags.includes('towing')) {
+    links.push({ label: 'Calculate your tow capacity', href: '/calculator' });
+    links.push({ label: 'Browse tow vehicles', href: '/vehicles' });
   }
-  if (tags.includes("caravan") || tags.includes("atm") || tags.includes("tbm")) {
-    links.push({ label: "Browse caravans", href: "/caravans" });
+  if (
+    tags.includes('caravan') ||
+    tags.includes('atm') ||
+    tags.includes('tbm')
+  ) {
+    links.push({ label: 'Browse caravans', href: '/caravans' });
   }
-  if (tags.includes("accessories")) {
-    links.push({ label: "Browse accessories", href: "/accessories" });
+  if (tags.includes('accessories')) {
+    links.push({ label: 'Browse accessories', href: '/accessories' });
   }
-  if (tags.includes("setup") || tags.includes("touring")) {
-    links.push({ label: "Browse touring setups", href: "/touring-setups" });
+  if (tags.includes('setup') || tags.includes('touring')) {
+    links.push({ label: 'Browse touring setups', href: '/touring-setups' });
   }
   return links;
 }
@@ -169,13 +170,15 @@ export default async function GuideSlugPage({ params }: Props) {
         {/* Main article */}
         <article className="min-w-0 flex-1">
           <header className="mb-8">
-            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+            <div className="mb-2 text-xs font-medium tracking-wide text-gray-500 uppercase">
               {CATEGORY_LABELS[frontmatter.category] ?? frontmatter.category}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
               {frontmatter.title}
             </h1>
-            <p className="mt-3 text-lg text-gray-600">{frontmatter.description}</p>
+            <p className="mt-3 text-lg text-gray-600">
+              {frontmatter.description}
+            </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {frontmatter.tags?.map((tag) => (
                 <span
@@ -187,13 +190,16 @@ export default async function GuideSlugPage({ params }: Props) {
               ))}
             </div>
             <p className="mt-4 text-xs text-gray-400">
-              Last updated:{" "}
+              Last updated:{' '}
               <time dateTime={frontmatter.last_updated}>
-                {new Date(frontmatter.last_updated).toLocaleDateString("en-AU", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {new Date(frontmatter.last_updated).toLocaleDateString(
+                  'en-AU',
+                  {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  },
+                )}
               </time>
             </p>
           </header>
@@ -202,25 +208,28 @@ export default async function GuideSlugPage({ params }: Props) {
             <MDXRemote source={content} components={mdxComponents} />
           </div>
 
-          {frontmatter.regulatory_references && frontmatter.regulatory_references.length > 0 && (
-            <section className="mt-10 border-t pt-6">
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
-                Regulatory References
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-700">
-                {frontmatter.regulatory_references.map((ref) => (
-                  <li key={ref}>{ref}</li>
-                ))}
-              </ul>
-            </section>
-          )}
+          {frontmatter.regulatory_references &&
+            frontmatter.regulatory_references.length > 0 && (
+              <section className="mt-10 border-t pt-6">
+                <h2 className="mb-3 text-sm font-semibold tracking-wide text-gray-500 uppercase">
+                  Regulatory References
+                </h2>
+                <ul className="space-y-1 text-sm text-gray-700">
+                  {frontmatter.regulatory_references.map((ref) => (
+                    <li key={ref}>{ref}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
         </article>
 
         {/* Related links sidebar */}
         {related.length > 0 && (
           <aside className="mt-10 w-full shrink-0 lg:mt-0 lg:w-64">
             <div className="rounded-lg border bg-gray-50 p-4">
-              <h2 className="mb-3 text-sm font-semibold text-gray-700">Related Tools</h2>
+              <h2 className="mb-3 text-sm font-semibold text-gray-700">
+                Related Tools
+              </h2>
               <ul className="space-y-2">
                 {related.map((link) => (
                   <li key={link.href}>

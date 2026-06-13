@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import type { VehicleBodyType } from "@prisma/client";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import type { VehicleBodyType } from '@prisma/client';
 import {
   getVehicleModelPageData,
   getAllVehicleModelSlugsForSSG,
-} from "@/modules/catalogue/queries/vehicle-profile.queries";
+} from '@/modules/catalogue/queries/vehicle-profile.queries';
 import type {
   VehicleModelPageData,
   VehicleModelVariantRow,
-} from "@/modules/catalogue/queries/vehicle-profile.queries";
+} from '@/modules/catalogue/queries/vehicle-profile.queries';
 
 export const revalidate = 86400;
 
@@ -32,26 +32,38 @@ export async function generateStaticParams(): Promise<PageParams[]> {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function yearRangeLabel(v: { yearFrom: number; yearTo: number; isCurrentProduction: boolean }): string {
+function yearRangeLabel(v: {
+  yearFrom: number;
+  yearTo: number;
+  isCurrentProduction: boolean;
+}): string {
   if (v.isCurrentProduction) return `${v.yearFrom}–present`;
   if (v.yearFrom === v.yearTo) return `${v.yearFrom}`;
   return `${v.yearFrom}–${v.yearTo}`;
 }
 
 function formatKg(n: number | null): string {
-  return n != null ? n.toLocaleString() : "—";
+  return n != null ? n.toLocaleString() : '—';
 }
 
 function bodyTypeLabel(bodyType: VehicleBodyType): string {
   switch (bodyType) {
-    case "DUAL_CAB_UTE": return "dual-cab ute";
-    case "SINGLE_CAB_UTE": return "single-cab ute";
-    case "EXTRA_CAB_UTE": return "extra-cab ute";
-    case "WAGON": return "wagon";
-    case "SUV": return "SUV";
-    case "VAN": return "van";
-    case "TROOPCARRIER": return "troopcarrier";
-    default: return "vehicle";
+    case 'DUAL_CAB_UTE':
+      return 'dual-cab ute';
+    case 'SINGLE_CAB_UTE':
+      return 'single-cab ute';
+    case 'EXTRA_CAB_UTE':
+      return 'extra-cab ute';
+    case 'WAGON':
+      return 'wagon';
+    case 'SUV':
+      return 'SUV';
+    case 'VAN':
+      return 'van';
+    case 'TROOPCARRIER':
+      return 'troopcarrier';
+    default:
+      return 'vehicle';
   }
 }
 
@@ -81,27 +93,39 @@ function groupVariants(variants: VehicleModelVariantRow[]): VariantGroup[] {
 function buildItemListJsonLd(data: VehicleModelPageData): object {
   const { make, model, variants } = data;
   return {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
     name: `${make.name} ${model.name} — All Variants`,
     itemListElement: variants.map((v, i) => {
       const productionEnd = v.isCurrentProduction
         ? new Date().getFullYear().toString()
         : v.yearTo.toString();
       return {
-        "@type": "ListItem",
+        '@type': 'ListItem',
         position: i + 1,
         item: {
-          "@type": "Car",
+          '@type': 'Car',
           name: `${make.name} ${model.name} ${v.name}`,
-          manufacturer: { "@type": "Organization", name: make.name },
+          manufacturer: { '@type': 'Organization', name: make.name },
           model: model.name,
           productionDate: `${v.yearFrom}/${productionEnd}`,
           ...(v.maxTowingCapacityKg != null
-            ? { towingCapacity: { "@type": "QuantitativeValue", value: v.maxTowingCapacityKg, unitCode: "KGM" } }
+            ? {
+                towingCapacity: {
+                  '@type': 'QuantitativeValue',
+                  value: v.maxTowingCapacityKg,
+                  unitCode: 'KGM',
+                },
+              }
             : {}),
           ...(v.gvmKg != null
-            ? { weightTotal: { "@type": "QuantitativeValue", value: v.gvmKg, unitCode: "KGM" } }
+            ? {
+                weightTotal: {
+                  '@type': 'QuantitativeValue',
+                  value: v.gvmKg,
+                  unitCode: 'KGM',
+                },
+              }
             : {}),
           url: `/vehicles/${make.slug}/${model.slug}/${v.slug}/`,
         },
@@ -115,7 +139,7 @@ function buildItemListJsonLd(data: VehicleModelPageData): object {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { make, model } = await params;
   const data = await getVehicleModelPageData(make, model);
-  if (!data) return { title: "Not Found" };
+  if (!data) return { title: 'Not Found' };
 
   const makeName = data.make.name;
   const modelName = data.model.name;
@@ -132,10 +156,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? hasCurrentProduction
         ? `${earliestYear}–present`
         : `${earliestYear}–${latestYear}`
-      : "";
+      : '';
 
   const title = `${makeName} ${modelName} — All Variants, Specifications & Towing Capacity`;
-  const description = `Compare all ${variantCount} ${makeName} ${modelName} variants${yearRangeStr ? ` (${yearRangeStr})` : ""}. GVM, GCM, and maximum towing capacity for every catalogued configuration. Australian market data.`;
+  const description = `Compare all ${variantCount} ${makeName} ${modelName} variants${yearRangeStr ? ` (${yearRangeStr})` : ''}. GVM, GCM, and maximum towing capacity for every catalogued configuration. Australian market data.`;
   const canonicalUrl = `/vehicles/${make}/${model}/`;
 
   return {
@@ -145,7 +169,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: [{ url: "/og/vehicle-default.png", width: 1200, height: 630 }],
+      images: [{ url: '/og/vehicle-default.png', width: 1200, height: 630 }],
     },
   };
 }
@@ -166,12 +190,24 @@ function VariantTable({
       <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">Variant</th>
-            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">Years</th>
-            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">GVM (kg)</th>
-            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">GCM (kg)</th>
-            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">Max towing (kg)</th>
-            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">Specs</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">
+              Variant
+            </th>
+            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">
+              Years
+            </th>
+            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">
+              GVM (kg)
+            </th>
+            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">
+              GCM (kg)
+            </th>
+            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">
+              Max towing (kg)
+            </th>
+            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">
+              Specs
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -179,13 +215,23 @@ function VariantTable({
             group.rows.map((row, rowIdx) => (
               <tr
                 key={row.id}
-                className={rowIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
               >
-                <td className="px-4 py-2.5 font-medium text-gray-900">{row.name}</td>
-                <td className="px-4 py-2.5 text-gray-600 tabular-nums">{yearRangeLabel(row)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-gray-900">{formatKg(row.gvmKg)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-gray-900">{formatKg(row.gcmKg)}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums text-gray-900">{formatKg(row.maxTowingCapacityKg)}</td>
+                <td className="px-4 py-2.5 font-medium text-gray-900">
+                  {row.name}
+                </td>
+                <td className="px-4 py-2.5 text-gray-600 tabular-nums">
+                  {yearRangeLabel(row)}
+                </td>
+                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">
+                  {formatKg(row.gvmKg)}
+                </td>
+                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">
+                  {formatKg(row.gcmKg)}
+                </td>
+                <td className="px-4 py-2.5 text-right text-gray-900 tabular-nums">
+                  {formatKg(row.maxTowingCapacityKg)}
+                </td>
                 <td className="px-4 py-2.5 text-right">
                   <Link
                     href={`/vehicles/${makeSlug}/${modelSlug}/${row.slug}/`}
@@ -195,7 +241,7 @@ function VariantTable({
                   </Link>
                 </td>
               </tr>
-            ))
+            )),
           )}
         </tbody>
       </table>
@@ -231,9 +277,9 @@ export default async function VehicleModelPage({ params }: Props) {
       ? hasCurrentProduction
         ? `from ${earliestYear} to the present day`
         : earliestYear === latestYear
-        ? `in ${earliestYear}`
-        : `from ${earliestYear} to ${latestYear}`
-      : "";
+          ? `in ${earliestYear}`
+          : `from ${earliestYear} to ${latestYear}`
+      : '';
 
   const groupCount = groups.length;
 
@@ -250,7 +296,9 @@ export default async function VehicleModelPage({ params }: Props) {
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="mb-6 flex items-center gap-1 text-sm text-gray-500">
-          <Link href="/vehicles" className="hover:text-blue-700">Vehicles</Link>
+          <Link href="/vehicles" className="hover:text-blue-700">
+            Vehicles
+          </Link>
           <span>/</span>
           <span className="text-gray-900">{makeName}</span>
           <span>/</span>
@@ -267,10 +315,14 @@ export default async function VehicleModelPage({ params }: Props) {
           The {makeName} {modelName} is a {bodyLabel} produced {spanStr}
           {variantCount > 0 && (
             <>
-              {". "}
-              This page lists all {variantCount} catalogued variant{variantCount !== 1 ? "s" : ""}
-              {groupCount > 1 ? ` across ${groupCount} distinct configurations` : ""}
-              , each with GVM, GCM, and maximum towing capacity specifications for Australian-market vehicles.
+              {'. '}
+              This page lists all {variantCount} catalogued variant
+              {variantCount !== 1 ? 's' : ''}
+              {groupCount > 1
+                ? ` across ${groupCount} distinct configurations`
+                : ''}
+              , each with GVM, GCM, and maximum towing capacity specifications
+              for Australian-market vehicles.
             </>
           )}
         </p>
@@ -297,8 +349,9 @@ export default async function VehicleModelPage({ params }: Props) {
             Know which {modelName} you have?
           </p>
           <p className="mt-1 text-xs text-blue-700">
-            Select your exact variant above to view its full specifications, then use the
-            TravellingBuddy calculator to check your towing compliance.
+            Select your exact variant above to view its full specifications,
+            then use the TravellingBuddy calculator to check your towing
+            compliance.
           </p>
           <Link
             href="/calculator/"

@@ -1,23 +1,23 @@
-import { z } from "zod";
-import type { PositionType, MountingLocation } from "@prisma/client";
-import { parseCsvToRecords } from "./csv-parser";
+import { z } from 'zod';
+import type { PositionType, MountingLocation } from '@prisma/client';
+import { parseCsvToRecords } from './csv-parser';
 
 // ── Constants ──────────────────────────────────────
 
 export const FITMENT_CSV_HEADERS = [
-  "accessory_slug",
-  "brand_name",
-  "vehicle_variant_slug",
-  "caravan_variant_slug",
-  "installed_weight_kg",
-  "position_type",
-  "mounting_location",
-  "provides_mounting_locations",
-  "cog_x_mm",
-  "start_x_mm",
-  "end_x_mm",
-  "mount_offset_x_mm",
-  "fluid_density",
+  'accessory_slug',
+  'brand_name',
+  'vehicle_variant_slug',
+  'caravan_variant_slug',
+  'installed_weight_kg',
+  'position_type',
+  'mounting_location',
+  'provides_mounting_locations',
+  'cog_x_mm',
+  'start_x_mm',
+  'end_x_mm',
+  'mount_offset_x_mm',
+  'fluid_density',
 ] as const;
 
 // vehicle_variant_slug format: make-slug/model-slug/variant-slug
@@ -25,37 +25,75 @@ export const FITMENT_CSV_HEADERS = [
 // provides_mounting_locations: pipe-separated, e.g. BULL_BAR|ROOF_RACK
 // fluid_density: tank contents density in kg/L (= tankContentsKgPerL)
 export const FITMENT_CSV_EXAMPLE_ROW = [
-  "summit-bull-bar-toyota-landcruiser-200-series",
-  "ARB",
-  "toyota/landcruiser-200-series/vx-petrol",
-  "",
-  "42.5",
-  "FIXED",
-  "CHASSIS_FRONT",
-  "BULL_BAR",
-  "450",
-  "",
-  "",
-  "0",
-  "",
+  'summit-bull-bar-toyota-landcruiser-200-series',
+  'ARB',
+  'toyota/landcruiser-200-series/vx-petrol',
+  '',
+  '42.5',
+  'FIXED',
+  'CHASSIS_FRONT',
+  'BULL_BAR',
+  '450',
+  '',
+  '',
+  '0',
+  '',
 ];
 
-const POSITION_TYPES = ["FIXED", "ADJUSTABLE", "MODULAR", "SLIDING"] as const;
+const POSITION_TYPES = ['FIXED', 'ADJUSTABLE', 'MODULAR', 'SLIDING'] as const;
 
 const MOUNTING_LOCATIONS = [
-  "CHASSIS_FRONT", "CHASSIS_MID", "CHASSIS_REAR", "BULL_BAR", "ROOF_RACK",
-  "ROOF_RAILS", "TRAY_FLOOR", "TRAY_SIDE_LEFT", "TRAY_SIDE_RIGHT",
-  "TRAY_HEADBOARD", "TRAY_TAILGATE", "CANOPY_EXTERIOR", "CANOPY_INTERIOR",
-  "CANOPY_ROOF", "TUB_INTERIOR", "TUB_EXTERIOR", "BONNET", "REAR_BAR",
-  "TOW_HITCH", "WHEEL_ARCH_LEFT", "WHEEL_ARCH_RIGHT", "UNDERBODY_FRONT",
-  "UNDERBODY_MID", "UNDERBODY_REAR", "A_PILLAR_LEFT", "A_PILLAR_RIGHT",
-  "WINDSCREEN", "CABIN_INTERIOR", "CABIN_ROOF", "CABIN_DASH", "DOOR_LEFT",
-  "DOOR_RIGHT", "SNORKEL", "FENDER_LEFT", "FENDER_RIGHT", "CARAVAN_DRAWBAR",
-  "CARAVAN_A_FRAME", "CARAVAN_CHASSIS_FRONT", "CARAVAN_CHASSIS_MID",
-  "CARAVAN_CHASSIS_REAR", "CARAVAN_UNDERBODY", "CARAVAN_ROOF",
-  "CARAVAN_WALL_LEFT", "CARAVAN_WALL_RIGHT", "CARAVAN_WALL_FRONT",
-  "CARAVAN_WALL_REAR", "CARAVAN_BUMPER_BAR", "CARAVAN_BOOT",
-  "CARAVAN_TUNNEL_BOOT", "CARAVAN_TOOLBAR_EXTERNAL", "CARAVAN_TOOLBAR_INTERNAL",
+  'CHASSIS_FRONT',
+  'CHASSIS_MID',
+  'CHASSIS_REAR',
+  'BULL_BAR',
+  'ROOF_RACK',
+  'ROOF_RAILS',
+  'TRAY_FLOOR',
+  'TRAY_SIDE_LEFT',
+  'TRAY_SIDE_RIGHT',
+  'TRAY_HEADBOARD',
+  'TRAY_TAILGATE',
+  'CANOPY_EXTERIOR',
+  'CANOPY_INTERIOR',
+  'CANOPY_ROOF',
+  'TUB_INTERIOR',
+  'TUB_EXTERIOR',
+  'BONNET',
+  'REAR_BAR',
+  'TOW_HITCH',
+  'WHEEL_ARCH_LEFT',
+  'WHEEL_ARCH_RIGHT',
+  'UNDERBODY_FRONT',
+  'UNDERBODY_MID',
+  'UNDERBODY_REAR',
+  'A_PILLAR_LEFT',
+  'A_PILLAR_RIGHT',
+  'WINDSCREEN',
+  'CABIN_INTERIOR',
+  'CABIN_ROOF',
+  'CABIN_DASH',
+  'DOOR_LEFT',
+  'DOOR_RIGHT',
+  'SNORKEL',
+  'FENDER_LEFT',
+  'FENDER_RIGHT',
+  'CARAVAN_DRAWBAR',
+  'CARAVAN_A_FRAME',
+  'CARAVAN_CHASSIS_FRONT',
+  'CARAVAN_CHASSIS_MID',
+  'CARAVAN_CHASSIS_REAR',
+  'CARAVAN_UNDERBODY',
+  'CARAVAN_ROOF',
+  'CARAVAN_WALL_LEFT',
+  'CARAVAN_WALL_RIGHT',
+  'CARAVAN_WALL_FRONT',
+  'CARAVAN_WALL_REAR',
+  'CARAVAN_BUMPER_BAR',
+  'CARAVAN_BOOT',
+  'CARAVAN_TUNNEL_BOOT',
+  'CARAVAN_TOOLBAR_EXTERNAL',
+  'CARAVAN_TOOLBAR_INTERNAL',
 ] as const;
 
 // ── Parsed row type ────────────────────────────────
@@ -83,10 +121,10 @@ function optionalIntField() {
     .string()
     .optional()
     .transform((v, ctx) => {
-      if (!v || v.trim() === "") return null;
+      if (!v || v.trim() === '') return null;
       const n = Number(v.trim());
       if (!Number.isInteger(n)) {
-        ctx.addIssue({ code: "custom", message: "Must be an integer" });
+        ctx.addIssue({ code: 'custom', message: 'Must be an integer' });
         return z.NEVER;
       }
       return n;
@@ -98,10 +136,13 @@ function optionalDecimalField() {
     .string()
     .optional()
     .transform((v, ctx) => {
-      if (!v || v.trim() === "") return null;
+      if (!v || v.trim() === '') return null;
       const n = parseFloat(v.trim());
       if (isNaN(n) || n < 0) {
-        ctx.addIssue({ code: "custom", message: "Must be a non-negative number" });
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a non-negative number',
+        });
         return z.NEVER;
       }
       return n;
@@ -109,23 +150,26 @@ function optionalDecimalField() {
 }
 
 const fitmentCsvRowSchema = z.object({
-  accessory_slug: z.string().min(1, "Required"),
-  brand_name: z.string().min(1, "Required"),
+  accessory_slug: z.string().min(1, 'Required'),
+  brand_name: z.string().min(1, 'Required'),
   vehicle_variant_slug: z.string().optional(),
   caravan_variant_slug: z.string().optional(),
   installed_weight_kg: z
     .string()
-    .min(1, "Required")
+    .min(1, 'Required')
     .transform((v, ctx) => {
       const n = parseFloat(v.trim());
       if (isNaN(n) || n < 0) {
-        ctx.addIssue({ code: "custom", message: "Must be a non-negative number" });
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Must be a non-negative number',
+        });
         return z.NEVER;
       }
       return n;
     }),
   position_type: z.enum(POSITION_TYPES, {
-    error: `Must be one of: ${POSITION_TYPES.join(", ")}`,
+    error: `Must be one of: ${POSITION_TYPES.join(', ')}`,
   }),
   mounting_location: z.enum(MOUNTING_LOCATIONS, {
     error: `Must be one of the valid MountingLocation values`,
@@ -134,12 +178,12 @@ const fitmentCsvRowSchema = z.object({
     .string()
     .optional()
     .transform((v, ctx) => {
-      if (!v || v.trim() === "") return [] as MountingLocation[];
-      const parts = v.split("|").map((s) => s.trim().toUpperCase());
+      if (!v || v.trim() === '') return [] as MountingLocation[];
+      const parts = v.split('|').map((s) => s.trim().toUpperCase());
       for (const p of parts) {
         if (!MOUNTING_LOCATIONS.includes(p as MountingLocation)) {
           ctx.addIssue({
-            code: "custom",
+            code: 'custom',
             message: `Unknown mounting location: ${p}`,
           });
           return z.NEVER;
@@ -174,14 +218,14 @@ export interface FitmentCsvPreviewResult {
 
 function validateRow(
   raw: Record<string, string>,
-  rowNumber: number
+  rowNumber: number,
 ): FitmentCsvRowResult {
   const result = fitmentCsvRowSchema.safeParse(raw);
 
   if (!result.success) {
     const errors: Record<string, string> = {};
     for (const issue of result.error.issues) {
-      const path = issue.path.length > 0 ? String(issue.path[0]) : "_";
+      const path = issue.path.length > 0 ? String(issue.path[0]) : '_';
       if (!errors[path]) errors[path] = issue.message;
     }
     return { rowNumber, raw, errors };
@@ -198,7 +242,7 @@ function validateRow(
       raw,
       errors: {
         vehicle_variant_slug:
-          "Either vehicle_variant_slug or caravan_variant_slug is required",
+          'Either vehicle_variant_slug or caravan_variant_slug is required',
       },
     };
   }
@@ -209,7 +253,7 @@ function validateRow(
       raw,
       errors: {
         vehicle_variant_slug:
-          "Specify vehicle_variant_slug or caravan_variant_slug, not both",
+          'Specify vehicle_variant_slug or caravan_variant_slug, not both',
       },
     };
   }
@@ -222,7 +266,8 @@ function validateRow(
     installedWeightKg: d.installed_weight_kg as unknown as number,
     positionType: d.position_type as PositionType,
     mountingLocation: d.mounting_location as MountingLocation,
-    providesMountingLocations: d.provides_mounting_locations as unknown as MountingLocation[],
+    providesMountingLocations:
+      d.provides_mounting_locations as unknown as MountingLocation[],
     cogXMm: d.cog_x_mm as unknown as number | null,
     startXMm: d.start_x_mm as unknown as number | null,
     endXMm: d.end_x_mm as unknown as number | null,
@@ -236,12 +281,12 @@ function validateRow(
 // ── Main entry point ───────────────────────────────
 
 export function validateAndPreviewFitmentCsv(
-  csvText: string
+  csvText: string,
 ): FitmentCsvPreviewResult {
   const { records } = parseCsvToRecords(csvText);
 
   const rows: FitmentCsvRowResult[] = records.map((raw, i) =>
-    validateRow(raw, i + 2)
+    validateRow(raw, i + 2),
   );
 
   const validRows = rows.filter((r) => r.parsed);

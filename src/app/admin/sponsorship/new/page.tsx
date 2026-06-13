@@ -1,7 +1,7 @@
-import { AdminPageHeader } from "@/modules/admin/components";
-import { SponsorForm } from "../_components/SponsorForm";
+import { AdminPageHeader } from '@/modules/admin/components';
+import { SponsorForm } from '../_components/SponsorForm';
 
-export const metadata = { title: "New Sponsor — Admin" };
+export const metadata = { title: 'New Sponsor — Admin' };
 
 export default function NewSponsorPage() {
   return (

@@ -1,72 +1,72 @@
-import { z } from "zod";
-import type { VehicleBodyType, FuelType, Market } from "@prisma/client";
-import { parseCsvToRecords } from "./csv-parser";
+import { z } from 'zod';
+import type { VehicleBodyType, FuelType, Market } from '@prisma/client';
+import { parseCsvToRecords } from './csv-parser';
 
 // ── Constants ──────────────────────────────────────
 
 export const VEHICLE_CSV_HEADERS = [
-  "make_name",
-  "make_country_of_origin",
-  "model_name",
-  "body_type",
-  "variant_name",
-  "year_from",
-  "year_to",
-  "is_current_production",
-  "fuel_type",
-  "market",
-  "gvm_kg",
-  "gcm_kg",
-  "kerb_weight_kg",
-  "max_towing_capacity_kg",
-  "front_axle_limit_kg",
-  "rear_axle_limit_kg",
-  "wheelbase_mm",
-  "front_overhang_mm",
-  "rear_overhang_mm",
-  "total_length_mm",
-  "max_tow_ball_download_kg",
-  "fuel_tank_capacity_l",
+  'make_name',
+  'make_country_of_origin',
+  'model_name',
+  'body_type',
+  'variant_name',
+  'year_from',
+  'year_to',
+  'is_current_production',
+  'fuel_type',
+  'market',
+  'gvm_kg',
+  'gcm_kg',
+  'kerb_weight_kg',
+  'max_towing_capacity_kg',
+  'front_axle_limit_kg',
+  'rear_axle_limit_kg',
+  'wheelbase_mm',
+  'front_overhang_mm',
+  'rear_overhang_mm',
+  'total_length_mm',
+  'max_tow_ball_download_kg',
+  'fuel_tank_capacity_l',
 ] as const;
 
 export const VEHICLE_CSV_EXAMPLE_ROW = [
-  "Toyota",
-  "JP",
-  "HiLux",
-  "DUAL_CAB_UTE",
-  "SR5 4x4 Auto",
-  "2018",
-  "2022",
-  "false",
-  "DIESEL",
-  "AU",
-  "3200",
-  "6000",
-  "1940",
-  "3500",
-  "1500",
-  "1500",
-  "3085",
-  "",
-  "",
-  "5330",
-  "300",
-  "80",
+  'Toyota',
+  'JP',
+  'HiLux',
+  'DUAL_CAB_UTE',
+  'SR5 4x4 Auto',
+  '2018',
+  '2022',
+  'false',
+  'DIESEL',
+  'AU',
+  '3200',
+  '6000',
+  '1940',
+  '3500',
+  '1500',
+  '1500',
+  '3085',
+  '',
+  '',
+  '5330',
+  '300',
+  '80',
 ];
 
 const VEHICLE_BODY_TYPES = [
-  "DUAL_CAB_UTE",
-  "SINGLE_CAB_UTE",
-  "EXTRA_CAB_UTE",
-  "WAGON",
-  "SUV",
-  "VAN",
-  "TROOPCARRIER",
-  "OTHER",
+  'DUAL_CAB_UTE',
+  'SINGLE_CAB_UTE',
+  'EXTRA_CAB_UTE',
+  'WAGON',
+  'SUV',
+  'VAN',
+  'TROOPCARRIER',
+  'OTHER',
 ] as const;
 
-const FUEL_TYPES = ["DIESEL", "PETROL", "HYBRID", "ELECTRIC"] as const;
-const MARKETS = ["AU", "NZ", "US", "EU", "GB"] as const;
+const FUEL_TYPES = ['DIESEL', 'PETROL', 'HYBRID', 'ELECTRIC'] as const;
+const MARKETS = ['AU', 'NZ', 'US', 'EU', 'GB'] as const;
 
 // ── Parsed row type ────────────────────────────────
 
@@ -102,10 +102,10 @@ function optionalIntField() {
     .string()
     .optional()
     .transform((v, ctx) => {
-      if (!v || v.trim() === "") return null;
+      if (!v || v.trim() === '') return null;
       const n = Number(v.trim());
       if (!Number.isInteger(n) || n <= 0) {
-        ctx.addIssue({ code: "custom", message: "Must be a positive integer" });
+        ctx.addIssue({ code: 'custom', message: 'Must be a positive integer' });
         return z.NEVER;
       }
       return n;
@@ -115,12 +115,12 @@ function optionalIntField() {
 function requiredIntField(min = 0) {
   return z
     .string()
-    .min(1, "Required")
+    .min(1, 'Required')
     .transform((v, ctx) => {
       const n = Number(v.trim());
       if (!Number.isInteger(n) || n < min) {
         ctx.addIssue({
-          code: "custom",
+          code: 'custom',
           message: `Must be an integer >= ${min}`,
         });
         return z.NEVER;
@@ -130,33 +130,33 @@ function requiredIntField(min = 0) {
 }
 
 const vehicleCsvRowSchema = z.object({
-  make_name: z.string().min(1, "Required"),
+  make_name: z.string().min(1, 'Required'),
   make_country_of_origin: z.string().optional(),
-  model_name: z.string().min(1, "Required"),
+  model_name: z.string().min(1, 'Required'),
   body_type: z.enum(VEHICLE_BODY_TYPES, {
-    error: `Must be one of: ${VEHICLE_BODY_TYPES.join(", ")}`,
+    error: `Must be one of: ${VEHICLE_BODY_TYPES.join(', ')}`,
   }),
-  variant_name: z.string().min(1, "Required"),
+  variant_name: z.string().min(1, 'Required'),
   year_from: requiredIntField(1900),
   year_to: requiredIntField(1900),
   is_current_production: z
     .string()
     .optional()
     .transform((v) =>
-      ["true", "1", "yes"].includes((v ?? "").toLowerCase().trim())
+      ['true', '1', 'yes'].includes((v ?? '').toLowerCase().trim()),
     ),
   fuel_type: z.enum(FUEL_TYPES, {
-    error: `Must be one of: ${FUEL_TYPES.join(", ")}`,
+    error: `Must be one of: ${FUEL_TYPES.join(', ')}`,
   }),
   market: z
     .string()
     .optional()
     .transform((v, ctx) => {
-      const val = (v ?? "AU").trim().toUpperCase();
+      const val = (v ?? 'AU').trim().toUpperCase();
       if (!MARKETS.includes(val as Market)) {
         ctx.addIssue({
-          code: "custom",
-          message: `Must be one of: ${MARKETS.join(", ")}`,
+          code: 'custom',
+          message: `Must be one of: ${MARKETS.join(', ')}`,
         });
         return z.NEVER;
       }
@@ -199,14 +199,14 @@ export interface VehicleCsvPreviewResult {
 
 function validateRow(
   raw: Record<string, string>,
-  rowNumber: number
+  rowNumber: number,
 ): VehicleCsvRowResult {
   const result = vehicleCsvRowSchema.safeParse(raw);
 
   if (!result.success) {
     const errors: Record<string, string> = {};
     for (const issue of result.error.issues) {
-      const path = issue.path.length > 0 ? String(issue.path[0]) : "_";
+      const path = issue.path.length > 0 ? String(issue.path[0]) : '_';
       if (!errors[path]) errors[path] = issue.message;
     }
     return { rowNumber, raw, errors };
@@ -215,8 +215,7 @@ function validateRow(
   const d = result.data;
   const parsed: VehicleCsvRowParsed = {
     makeName: d.make_name.trim(),
-    makeCountryOfOrigin:
-      d.make_country_of_origin?.trim() || null,
+    makeCountryOfOrigin: d.make_country_of_origin?.trim() || null,
     modelName: d.model_name.trim(),
     bodyType: d.body_type as VehicleBodyType,
     variantName: d.variant_name.trim(),
@@ -245,7 +244,7 @@ function validateRow(
     return {
       rowNumber,
       raw,
-      errors: { year_to: "year_to must be >= year_from" },
+      errors: { year_to: 'year_to must be >= year_from' },
     };
   }
 
@@ -278,7 +277,7 @@ function variantSignature(r: VehicleCsvRowParsed): string {
 }
 
 function deduplicateVehicleRows(
-  rows: VehicleCsvRowParsed[]
+  rows: VehicleCsvRowParsed[],
 ): VehicleCsvRowParsed[] {
   const groups = new Map<string, VehicleCsvRowParsed[]>();
   for (const row of rows) {
@@ -313,20 +312,18 @@ function deduplicateVehicleRows(
 // ── Main entry point ───────────────────────────────
 
 export function validateAndPreviewVehicleCsv(
-  csvText: string
+  csvText: string,
 ): VehicleCsvPreviewResult {
   const { records } = parseCsvToRecords(csvText);
 
   const rows: VehicleCsvRowResult[] = records.map((raw, i) =>
-    validateRow(raw, i + 2)
+    validateRow(raw, i + 2),
   );
 
   const validRows = rows.filter((r) => r.parsed);
   const errorRows = rows.filter((r) => r.errors);
 
-  const deduplicated = deduplicateVehicleRows(
-    validRows.map((r) => r.parsed!)
-  );
+  const deduplicated = deduplicateVehicleRows(validRows.map((r) => r.parsed!));
 
   const mergedRows = validRows.length - deduplicated.length;
 

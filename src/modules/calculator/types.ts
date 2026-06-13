@@ -31,15 +31,15 @@ export interface CalculatorState {
 }
 
 export type CalculatorAction =
-  | { type: "SET_VEHICLE_VARIANT"; id: string | null }
-  | { type: "SET_CARAVAN_VARIANT"; id: string | null }
-  | { type: "SET_JOURNEY"; patch: Partial<JourneyAssumptions> }
-  | { type: "SET_CARAVAN_ASSUMPTIONS"; patch: Partial<CaravanAssumptions> }
-  | { type: "ADD_ACCESSORY"; accessory: AccessorySelection }
-  | { type: "REMOVE_ACCESSORY"; accessoryId: string }
-  | { type: "ADD_CARAVAN_ACCESSORY"; accessory: AccessorySelection }
-  | { type: "REMOVE_CARAVAN_ACCESSORY"; accessoryId: string }
-  | { type: "RESET" };
+  | { type: 'SET_VEHICLE_VARIANT'; id: string | null }
+  | { type: 'SET_CARAVAN_VARIANT'; id: string | null }
+  | { type: 'SET_JOURNEY'; patch: Partial<JourneyAssumptions> }
+  | { type: 'SET_CARAVAN_ASSUMPTIONS'; patch: Partial<CaravanAssumptions> }
+  | { type: 'ADD_ACCESSORY'; accessory: AccessorySelection }
+  | { type: 'REMOVE_ACCESSORY'; accessoryId: string }
+  | { type: 'ADD_CARAVAN_ACCESSORY'; accessory: AccessorySelection }
+  | { type: 'REMOVE_CARAVAN_ACCESSORY'; accessoryId: string }
+  | { type: 'RESET' };
 
 export const DEFAULT_JOURNEY: JourneyAssumptions = {
   passengers: 2,
@@ -71,41 +71,62 @@ export function calculatorReducer(
   action: CalculatorAction,
 ): CalculatorState {
   switch (action.type) {
-    case "SET_VEHICLE_VARIANT":
+    case 'SET_VEHICLE_VARIANT':
       if (action.id === null) {
         return { ...state, vehicleVariantId: null, accessories: [] };
       }
       return { ...state, vehicleVariantId: action.id };
-    case "SET_CARAVAN_VARIANT":
+    case 'SET_CARAVAN_VARIANT':
       if (action.id === null) {
         return { ...state, caravanVariantId: null, caravanAccessories: [] };
       }
       return { ...state, caravanVariantId: action.id };
-    case "SET_JOURNEY":
+    case 'SET_JOURNEY':
       return { ...state, journey: { ...state.journey, ...action.patch } };
-    case "SET_CARAVAN_ASSUMPTIONS":
-      return { ...state, caravanAssumptions: { ...state.caravanAssumptions, ...action.patch } };
-    case "ADD_ACCESSORY":
-      if (state.accessories.some((a) => a.accessoryId === action.accessory.accessoryId)) {
-        return state;
-      }
-      return { ...state, accessories: [...state.accessories, action.accessory] };
-    case "REMOVE_ACCESSORY":
+    case 'SET_CARAVAN_ASSUMPTIONS':
       return {
         ...state,
-        accessories: state.accessories.filter((a) => a.accessoryId !== action.accessoryId),
+        caravanAssumptions: { ...state.caravanAssumptions, ...action.patch },
       };
-    case "ADD_CARAVAN_ACCESSORY":
-      if (state.caravanAccessories.some((a) => a.accessoryId === action.accessory.accessoryId)) {
+    case 'ADD_ACCESSORY':
+      if (
+        state.accessories.some(
+          (a) => a.accessoryId === action.accessory.accessoryId,
+        )
+      ) {
         return state;
       }
-      return { ...state, caravanAccessories: [...state.caravanAccessories, action.accessory] };
-    case "REMOVE_CARAVAN_ACCESSORY":
       return {
         ...state,
-        caravanAccessories: state.caravanAccessories.filter((a) => a.accessoryId !== action.accessoryId),
+        accessories: [...state.accessories, action.accessory],
       };
-    case "RESET":
+    case 'REMOVE_ACCESSORY':
+      return {
+        ...state,
+        accessories: state.accessories.filter(
+          (a) => a.accessoryId !== action.accessoryId,
+        ),
+      };
+    case 'ADD_CARAVAN_ACCESSORY':
+      if (
+        state.caravanAccessories.some(
+          (a) => a.accessoryId === action.accessory.accessoryId,
+        )
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        caravanAccessories: [...state.caravanAccessories, action.accessory],
+      };
+    case 'REMOVE_CARAVAN_ACCESSORY':
+      return {
+        ...state,
+        caravanAccessories: state.caravanAccessories.filter(
+          (a) => a.accessoryId !== action.accessoryId,
+        ),
+      };
+    case 'RESET':
       return INITIAL_STATE;
     default:
       return state;

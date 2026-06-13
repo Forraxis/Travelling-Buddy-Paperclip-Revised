@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { processPhoto, uploadPhoto } from "@/lib/client/photo-processing";
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { processPhoto, uploadPhoto } from '@/lib/client/photo-processing';
 
 interface DuplicateMatch {
   id: string;
   name: string;
-  kind: "canonical" | "community";
+  kind: 'canonical' | 'community';
   url: string;
 }
 
-type Step = "photo" | "form" | "confirm" | "success" | "duplicate";
+type Step = 'photo' | 'form' | 'confirm' | 'success' | 'duplicate';
 
 type AxleConfig =
-  | "SINGLE_AXLE"
-  | "DUAL_AXLE_CLOSE_COUPLED"
-  | "DUAL_AXLE_SPREAD"
-  | "TRIPLE_AXLE"
-  | "";
+  | 'SINGLE_AXLE'
+  | 'DUAL_AXLE_CLOSE_COUPLED'
+  | 'DUAL_AXLE_SPREAD'
+  | 'TRIPLE_AXLE'
+  | '';
 
 interface FormValues {
   newMakeName: string;
@@ -45,25 +45,25 @@ interface FormValues {
 }
 
 const BODY_TYPES = [
-  "Caravan (pop-top)",
-  "Caravan (full-height)",
-  "Off-road caravan",
-  "Camper trailer",
-  "Fifth-wheeler",
-  "Other",
+  'Caravan (pop-top)',
+  'Caravan (full-height)',
+  'Off-road caravan',
+  'Camper trailer',
+  'Fifth-wheeler',
+  'Other',
 ];
 
 const AXLE_CONFIGS: { value: AxleConfig; label: string }[] = [
-  { value: "SINGLE_AXLE", label: "Single axle" },
-  { value: "DUAL_AXLE_CLOSE_COUPLED", label: "Dual axle (close-coupled)" },
-  { value: "DUAL_AXLE_SPREAD", label: "Dual axle (spread)" },
-  { value: "TRIPLE_AXLE", label: "Triple axle" },
+  { value: 'SINGLE_AXLE', label: 'Single axle' },
+  { value: 'DUAL_AXLE_CLOSE_COUPLED', label: 'Dual axle (close-coupled)' },
+  { value: 'DUAL_AXLE_SPREAD', label: 'Dual axle (spread)' },
+  { value: 'TRIPLE_AXLE', label: 'Triple axle' },
 ];
 
 const MULTI_AXLE: AxleConfig[] = [
-  "DUAL_AXLE_CLOSE_COUPLED",
-  "DUAL_AXLE_SPREAD",
-  "TRIPLE_AXLE",
+  'DUAL_AXLE_CLOSE_COUPLED',
+  'DUAL_AXLE_SPREAD',
+  'TRIPLE_AXLE',
 ];
 
 function isFormValid(form: FormValues): boolean {
@@ -87,7 +87,7 @@ interface Props {
 
 export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>(initialValues ? "form" : "photo");
+  const [step, setStep] = useState<Step>(initialValues ? 'form' : 'photo');
   const [platePhotoFile, setPlatePhotoFile] = useState<File | null>(null);
   const [platePreview, setPlatePreview] = useState<string | null>(null);
   const [platePhotoKey, setPlatePhotoKey] = useState<string | null>(null);
@@ -101,28 +101,30 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const EMPTY_CARAVAN_FORM: FormValues = {
-    newMakeName: "",
-    newModelName: "",
+    newMakeName: '',
+    newModelName: '',
     year: String(new Date().getFullYear()),
-    variantName: "",
-    bodyType: "",
-    axleConfiguration: "",
-    atmKg: "",
-    gtmKg: "",
-    tareKg: "",
-    tbmKg: "",
-    couplingToAxleMm: "",
-    axleSpacingMm: "",
-    bodyLengthMm: "",
-    overallLengthMm: "",
-    freshWaterLitres: "",
-    greyWaterLitres: "",
-    gasBottleConfig: "",
-    notes: "",
+    variantName: '',
+    bodyType: '',
+    axleConfiguration: '',
+    atmKg: '',
+    gtmKg: '',
+    tareKg: '',
+    tbmKg: '',
+    couplingToAxleMm: '',
+    axleSpacingMm: '',
+    bodyLengthMm: '',
+    overallLengthMm: '',
+    freshWaterLitres: '',
+    greyWaterLitres: '',
+    gasBottleConfig: '',
+    notes: '',
   };
 
   const [form, setForm] = useState<FormValues>(
-    initialValues ? { ...EMPTY_CARAVAN_FORM, ...initialValues } as FormValues : EMPTY_CARAVAN_FORM
+    initialValues
+      ? ({ ...EMPTY_CARAVAN_FORM, ...initialValues } as FormValues)
+      : EMPTY_CARAVAN_FORM,
   );
 
   // Mid-flow duplicate check for caravans
@@ -140,14 +142,17 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
     dupCheckTimerRef.current = setTimeout(async () => {
       try {
         const params = new URLSearchParams({
-          type: "caravan",
+          type: 'caravan',
           makeName,
           modelName,
           year: String(year),
         });
         const res = await fetch(`/api/submissions/check-duplicate?${params}`);
         if (!res.ok) return;
-        const data = await res.json() as { hasDuplicate: boolean; matches: DuplicateMatch[] };
+        const data = (await res.json()) as {
+          hasDuplicate: boolean;
+          matches: DuplicateMatch[];
+        };
         setDupWarning(data.hasDuplicate ? data.matches : null);
         if (!data.hasDuplicate) setDupSuspected(false);
       } catch {
@@ -165,7 +170,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
     onChange: (
       e: React.ChangeEvent<
         HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-      >
+      >,
     ) => setForm((f) => ({ ...f, [key]: e.target.value })),
   });
 
@@ -177,7 +182,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
       setPlatePhotoFile(processed.file);
       setPlatePreview(processed.previewUrl);
     } catch {
-      setError("Could not process photo.");
+      setError('Could not process photo.');
     } finally {
       setUploading(false);
     }
@@ -185,7 +190,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
 
   const handlePhotoUpload = useCallback(async () => {
     if (!platePhotoFile) {
-      setStep("form");
+      setStep('form');
       return;
     }
     setUploading(true);
@@ -194,9 +199,9 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
       const result = await uploadPhoto(platePhotoFile);
       setPlatePhotoKey(result.key);
       setPlatePhotoUrl(result.url);
-      setStep("form");
+      setStep('form');
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed.");
+      setError(e instanceof Error ? e.message : 'Upload failed.');
     } finally {
       setUploading(false);
     }
@@ -207,13 +212,13 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
       setSubmitting(true);
       setError(null);
       try {
-        const res = await fetch("/api/submissions/caravans", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api/submissions/caravans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            makeId: "new",
+            makeId: 'new',
             newMakeName: form.newMakeName,
-            modelId: "new",
+            modelId: 'new',
             newModelName: form.newModelName,
             year: parseInt(form.year, 10),
             variantName: form.variantName,
@@ -251,29 +256,29 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
         });
 
         if (res.status === 409) {
-          setStep("duplicate");
+          setStep('duplicate');
           return;
         }
 
         if (!res.ok) {
           const b = await res.json().catch(() => ({}));
-          setError((b as { error?: string }).error ?? "Submission failed.");
+          setError((b as { error?: string }).error ?? 'Submission failed.');
           return;
         }
 
-        setStep("success");
+        setStep('success');
       } finally {
         setSubmitting(false);
       }
     },
-    [form, platePhotoKey, platePhotoUrl]
+    [form, platePhotoKey, platePhotoUrl],
   );
 
   // ── Success ──────────────────────────────────────────────────────────────
 
-  if (step === "success") {
+  if (step === 'success') {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm text-center space-y-4">
+      <div className="space-y-4 rounded-xl bg-white p-6 text-center shadow-sm">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-50">
           <svg
             className="h-6 w-6 text-green-600"
@@ -288,7 +293,9 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
           </svg>
         </div>
         <div>
-          <p className="font-semibold text-gray-900">Caravan submitted for review</p>
+          <p className="font-semibold text-gray-900">
+            Caravan submitted for review
+          </p>
           <p className="mt-1 text-sm text-gray-500">
             You can use this caravan in your own calculations now with an
             &ldquo;Awaiting review&rdquo; badge. It will appear in community
@@ -298,7 +305,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => router.push("/account/submissions?submitted=1")}
+            onClick={() => router.push('/account/submissions?submitted=1')}
             className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
           >
             View my submissions
@@ -306,7 +313,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="w-full rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark"
+            className="bg-tb-primary hover:bg-tb-primary-dark w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white"
           >
             Back to calculator
           </button>
@@ -317,10 +324,12 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
 
   // ── Duplicate ────────────────────────────────────────────────────────────
 
-  if (step === "duplicate") {
+  if (step === 'duplicate') {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-gray-900">Possible duplicate found</h2>
+      <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+        <h2 className="font-semibold text-gray-900">
+          Possible duplicate found
+        </h2>
         <p className="text-sm text-gray-600">
           We may already have this caravan variant in the catalogue or pending
           review. Is yours different?
@@ -330,9 +339,11 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
             type="button"
             onClick={() => handleSubmit(true)}
             disabled={submitting}
-            className="w-full rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+            className="bg-tb-primary hover:bg-tb-primary-dark w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {submitting ? "Submitting…" : "Yes, mine is different — submit anyway"}
+            {submitting
+              ? 'Submitting…'
+              : 'Yes, mine is different — submit anyway'}
           </button>
           <button
             type="button"
@@ -348,13 +359,15 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
 
   // ── Multi-step form ──────────────────────────────────────────────────────
 
-  const showAxleSpacing = MULTI_AXLE.includes(form.axleConfiguration as AxleConfig);
+  const showAxleSpacing = MULTI_AXLE.includes(
+    form.axleConfiguration as AxleConfig,
+  );
 
   return (
     <div className="space-y-4">
       {/* Step: photo */}
-      {step === "photo" && (
-        <div className="rounded-xl bg-white p-4 shadow-sm space-y-4">
+      {step === 'photo' && (
+        <div className="space-y-4 rounded-xl bg-white p-4 shadow-sm">
           <div>
             <h2 className="font-medium text-gray-900">
               Compliance plate photo (recommended)
@@ -368,8 +381,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
           </div>
 
           <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            Tip: the compliance plate is usually inside a locker, on the A-frame,
-            or on the chassis rail near the coupling.
+            Tip: the compliance plate is usually inside a locker, on the
+            A-frame, or on the chassis rail near the coupling.
           </div>
 
           <input
@@ -398,9 +411,13 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                   setPlatePhotoFile(null);
                   setPlatePreview(null);
                 }}
-                className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-gray-600 hover:bg-white"
+                className="absolute top-2 right-2 rounded-full bg-white/90 p-1.5 text-gray-600 hover:bg-white"
               >
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -414,7 +431,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="flex h-36 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-tb-primary hover:text-tb-primary"
+              className="hover:border-tb-primary hover:text-tb-primary flex h-36 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 text-gray-400"
             >
               <svg
                 className="h-8 w-8"
@@ -443,7 +460,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setStep("form")}
+              onClick={() => setStep('form')}
               className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
             >
               Skip photo
@@ -452,17 +469,17 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
               type="button"
               onClick={handlePhotoUpload}
               disabled={uploading || !platePhotoFile}
-              className="flex-1 rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+              className="bg-tb-primary hover:bg-tb-primary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
-              {uploading ? "Uploading…" : "Upload & continue"}
+              {uploading ? 'Uploading…' : 'Upload & continue'}
             </button>
           </div>
         </div>
       )}
 
       {/* Step: form */}
-      {step === "form" && (
-        <div className="rounded-xl bg-white p-4 shadow-sm space-y-4">
+      {step === 'form' && (
+        <div className="space-y-4 rounded-xl bg-white p-4 shadow-sm">
           {platePreview && (
             <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -486,8 +503,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
               <input
                 type="text"
                 placeholder="e.g. Jayco"
-                {...field("newMakeName")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('newMakeName')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
             <div className="col-span-2">
@@ -497,8 +514,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
               <input
                 type="text"
                 placeholder="e.g. Journey"
-                {...field("newModelName")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('newModelName')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
             <div>
@@ -509,15 +526,17 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                 type="number"
                 min="1950"
                 max={new Date().getFullYear() + 2}
-                {...field("year")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('year')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
 
             {/* Mid-flow duplicate warning */}
             {dupWarning && dupWarning.length > 0 && !dupSuspected && (
               <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
-                <p className="font-medium text-amber-800">We may already have this caravan</p>
+                <p className="font-medium text-amber-800">
+                  We may already have this caravan
+                </p>
                 <ul className="mt-1 space-y-0.5">
                   {dupWarning.slice(0, 3).map((m) => (
                     <li key={m.id}>
@@ -529,7 +548,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                       >
                         {m.name}
                       </a>
-                      {m.kind === "canonical" && (
+                      {m.kind === 'canonical' && (
                         <span className="ml-1 text-amber-600">(catalogue)</span>
                       )}
                     </li>
@@ -557,8 +576,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
               <input
                 type="text"
                 placeholder="e.g. 17.58-3"
-                {...field("variantName")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('variantName')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
             <div>
@@ -566,8 +585,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                 Body type *
               </label>
               <select
-                {...field("bodyType")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('bodyType')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               >
                 <option value="">Select…</option>
                 {BODY_TYPES.map((b) => (
@@ -582,8 +601,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                 Axle configuration *
               </label>
               <select
-                {...field("axleConfiguration")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('axleConfiguration')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               >
                 <option value="">Select…</option>
                 {AXLE_CONFIGS.map((a) => (
@@ -602,47 +621,55 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs text-gray-500">ATM *</label>
+                <label className="mb-1 block text-xs text-gray-500">
+                  ATM *
+                </label>
                 <input
                   type="number"
                   min="100"
                   max="20000"
                   placeholder="e.g. 2800"
-                  {...field("atmKg")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('atmKg')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-gray-500">GTM *</label>
+                <label className="mb-1 block text-xs text-gray-500">
+                  GTM *
+                </label>
                 <input
                   type="number"
                   min="100"
                   max="20000"
                   placeholder="e.g. 2500"
-                  {...field("gtmKg")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('gtmKg')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-gray-500">Tare *</label>
+                <label className="mb-1 block text-xs text-gray-500">
+                  Tare *
+                </label>
                 <input
                   type="number"
                   min="100"
                   max="20000"
                   placeholder="e.g. 1800"
-                  {...field("tareKg")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('tareKg')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-gray-500">TBM *</label>
+                <label className="mb-1 block text-xs text-gray-500">
+                  TBM *
+                </label>
                 <input
                   type="number"
                   min="0"
                   max="500"
                   placeholder="e.g. 160"
-                  {...field("tbmKg")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('tbmKg')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
             </div>
@@ -662,8 +689,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                   type="number"
                   min="0"
                   placeholder="e.g. 4200"
-                  {...field("couplingToAxleMm")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('couplingToAxleMm')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               {showAxleSpacing && (
@@ -675,8 +702,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                     type="number"
                     min="0"
                     placeholder="e.g. 1000"
-                    {...field("axleSpacingMm")}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                    {...field('axleSpacingMm')}
+                    className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                   />
                 </div>
               )}
@@ -688,8 +715,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                   type="number"
                   min="0"
                   placeholder="e.g. 5800"
-                  {...field("bodyLengthMm")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('bodyLengthMm')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div>
@@ -700,8 +727,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                   type="number"
                   min="0"
                   placeholder="e.g. 7500"
-                  {...field("overallLengthMm")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('overallLengthMm')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
             </div>
@@ -722,8 +749,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                   min="0"
                   step="5"
                   placeholder="e.g. 95"
-                  {...field("freshWaterLitres")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('freshWaterLitres')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div>
@@ -735,8 +762,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                   min="0"
                   step="5"
                   placeholder="e.g. 75"
-                  {...field("greyWaterLitres")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('greyWaterLitres')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div className="col-span-2">
@@ -746,8 +773,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
                 <input
                   type="text"
                   placeholder="e.g. 2 × 9 kg"
-                  {...field("gasBottleConfig")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('gasBottleConfig')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
             </div>
@@ -760,8 +787,8 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
             <textarea
               rows={2}
               placeholder="Any other information…"
-              {...field("notes")}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+              {...field('notes')}
+              className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
             />
           </div>
 
@@ -770,16 +797,16 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setStep("photo")}
+              onClick={() => setStep('photo')}
               className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
             >
               Back
             </button>
             <button
               type="button"
-              onClick={() => setStep("confirm")}
+              onClick={() => setStep('confirm')}
               disabled={!isFormValid(form)}
-              className="flex-1 rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+              className="bg-tb-primary hover:bg-tb-primary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
               Review
             </button>
@@ -788,20 +815,23 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
       )}
 
       {/* Step: confirm */}
-      {step === "confirm" && (
-        <div className="rounded-xl bg-white p-4 shadow-sm space-y-4">
-          <div className="rounded-lg bg-gray-50 p-3 text-sm space-y-1">
+      {step === 'confirm' && (
+        <div className="space-y-4 rounded-xl bg-white p-4 shadow-sm">
+          <div className="space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
             <p className="font-medium text-gray-800">
               {form.newMakeName} {form.newModelName} {form.variantName}
             </p>
             <p className="text-gray-500">
-              {form.year} · {form.bodyType} ·{" "}
-              {AXLE_CONFIGS.find((a) => a.value === form.axleConfiguration)?.label}
+              {form.year} · {form.bodyType} ·{' '}
+              {
+                AXLE_CONFIGS.find((a) => a.value === form.axleConfiguration)
+                  ?.label
+              }
             </p>
             <p className="text-xs text-gray-500">
-              ATM: {parseInt(form.atmKg, 10).toLocaleString()} kg · GTM:{" "}
-              {parseInt(form.gtmKg, 10).toLocaleString()} kg · Tare:{" "}
-              {parseInt(form.tareKg, 10).toLocaleString()} kg · TBM:{" "}
+              ATM: {parseInt(form.atmKg, 10).toLocaleString()} kg · GTM:{' '}
+              {parseInt(form.gtmKg, 10).toLocaleString()} kg · Tare:{' '}
+              {parseInt(form.tareKg, 10).toLocaleString()} kg · TBM:{' '}
               {parseInt(form.tbmKg, 10).toLocaleString()} kg
             </p>
             {platePreview && (
@@ -825,7 +855,7 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setStep("form")}
+              onClick={() => setStep('form')}
               className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
             >
               Back
@@ -834,9 +864,9 @@ export function CaravanSubmitForm({ isAuthenticated, initialValues }: Props) {
               type="button"
               onClick={() => handleSubmit(false)}
               disabled={submitting}
-              className="flex-1 rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+              className="bg-tb-primary hover:bg-tb-primary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
-              {submitting ? "Submitting…" : "Submit caravan"}
+              {submitting ? 'Submitting…' : 'Submit caravan'}
             </button>
           </div>
         </div>

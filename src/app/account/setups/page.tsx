@@ -1,17 +1,17 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { SetupsDashboard } from "./_components/SetupsDashboard";
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { SetupsDashboard } from './_components/SetupsDashboard';
 
 export default async function SetupsPage() {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect("/auth/signin?callbackUrl=/account/setups");
+    redirect('/auth/signin?callbackUrl=/account/setups');
   }
 
   const setups = await prisma.setup.findMany({
     where: { userId: session.user.id, deletedAt: null },
-    orderBy: { updatedAt: "desc" },
+    orderBy: { updatedAt: 'desc' },
     include: {
       vehicleVariant: { include: { model: { include: { make: true } } } },
       caravanVariant: { include: { model: { include: { make: true } } } },

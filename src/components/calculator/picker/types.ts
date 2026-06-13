@@ -28,7 +28,11 @@ export interface PickerVariant {
   modelId: string;
   modelName: string;
   bodyType?: string;
-  confidenceBadge?: 'verified' | 'manufacturer_spec' | 'community' | 'estimated';
+  confidenceBadge?:
+    | 'verified'
+    | 'manufacturer_spec'
+    | 'community'
+    | 'estimated';
   // Vehicle-specific
   gvmKg?: number;
   gcmKg?: number;
@@ -71,7 +75,16 @@ export const VEHICLE_CONFIG: PickerConfig = {
   label: 'vehicle',
   apiBase: '/api/picker/vehicles',
   submitLabel: 'Submit vehicle',
-  popularMakeNames: ['Toyota', 'Ford', 'Isuzu', 'Nissan', 'Mitsubishi', 'Land Rover', 'Jeep', 'GWM'],
+  popularMakeNames: [
+    'Toyota',
+    'Ford',
+    'Isuzu',
+    'Nissan',
+    'Mitsubishi',
+    'Land Rover',
+    'Jeep',
+    'GWM',
+  ],
 } as const;
 
 export const CARAVAN_CONFIG: PickerConfig = {
@@ -79,7 +92,16 @@ export const CARAVAN_CONFIG: PickerConfig = {
   label: 'caravan or trailer',
   apiBase: '/api/picker/caravans',
   submitLabel: 'Submit caravan',
-  popularMakeNames: ['Jayco', 'Coromal', 'Roadstar', 'Avan', 'Concept', 'Jurgen', 'Lotus', 'Royal Flair'],
+  popularMakeNames: [
+    'Jayco',
+    'Coromal',
+    'Roadstar',
+    'Avan',
+    'Concept',
+    'Jurgen',
+    'Lotus',
+    'Royal Flair',
+  ],
 } as const;
 
 // API response shapes (matching existing route handlers)

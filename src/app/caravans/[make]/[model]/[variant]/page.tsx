@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   getCaravanVariantProfileData,
   getAllCaravanVariantSlugsForSSG,
-} from "@/modules/catalogue/queries/caravan-profile.queries";
+} from '@/modules/catalogue/queries/caravan-profile.queries';
 import type {
   CaravanAdjacentRangeLink,
   CaravanSiblingVariantLink,
   CaravanVariantProfileData,
-} from "@/modules/catalogue/queries/caravan-profile.queries";
-import type { CaravanVariantDto } from "@/modules/catalogue/types/caravan.types";
-import type { AxleConfiguration } from "@prisma/client";
+} from '@/modules/catalogue/queries/caravan-profile.queries';
+import type { CaravanVariantDto } from '@/modules/catalogue/types/caravan.types';
+import type { AxleConfiguration } from '@prisma/client';
 
 export const revalidate = 86400;
 
@@ -40,34 +40,43 @@ function coverageYears(v: CaravanVariantDto): number[] {
   return Array.from({ length: end - v.yearFrom + 1 }, (_, i) => v.yearFrom + i);
 }
 
-function yearRangeLabel(v: { yearFrom: number; yearTo: number; isCurrentProduction: boolean }): string {
+function yearRangeLabel(v: {
+  yearFrom: number;
+  yearTo: number;
+  isCurrentProduction: boolean;
+}): string {
   if (v.isCurrentProduction) return `${v.yearFrom}–present`;
   if (v.yearFrom === v.yearTo) return `${v.yearFrom}`;
   return `${v.yearFrom}–${v.yearTo}`;
 }
 
 function enumerateYearsProse(years: number[]): string {
-  if (years.length === 0) return "";
+  if (years.length === 0) return '';
   if (years.length === 1) return `${years[0]}`;
-  const init = years.slice(0, -1).join(", ");
+  const init = years.slice(0, -1).join(', ');
   return `${init}, or ${years[years.length - 1]}`;
 }
 
 function formatKg(n: number | null): string {
-  return n != null ? `${n.toLocaleString()} kg` : "—";
+  return n != null ? `${n.toLocaleString()} kg` : '—';
 }
 
 function formatMm(n: number | null): string {
-  return n != null ? `${n.toLocaleString()} mm` : "—";
+  return n != null ? `${n.toLocaleString()} mm` : '—';
 }
 
 function formatAxleConfig(config: AxleConfiguration): string {
   switch (config) {
-    case "SINGLE_AXLE": return "Single axle";
-    case "DUAL_AXLE_CLOSE_COUPLED": return "Dual axle (close coupled)";
-    case "DUAL_AXLE_SPREAD": return "Dual axle (spread)";
-    case "TRIPLE_AXLE": return "Triple axle";
-    default: return config;
+    case 'SINGLE_AXLE':
+      return 'Single axle';
+    case 'DUAL_AXLE_CLOSE_COUPLED':
+      return 'Dual axle (close coupled)';
+    case 'DUAL_AXLE_SPREAD':
+      return 'Dual axle (spread)';
+    case 'TRIPLE_AXLE':
+      return 'Triple axle';
+    default:
+      return config;
   }
 }
 
@@ -81,27 +90,27 @@ interface FaqEntry {
 interface CaravanMetricDef {
   label: string;
   shortLabel: string;
-  key: "atmKg" | "gtmKg" | "tbmKg" | "tareKg";
+  key: 'atmKg' | 'gtmKg' | 'tbmKg' | 'tareKg';
 }
 
 const CARAVAN_METRICS: CaravanMetricDef[] = [
-  { label: "ATM (aggregate trailer mass)", shortLabel: "ATM", key: "atmKg" },
-  { label: "GTM (gross trailer mass)", shortLabel: "GTM", key: "gtmKg" },
-  { label: "TBM (tow ball mass)", shortLabel: "TBM", key: "tbmKg" },
-  { label: "tare mass", shortLabel: "tare mass", key: "tareKg" },
+  { label: 'ATM (aggregate trailer mass)', shortLabel: 'ATM', key: 'atmKg' },
+  { label: 'GTM (gross trailer mass)', shortLabel: 'GTM', key: 'gtmKg' },
+  { label: 'TBM (tow ball mass)', shortLabel: 'TBM', key: 'tbmKg' },
+  { label: 'tare mass', shortLabel: 'tare mass', key: 'tareKg' },
 ];
 
 function buildFaqs(
   makeName: string,
   modelName: string,
   variantName: string,
-  variant: CaravanVariantDto
+  variant: CaravanVariantDto,
 ): FaqEntry[] {
   const fullName = `${makeName} ${modelName} ${variantName}`;
   const rangeLabel = yearRangeLabel(variant);
   const isSingleYear = variant.yearFrom === variant.yearTo;
   const canonicalTail = isSingleYear
-    ? ""
+    ? ''
     : ` This specification is unchanged across the entire ${rangeLabel} production run.`;
 
   const makeEntry = (year: number, m: CaravanMetricDef): FaqEntry | null => {
@@ -137,7 +146,7 @@ function buildFaqs(
   if (entries.length < 15 && mostRecent - earliest > 1) {
     const middleYears = Array.from(
       { length: mostRecent - earliest - 1 },
-      (_, i) => mostRecent - 1 - i
+      (_, i) => mostRecent - 1 - i,
     );
     outer: for (const year of middleYears) {
       for (const m of CARAVAN_METRICS) {
@@ -163,30 +172,42 @@ function buildVehicleJsonLd(data: CaravanVariantProfileData): object {
   const productionDate = `${variant.yearFrom}/${productionEnd}`;
 
   return {
-    "@context": "https://schema.org",
-    "@type": "Vehicle",
+    '@context': 'https://schema.org',
+    '@type': 'Vehicle',
     name: `${make.name} ${model.name} ${variant.name}`,
-    manufacturer: { "@type": "Organization", name: make.name },
+    manufacturer: { '@type': 'Organization', name: make.name },
     model: model.name,
     vehicleModelDate: productionEnd,
     productionDate,
     ...(variant.atmKg != null
-      ? { weightTotal: { "@type": "QuantitativeValue", value: variant.atmKg, unitCode: "KGM" } }
+      ? {
+          weightTotal: {
+            '@type': 'QuantitativeValue',
+            value: variant.atmKg,
+            unitCode: 'KGM',
+          },
+        }
       : {}),
     ...(variant.bodyLengthMm != null
-      ? { depth: { "@type": "QuantitativeValue", value: variant.bodyLengthMm / 1000, unitCode: "MTR" } }
+      ? {
+          depth: {
+            '@type': 'QuantitativeValue',
+            value: variant.bodyLengthMm / 1000,
+            unitCode: 'MTR',
+          },
+        }
       : {}),
   };
 }
 
 function buildFaqJsonLd(faqs: FaqEntry[]): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
     mainEntity: faqs.map((f) => ({
-      "@type": "Question",
+      '@type': 'Question',
       name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
     })),
   };
 }
@@ -196,7 +217,7 @@ function buildFaqJsonLd(faqs: FaqEntry[]): object {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { make, model, variant } = await params;
   const data = await getCaravanVariantProfileData(make, model, variant);
-  if (!data) return { title: "Not Found" };
+  if (!data) return { title: 'Not Found' };
 
   const v = data.variant;
   const makeName = v.model.make.name;
@@ -216,7 +237,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: [{ url: "/og/caravan-default.png", width: 1200, height: 630 }],
+      images: [{ url: '/og/caravan-default.png', width: 1200, height: 630 }],
     },
   };
 }
@@ -225,12 +246,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 function SpecTable({ variant }: { variant: CaravanVariantDto }) {
   const rows: Array<{ label: string; value: string }> = [
-    { label: "ATM (aggregate trailer mass)", value: formatKg(variant.atmKg) },
-    { label: "GTM (gross trailer mass)", value: formatKg(variant.gtmKg) },
-    { label: "Tare", value: formatKg(variant.tareKg) },
-    { label: "TBM (tow ball mass)", value: formatKg(variant.tbmKg) },
-    { label: "Body length", value: formatMm(variant.bodyLengthMm) },
-    { label: "Axle configuration", value: formatAxleConfig(variant.axleConfiguration) },
+    { label: 'ATM (aggregate trailer mass)', value: formatKg(variant.atmKg) },
+    { label: 'GTM (gross trailer mass)', value: formatKg(variant.gtmKg) },
+    { label: 'Tare', value: formatKg(variant.tareKg) },
+    { label: 'TBM (tow ball mass)', value: formatKg(variant.tbmKg) },
+    { label: 'Body length', value: formatMm(variant.bodyLengthMm) },
+    {
+      label: 'Axle configuration',
+      value: formatAxleConfig(variant.axleConfiguration),
+    },
   ];
 
   return (
@@ -238,15 +262,24 @@ function SpecTable({ variant }: { variant: CaravanVariantDto }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">Specification</th>
-            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">Value</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">
+              Specification
+            </th>
+            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">
+              Value
+            </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={row.label} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+            <tr
+              key={row.label}
+              className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+            >
               <td className="px-4 py-2.5 text-gray-600">{row.label}</td>
-              <td className="px-4 py-2.5 text-right font-medium text-gray-900">{row.value}</td>
+              <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                {row.value}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -283,10 +316,15 @@ function FaqSection({ faqs }: { faqs: FaqEntry[] }) {
   if (faqs.length === 0) return null;
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-900">Frequently Asked Questions</h2>
+      <h2 className="text-xl font-bold text-gray-900">
+        Frequently Asked Questions
+      </h2>
       <div className="space-y-4">
         {faqs.map((faq, i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
+          <div
+            key={i}
+            className="rounded-xl border border-gray-200 bg-white p-4"
+          >
             <p className="font-semibold text-gray-900">{faq.question}</p>
             <p className="mt-1 text-sm text-gray-600">{faq.answer}</p>
           </div>
@@ -298,15 +336,25 @@ function FaqSection({ faqs }: { faqs: FaqEntry[] }) {
 
 // ── Adjacent range + sibling links ──────────────────────────────────────────
 
-function RangeLink({ link, label }: { link: CaravanAdjacentRangeLink; label: string }) {
+function RangeLink({
+  link,
+  label,
+}: {
+  link: CaravanAdjacentRangeLink;
+  label: string;
+}) {
   const href = `/caravans/${link.makeSlug}/${link.modelSlug}/${link.slug}/`;
   return (
     <Link
       href={href}
       className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-700"
     >
-      <span className="text-gray-400 text-xs uppercase tracking-wide">{label}</span>
-      <span>{link.name} {yearRangeLabel(link)}</span>
+      <span className="text-xs tracking-wide text-gray-400 uppercase">
+        {label}
+      </span>
+      <span>
+        {link.name} {yearRangeLabel(link)}
+      </span>
     </Link>
   );
 }
@@ -326,7 +374,9 @@ function SiblingLinks({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold text-gray-900">Other {modelName} variants</h2>
+      <h2 className="text-lg font-semibold text-gray-900">
+        Other {modelName} variants
+      </h2>
       <div className="flex flex-wrap gap-2">
         {visible.map((s) => (
           <Link
@@ -334,7 +384,10 @@ function SiblingLinks({
             href={`/caravans/${s.makeSlug}/${s.modelSlug}/${s.slug}/`}
             className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-700"
           >
-            {s.name} <span className="ml-1 text-xs text-gray-400">({yearRangeLabel(s)})</span>
+            {s.name}{' '}
+            <span className="ml-1 text-xs text-gray-400">
+              ({yearRangeLabel(s)})
+            </span>
           </Link>
         ))}
         {overflow && (
@@ -385,11 +438,15 @@ export default async function CaravanVariantProfilePage({ params }: Props) {
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="mb-6 flex items-center gap-1 text-sm text-gray-500">
-          <Link href="/caravans" className="hover:text-blue-700">Caravans</Link>
+          <Link href="/caravans" className="hover:text-blue-700">
+            Caravans
+          </Link>
           <span>/</span>
           <span className="text-gray-900">{makeName}</span>
           <span>/</span>
-          <Link href={modelHref} className="hover:text-blue-700">{modelName}</Link>
+          <Link href={modelHref} className="hover:text-blue-700">
+            {modelName}
+          </Link>
           <span>/</span>
           <span className="text-gray-900">{v.name}</span>
         </nav>
@@ -401,9 +458,10 @@ export default async function CaravanVariantProfilePage({ params }: Props) {
 
         {/* Lead paragraph */}
         <p className="mt-4 text-base leading-relaxed text-gray-600">
-          If your {modelName} is a {enumerateYearsProse(years)} model, this page covers your exact
-          caravan. All specifications on this page — ATM, GTM, TBM, and tare — are unchanged
-          across the entire {rangeLabel} production run of the {makeName} {modelName} {v.name}.
+          If your {modelName} is a {enumerateYearsProse(years)} model, this page
+          covers your exact caravan. All specifications on this page — ATM, GTM,
+          TBM, and tare — are unchanged across the entire {rangeLabel}{' '}
+          production run of the {makeName} {modelName} {v.name}.
         </p>
 
         {/* Year selector */}
@@ -423,17 +481,25 @@ export default async function CaravanVariantProfilePage({ params }: Props) {
 
         {/* Spec table */}
         <div className="mt-10 space-y-3">
-          <h2 className="text-xl font-bold text-gray-900">Headline specifications</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Headline specifications
+          </h2>
           <SpecTable variant={v} />
         </div>
 
         {/* Adjacent-range links */}
         {(data.olderRange || data.newerRange) && (
           <div className="mt-10 space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900">Adjacent production ranges</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Adjacent production ranges
+            </h2>
             <div className="flex flex-col gap-2 sm:flex-row">
-              {data.olderRange && <RangeLink link={data.olderRange} label="Older" />}
-              {data.newerRange && <RangeLink link={data.newerRange} label="Newer" />}
+              {data.olderRange && (
+                <RangeLink link={data.olderRange} label="Older" />
+              )}
+              {data.newerRange && (
+                <RangeLink link={data.newerRange} label="Newer" />
+              )}
             </div>
           </div>
         )}
@@ -458,8 +524,8 @@ export default async function CaravanVariantProfilePage({ params }: Props) {
             Ready to check your tow vehicle compliance?
           </p>
           <p className="mt-1 text-xs text-blue-700">
-            Use the TravellingBuddy calculator to verify your ATM, GTM, and tow ball mass before
-            you head out.
+            Use the TravellingBuddy calculator to verify your ATM, GTM, and tow
+            ball mass before you head out.
           </p>
           <Link
             href={`/calculator?c=${v.slug}`}

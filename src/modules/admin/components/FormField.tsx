@@ -21,7 +21,7 @@ export function FormField({
 }
 
 export const inputClassName =
-  "block w-full rounded-lg border border-tb-neutral-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tb-primary focus:outline-none focus:ring-1 focus:ring-tb-primary";
+  'block w-full rounded-lg border border-tb-neutral-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tb-primary focus:outline-none focus:ring-1 focus:ring-tb-primary';
 
 export const selectClassName =
-  "block w-full rounded-lg border border-tb-neutral-200 px-3 py-2 text-sm text-gray-900 focus:border-tb-primary focus:outline-none focus:ring-1 focus:ring-tb-primary";
+  'block w-full rounded-lg border border-tb-neutral-200 px-3 py-2 text-sm text-gray-900 focus:border-tb-primary focus:outline-none focus:ring-1 focus:ring-tb-primary';

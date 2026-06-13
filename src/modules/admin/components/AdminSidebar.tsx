@@ -6,10 +6,19 @@ import { useState } from 'react';
 import { adminNavSections, getVisibleSections } from '../lib/navigation';
 import type { AdminRole } from '../lib/auth';
 
-function SectionIcon({ name, className }: { name: string; className?: string }) {
+function SectionIcon({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
   const icons: Record<string, string> = {
-    catalogue: '📦', submissions: '📋', sponsorship: '💰',
-    operations: '⚙️', analytics: '📊',
+    catalogue: '📦',
+    submissions: '📋',
+    sponsorship: '💰',
+    operations: '⚙️',
+    analytics: '📊',
   };
   return <span className={className}>{icons[name] ?? '📁'}</span>;
 }
@@ -28,9 +37,9 @@ export function AdminSidebar({
 
   const [expandedSection, setExpandedSection] = useState<string | null>(() => {
     const match = visibleSections.find((s) =>
-      s.items.some((item) => pathname.startsWith(item.href))
+      s.items.some((item) => pathname.startsWith(item.href)),
     );
-    return match?.label ?? (visibleSections[0]?.label ?? null);
+    return match?.label ?? visibleSections[0]?.label ?? null;
   });
 
   return (
@@ -42,16 +51,16 @@ export function AdminSidebar({
         />
       )}
       <aside
-        className={`fixed top-0 left-0 z-40 flex h-full w-64 flex-col border-r border-tb-neutral-200 bg-white transition-transform lg:static lg:translate-x-0 ${
+        className={`border-tb-neutral-200 fixed top-0 left-0 z-40 flex h-full w-64 flex-col border-r bg-white transition-transform lg:static lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex h-14 items-center gap-2 border-b border-tb-neutral-200 px-4">
-          <span className="text-lg font-semibold text-tb-primary">TB</span>
-          <span className="text-sm text-tb-primary-light">Admin</span>
+        <div className="border-tb-neutral-200 flex h-14 items-center gap-2 border-b px-4">
+          <span className="text-tb-primary text-lg font-semibold">TB</span>
+          <span className="text-tb-primary-light text-sm">Admin</span>
           <button
             onClick={onClose}
-            className="ml-auto rounded-md p-1 text-tb-primary hover:bg-tb-neutral-50 lg:hidden"
+            className="text-tb-primary hover:bg-tb-neutral-50 ml-auto rounded-md p-1 lg:hidden"
             aria-label="Close sidebar"
           >
             ✕
@@ -62,7 +71,7 @@ export function AdminSidebar({
           {visibleSections.map((section) => {
             const isExpanded = expandedSection === section.label;
             const sectionActive = section.items.some((item) =>
-              pathname.startsWith(item.href)
+              pathname.startsWith(item.href),
             );
 
             return (
@@ -77,7 +86,7 @@ export function AdminSidebar({
                       ? 'cursor-not-allowed text-gray-400'
                       : sectionActive
                         ? 'bg-tb-primary-lighter text-tb-primary'
-                        : 'text-gray-700 hover:bg-tb-neutral-50'
+                        : 'hover:bg-tb-neutral-50 text-gray-700'
                   }`}
                 >
                   <SectionIcon name={section.icon} className="text-base" />
@@ -92,13 +101,15 @@ export function AdminSidebar({
                 </button>
 
                 {isExpanded && !section.disabled && (
-                  <div className="ml-4 mt-1 space-y-0.5 border-l border-tb-neutral-200 pl-3">
+                  <div className="border-tb-neutral-200 mt-1 ml-4 space-y-0.5 border-l pl-3">
                     {section.items.map((item) => {
-                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                      const isActive =
+                        pathname === item.href ||
+                        pathname.startsWith(item.href + '/');
                       return item.disabled ? (
                         <span
                           key={item.href}
-                          className="block rounded-md px-3 py-1.5 text-sm text-gray-400 cursor-not-allowed"
+                          className="block cursor-not-allowed rounded-md px-3 py-1.5 text-sm text-gray-400"
                         >
                           {item.label}
                         </span>
@@ -109,8 +120,8 @@ export function AdminSidebar({
                           onClick={onClose}
                           className={`block rounded-md px-3 py-1.5 text-sm transition-colors ${
                             isActive
-                              ? 'bg-tb-primary text-white font-medium'
-                              : 'text-gray-600 hover:bg-tb-neutral-50 hover:text-gray-900'
+                              ? 'bg-tb-primary font-medium text-white'
+                              : 'hover:bg-tb-neutral-50 text-gray-600 hover:text-gray-900'
                           }`}
                         >
                           {item.label}
@@ -124,10 +135,10 @@ export function AdminSidebar({
           })}
         </nav>
 
-        <div className="border-t border-tb-neutral-200 px-4 py-3">
+        <div className="border-tb-neutral-200 border-t px-4 py-3">
           <Link
             href="/"
-            className="block text-xs text-gray-500 hover:text-tb-primary"
+            className="hover:text-tb-primary block text-xs text-gray-500"
           >
             ← Back to public site
           </Link>

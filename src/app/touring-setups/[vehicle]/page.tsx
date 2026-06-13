@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   getTouringRigPageData,
   getAllTouringRigSlugsForSSG,
-} from "@/modules/catalogue/queries/touring-rig.queries";
+} from '@/modules/catalogue/queries/touring-rig.queries';
 import type {
   TouringRigPageData,
   TouringRigVariant,
   TouringAccessoryRow,
-} from "@/modules/catalogue/queries/touring-rig.queries";
+} from '@/modules/catalogue/queries/touring-rig.queries';
 
 export const revalidate = 86400;
 
@@ -42,7 +42,7 @@ function yearRangeLabel(v: {
 }
 
 function formatKg(n: number | null): string {
-  return n != null ? `${n.toLocaleString()} kg` : "—";
+  return n != null ? `${n.toLocaleString()} kg` : '—';
 }
 
 function gvmHeadroom(v: TouringRigVariant): number | null {
@@ -51,10 +51,10 @@ function gvmHeadroom(v: TouringRigVariant): number | null {
 }
 
 function gvmClass(gvmKg: number | null): string {
-  if (gvmKg == null) return "unknown GVM class";
-  if (gvmKg <= 3000) return "light-duty (GVM ≤ 3,000 kg)";
-  if (gvmKg <= 4500) return "medium-duty (GVM 3,001–4,500 kg)";
-  return "heavy-duty (GVM > 4,500 kg)";
+  if (gvmKg == null) return 'unknown GVM class';
+  if (gvmKg <= 3000) return 'light-duty (GVM ≤ 3,000 kg)';
+  if (gvmKg <= 4500) return 'medium-duty (GVM 3,001–4,500 kg)';
+  return 'heavy-duty (GVM > 4,500 kg)';
 }
 
 // ── JSON-LD builders ──────────────────────────────────────────────────────────
@@ -66,19 +66,19 @@ function buildVehicleJsonLd(data: TouringRigPageData): object {
     : v.yearTo.toString();
 
   return {
-    "@context": "https://schema.org",
-    "@type": "Car",
+    '@context': 'https://schema.org',
+    '@type': 'Car',
     name: `${v.model.make.name} ${v.model.name} ${v.name}`,
-    manufacturer: { "@type": "Organization", name: v.model.make.name },
+    manufacturer: { '@type': 'Organization', name: v.model.make.name },
     model: v.model.name,
     vehicleModelDate: productionEnd,
     productionDate: `${v.yearFrom}/${productionEnd}`,
     ...(v.gvmKg != null
       ? {
           weightTotal: {
-            "@type": "QuantitativeValue",
+            '@type': 'QuantitativeValue',
             value: v.gvmKg,
-            unitCode: "KGM",
+            unitCode: 'KGM',
           },
         }
       : {}),
@@ -92,29 +92,29 @@ function buildHowToJsonLd(data: TouringRigPageData): object {
   const headroom = gvmHeadroom(v);
 
   return {
-    "@context": "https://schema.org",
-    "@type": "HowTo",
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
     name: `How to set up a ${makeName} ${modelName} ${v.name} as a touring rig`,
     description: `Step-by-step guide to building a touring rig with the ${makeName} ${modelName} ${v.name}, including GVM headroom (${formatKg(headroom)}), common accessories, and GVM upgrade paths.`,
     step: [
       {
-        "@type": "HowToStep",
-        name: "Know your GVM headroom",
+        '@type': 'HowToStep',
+        name: 'Know your GVM headroom',
         text: `The ${makeName} ${modelName} ${v.name} has a GVM of ${formatKg(v.gvmKg)} and a kerb weight of ${formatKg(v.kerbWeightKg)}, giving ${formatKg(headroom)} of available load capacity before you hit the GVM limit.`,
       },
       {
-        "@type": "HowToStep",
-        name: "Budget your accessory weight",
-        text: "Add up the installed weight of your planned accessories against your available GVM headroom. Front-heavy accessories (bull bars, winches) affect front axle limits first.",
+        '@type': 'HowToStep',
+        name: 'Budget your accessory weight',
+        text: 'Add up the installed weight of your planned accessories against your available GVM headroom. Front-heavy accessories (bull bars, winches) affect front axle limits first.',
       },
       {
-        "@type": "HowToStep",
-        name: "Consider a GVM upgrade if needed",
+        '@type': 'HowToStep',
+        name: 'Consider a GVM upgrade if needed',
         text: `If your planned touring build exceeds the stock GVM of ${formatKg(v.gvmKg)}, a certified GVM upgrade kit can increase your legal payload capacity. Always use a certified provider.`,
       },
       {
-        "@type": "HowToStep",
-        name: "Verify your rig with the calculator",
+        '@type': 'HowToStep',
+        name: 'Verify your rig with the calculator',
         text: `Use the TravellingBuddy calculator with your exact accessory list to confirm you are within GVM, axle limits, and GCM before you leave.`,
       },
     ],
@@ -126,7 +126,7 @@ function buildHowToJsonLd(data: TouringRigPageData): object {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { vehicle } = await params;
   const data = await getTouringRigPageData(vehicle);
-  if (!data) return { title: "Not Found" };
+  if (!data) return { title: 'Not Found' };
 
   const { variant: v } = data;
   const makeName = v.model.make.name;
@@ -150,7 +150,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: [{ url: "/og/vehicle-default.png", width: 1200, height: 630 }],
+      images: [{ url: '/og/vehicle-default.png', width: 1200, height: 630 }],
     },
   };
 }
@@ -170,10 +170,13 @@ function OverviewSection({ v }: { v: TouringRigVariant }) {
   const headroom = gvmHeadroom(v);
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-bold text-gray-900">Load capacity overview</h2>
+      <h2 className="text-xl font-bold text-gray-900">
+        Load capacity overview
+      </h2>
       <p className="text-sm text-gray-600">
-        GVM headroom is how much payload you can add before hitting your vehicle&apos;s legal
-        gross vehicle mass — passengers, fuel, accessories, and cargo included.
+        GVM headroom is how much payload you can add before hitting your
+        vehicle&apos;s legal gross vehicle mass — passengers, fuel, accessories,
+        and cargo included.
       </p>
       <div className="rounded-xl border border-gray-200 bg-white px-5 py-1">
         <SpecRow label="GVM (gross vehicle mass)" value={formatKg(v.gvmKg)} />
@@ -182,13 +185,19 @@ function OverviewSection({ v }: { v: TouringRigVariant }) {
           label="GVM headroom (available payload)"
           value={formatKg(headroom)}
         />
-        <SpecRow label="GCM (gross combination mass)" value={formatKg(v.gcmKg)} />
-        <SpecRow label="Front axle limit" value={formatKg(v.frontAxleLimitKg)} />
+        <SpecRow
+          label="GCM (gross combination mass)"
+          value={formatKg(v.gcmKg)}
+        />
+        <SpecRow
+          label="Front axle limit"
+          value={formatKg(v.frontAxleLimitKg)}
+        />
         <SpecRow label="Rear axle limit" value={formatKg(v.rearAxleLimitKg)} />
       </div>
       {headroom != null && (
         <p className="text-xs text-gray-500">
-          This is a {gvmClass(v.gvmKg)} vehicle. Stock GVM headroom of{" "}
+          This is a {gvmClass(v.gvmKg)} vehicle. Stock GVM headroom of{' '}
           <strong>{headroom.toLocaleString()} kg</strong> must cover all
           passengers, fuel, accessories, water, food, and camping gear.
         </p>
@@ -221,14 +230,17 @@ function AccessoriesSection({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-bold text-gray-900">Common touring accessories</h2>
+      <h2 className="text-xl font-bold text-gray-900">
+        Common touring accessories
+      </h2>
       <p className="text-sm text-gray-600">
-        Accessories commonly fitted to the {vehicleName}. Each link shows installed weight and
-        fitment details so you can budget your GVM load accurately.
+        Accessories commonly fitted to the {vehicleName}. Each link shows
+        installed weight and fitment details so you can budget your GVM load
+        accurately.
       </p>
       {accessories.length === 0 ? (
         <p className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-400">
-          No accessory fitment data yet for this variant.{" "}
+          No accessory fitment data yet for this variant.{' '}
           <Link href="/submit" className="text-blue-600 hover:underline">
             Submit a fitment
           </Link>
@@ -255,9 +267,10 @@ function GvmUpgradeSection({
     <section className="space-y-3">
       <h2 className="text-xl font-bold text-gray-900">GVM upgrade paths</h2>
       <p className="text-sm text-gray-600">
-        If your touring build exceeds the stock GVM of {formatKg(v.gvmKg)}, a certified GVM
-        upgrade kit increases your legal payload capacity. GVM upgrades require engineer
-        certification and change your registration — always use a certified provider.
+        If your touring build exceeds the stock GVM of {formatKg(v.gvmKg)}, a
+        certified GVM upgrade kit increases your legal payload capacity. GVM
+        upgrades require engineer certification and change your registration —
+        always use a certified provider.
       </p>
       {gvmUpgrades.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-200 p-6 text-center">
@@ -265,8 +278,9 @@ function GvmUpgradeSection({
             No GVM upgrade kits are currently listed for this variant.
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            GVM upgrades are available from specialist suspension and engineering shops.
-            Confirm certification with an authorised repairer before purchasing.
+            GVM upgrades are available from specialist suspension and
+            engineering shops. Confirm certification with an authorised repairer
+            before purchasing.
           </p>
         </div>
       ) : (
@@ -335,9 +349,10 @@ export default async function TouringRigPage({ params }: Props) {
 
         {/* Lead paragraph */}
         <p className="mt-4 text-base leading-relaxed text-gray-600">
-          This guide covers the {fullName} ({rangeLabel}) as a solo touring rig — no caravan, no
-          trailer. It focuses on available GVM headroom, common touring accessories and their
-          weight impact, and GVM upgrade paths for builders who need more payload.
+          This guide covers the {fullName} ({rangeLabel}) as a solo touring rig
+          — no caravan, no trailer. It focuses on available GVM headroom, common
+          touring accessories and their weight impact, and GVM upgrade paths for
+          builders who need more payload.
         </p>
 
         {/* Calculator CTA */}
@@ -384,9 +399,7 @@ export default async function TouringRigPage({ params }: Props) {
                 href={`/calculator?v=${v.slug}`}
                 className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-700"
               >
-                <span className="font-medium">
-                  {fullName} + caravan combos
-                </span>
+                <span className="font-medium">{fullName} + caravan combos</span>
                 <span className="text-xs text-gray-400">
                   Tows up to {formatKg(v.maxTowingCapacityKg)}
                 </span>
@@ -402,7 +415,8 @@ export default async function TouringRigPage({ params }: Props) {
           </p>
           <p className="mt-1 text-xs text-blue-700">
             Enter your accessories, passengers, fuel, water, and cargo into the
-            TravellingBuddy calculator to verify you are within GVM and axle limits.
+            TravellingBuddy calculator to verify you are within GVM and axle
+            limits.
           </p>
           <Link
             href={calculatorHref}

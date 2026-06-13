@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SignUpPage() {
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,31 +20,31 @@ export default function SignUpPage() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError('Passwords do not match.');
       return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError('Password must be at least 8 characters.');
       return;
     }
 
     setLoading(true);
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
     });
 
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      setError(data?.error ?? "Something went wrong. Please try again.");
+      setError(data?.error ?? 'Something went wrong. Please try again.');
       setLoading(false);
       return;
     }
 
-    const result = await signIn("credentials", {
+    const result = await signIn('credentials', {
       email,
       password,
       redirect: false,
@@ -53,19 +53,19 @@ export default function SignUpPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Account created but sign-in failed. Please sign in manually.");
+      setError('Account created but sign-in failed. Please sign in manually.');
       return;
     }
 
     const hasLocalSetups = Object.keys(localStorage).some((k) =>
-      k.startsWith("tb:setup:")
+      k.startsWith('tb:setup:'),
     );
     if (hasLocalSetups) {
       router.push(
-        `/auth/claim-setups?redirect=${encodeURIComponent("/account/setups")}`
+        `/auth/claim-setups?redirect=${encodeURIComponent('/account/setups')}`,
       );
     } else {
-      router.push("/account/setups");
+      router.push('/account/setups');
     }
   }
 
@@ -90,7 +90,7 @@ export default function SignUpPage() {
               autoComplete="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
           <div>
@@ -107,7 +107,7 @@ export default function SignUpPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
           <div>
@@ -124,7 +124,7 @@ export default function SignUpPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
           <div>
@@ -141,7 +141,7 @@ export default function SignUpPage() {
               required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
 
@@ -156,12 +156,12 @@ export default function SignUpPage() {
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? "Creating account…" : "Sign up"}
+            {loading ? 'Creating account…' : 'Sign up'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Already have an account?{" "}
+          Already have an account?{' '}
           <Link href="/auth/signin" className="text-blue-600 hover:underline">
             Sign in
           </Link>

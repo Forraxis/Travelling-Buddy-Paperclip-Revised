@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
 import {
   FormField,
   inputClassName,
   selectClassName,
-} from "@/modules/admin/components/FormField";
+} from '@/modules/admin/components/FormField';
 import {
   createAccessoryAction,
   updateAccessoryAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import type { AccessoryDto } from "@/modules/catalogue/types/accessory.types";
-import type { AccessoryBrandDto } from "@/modules/catalogue/types/accessory-brand.types";
-import type { AccessoryCategoryDto } from "@/modules/catalogue/types/accessory-category.types";
-import type { AccessoryStatus, Market } from "@prisma/client";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import type { AccessoryDto } from '@/modules/catalogue/types/accessory.types';
+import type { AccessoryBrandDto } from '@/modules/catalogue/types/accessory-brand.types';
+import type { AccessoryCategoryDto } from '@/modules/catalogue/types/accessory-category.types';
+import type { AccessoryStatus, Market } from '@prisma/client';
 
 const MARKETS: { value: Market; label: string }[] = [
-  { value: "AU", label: "Australia" },
-  { value: "NZ", label: "New Zealand" },
-  { value: "US", label: "United States" },
-  { value: "EU", label: "Europe" },
-  { value: "GB", label: "United Kingdom" },
+  { value: 'AU', label: 'Australia' },
+  { value: 'NZ', label: 'New Zealand' },
+  { value: 'US', label: 'United States' },
+  { value: 'EU', label: 'Europe' },
+  { value: 'GB', label: 'United Kingdom' },
 ];
 
 interface AccessoryFormProps {
@@ -42,30 +42,42 @@ export function AccessoryForm({
   const { toast } = useToast();
   const isEdit = !!accessory;
 
-  const [name, setName] = useState(accessory?.name ?? "");
-  const [brandId, setBrandId] = useState(accessory?.brandId ?? brands[0]?.id ?? "");
+  const [name, setName] = useState(accessory?.name ?? '');
+  const [brandId, setBrandId] = useState(
+    accessory?.brandId ?? brands[0]?.id ?? '',
+  );
   const [categoryId, setCategoryId] = useState(
-    accessory?.categoryId ?? categories[0]?.id ?? ""
+    accessory?.categoryId ?? categories[0]?.id ?? '',
   );
-  const [description, setDescription] = useState(accessory?.description ?? "");
-  const [priceMin, setPriceMin] = useState(accessory?.priceMin?.toString() ?? "");
-  const [priceMax, setPriceMax] = useState(accessory?.priceMax?.toString() ?? "");
-  const [currencyCode, setCurrencyCode] = useState(accessory?.currencyCode ?? "AUD");
-  const [affiliateUrl, setAffiliateUrl] = useState(accessory?.affiliateUrl ?? "");
+  const [description, setDescription] = useState(accessory?.description ?? '');
+  const [priceMin, setPriceMin] = useState(
+    accessory?.priceMin?.toString() ?? '',
+  );
+  const [priceMax, setPriceMax] = useState(
+    accessory?.priceMax?.toString() ?? '',
+  );
+  const [currencyCode, setCurrencyCode] = useState(
+    accessory?.currencyCode ?? 'AUD',
+  );
+  const [affiliateUrl, setAffiliateUrl] = useState(
+    accessory?.affiliateUrl ?? '',
+  );
   const [status, setStatus] = useState<AccessoryStatus>(
-    accessory?.status ?? "ACTIVE"
+    accessory?.status ?? 'ACTIVE',
   );
-  const [market, setMarket] = useState<Market>(accessory?.market ?? "AU");
+  const [market, setMarket] = useState<Market>(accessory?.market ?? 'AU');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = "Name is required";
-    if (!brandId) errs.brandId = "Brand is required";
-    if (!categoryId) errs.categoryId = "Category is required";
-    if (priceMin && isNaN(parseFloat(priceMin))) errs.priceMin = "Invalid price";
-    if (priceMax && isNaN(parseFloat(priceMax))) errs.priceMax = "Invalid price";
+    if (!name.trim()) errs.name = 'Name is required';
+    if (!brandId) errs.brandId = 'Brand is required';
+    if (!categoryId) errs.categoryId = 'Category is required';
+    if (priceMin && isNaN(parseFloat(priceMin)))
+      errs.priceMin = 'Invalid price';
+    if (priceMax && isNaN(parseFloat(priceMax)))
+      errs.priceMax = 'Invalid price';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -95,18 +107,18 @@ export function AccessoryForm({
     setSubmitting(false);
 
     if (result.success) {
-      toast(isEdit ? "Accessory updated" : "Accessory created");
+      toast(isEdit ? 'Accessory updated' : 'Accessory created');
       router.push(backHref);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Identity
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -148,7 +160,11 @@ export function AccessoryForm({
               ))}
             </select>
           </FormField>
-          <FormField label="Category" name="categoryId" error={errors.categoryId}>
+          <FormField
+            label="Category"
+            name="categoryId"
+            error={errors.categoryId}
+          >
             <select
               id="categoryId"
               value={categoryId}
@@ -192,8 +208,8 @@ export function AccessoryForm({
         </div>
       </div>
 
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Pricing (optional)
         </h3>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -251,20 +267,20 @@ export function AccessoryForm({
         <button
           type="button"
           onClick={() => router.push(backHref)}
-          className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+          className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-tb-primary px-6 py-2 text-sm font-medium text-white hover:bg-tb-primary-light disabled:opacity-50"
+          className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-6 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {submitting
-            ? "Saving..."
+            ? 'Saving...'
             : isEdit
-              ? "Update Accessory"
-              : "Create Accessory"}
+              ? 'Update Accessory'
+              : 'Create Accessory'}
         </button>
       </div>
     </form>

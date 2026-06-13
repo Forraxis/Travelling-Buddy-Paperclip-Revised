@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
-import { z } from "zod/v4";
-import { MountingLocation } from "@prisma/client";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { generateShareToken } from "@/lib/share-token";
-import { generateSetupName } from "@/lib/setup-name";
-import { serverError } from "@/lib/api-helpers";
-import { buildSnapshots } from "@/lib/setup-snapshots";
-import type { Prisma } from "@prisma/client";
+import { NextResponse } from 'next/server';
+import { z } from 'zod/v4';
+import { MountingLocation } from '@prisma/client';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { generateShareToken } from '@/lib/share-token';
+import { generateSetupName } from '@/lib/setup-name';
+import { serverError } from '@/lib/api-helpers';
+import { buildSnapshots } from '@/lib/setup-snapshots';
+import type { Prisma } from '@prisma/client';
 
 const mountingLocationEnum = z.nativeEnum(MountingLocation);
 
@@ -38,7 +38,9 @@ const createSchema = z.object({
   freshWaterPercent: z.number().int().min(0).max(100).default(100),
   greyWaterPercent: z.number().int().min(0).max(100).default(0),
   calibrationOverrides: z.record(z.string(), z.unknown()).default({}),
-  regulationSetCode: z.enum(["AU_ADR", "NZ_VIRM", "US_FMVSS", "EU_UNECE", "GB_IVA"]).default("AU_ADR"),
+  regulationSetCode: z
+    .enum(['AU_ADR', 'NZ_VIRM', 'US_FMVSS', 'EU_UNECE', 'GB_IVA'])
+    .default('AU_ADR'),
   tags: z.array(z.string().max(50)).max(20).default([]),
   accessories: z.array(accessoryEntrySchema).default([]),
   caravanAccessories: z.array(accessoryEntrySchema).default([]),
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -57,13 +59,13 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Invalid request body",
+          error: 'Invalid request body',
           details: parsed.error.issues.map((i) => ({
-            field: i.path.join("."),
+            field: i.path.join('.'),
             message: i.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,14 +89,16 @@ export async function POST(request: Request) {
           name = generateSetupName(vehicle, caravan);
         }
       }
-      if (!name) name = `Setup ${new Date().toLocaleDateString("en-AU")}`;
+      if (!name) name = `Setup ${new Date().toLocaleDateString('en-AU')}`;
     }
 
     const snapshots = await buildSnapshots({
       vehicleVariantId: data.vehicleVariantId,
       caravanVariantId: data.caravanVariantId,
       accessoryFitmentIds: data.accessories.map((a) => a.fitmentId),
-      caravanAccessoryFitmentIds: data.caravanAccessories.map((a) => a.fitmentId),
+      caravanAccessoryFitmentIds: data.caravanAccessories.map(
+        (a) => a.fitmentId,
+      ),
     });
 
     const setup = await prisma.setup.create({
@@ -108,7 +112,8 @@ export async function POST(request: Request) {
         fuelPercent: data.fuelPercent,
         freshWaterPercent: data.freshWaterPercent,
         greyWaterPercent: data.greyWaterPercent,
-        calibrationOverrides: data.calibrationOverrides as Prisma.InputJsonValue,
+        calibrationOverrides:
+          data.calibrationOverrides as Prisma.InputJsonValue,
         regulationSetCode: data.regulationSetCode,
         tags: data.tags,
         shareToken: generateShareToken(),
@@ -157,8 +162,8 @@ export async function POST(request: Request) {
 }
 
 const listSchema = z.object({
-  sort: z.enum(["name", "createdAt", "updatedAt"]).default("updatedAt"),
-  order: z.enum(["asc", "desc"]).default("desc"),
+  sort: z.enum(['name', 'createdAt', 'updatedAt']).default('updatedAt'),
+  order: z.enum(['asc', 'desc']).default('desc'),
   tag: z.string().optional(),
   q: z.string().optional(),
 });
@@ -167,7 +172,7 @@ export async function GET(request: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -178,13 +183,13 @@ export async function GET(request: Request) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Invalid query parameters",
+          error: 'Invalid query parameters',
           details: parsed.error.issues.map((i) => ({
-            field: i.path.join("."),
+            field: i.path.join('.'),
             message: i.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -200,7 +205,7 @@ export async function GET(request: Request) {
     }
     if (q) {
       where.OR = [
-        { name: { contains: q, mode: "insensitive" } },
+        { name: { contains: q, mode: 'insensitive' } },
         { tags: { has: q } },
       ];
     }
@@ -211,7 +216,13 @@ export async function GET(request: Request) {
       include: {
         vehicleVariant: { include: { model: { include: { make: true } } } },
         caravanVariant: { include: { model: { include: { make: true } } } },
-        _count: { select: { accessories: true, caravanAccessories: true, customLoads: true } },
+        _count: {
+          select: {
+            accessories: true,
+            caravanAccessories: true,
+            customLoads: true,
+          },
+        },
       },
     });
 

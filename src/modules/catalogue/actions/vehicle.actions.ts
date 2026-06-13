@@ -1,9 +1,9 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
-import { createVehicleService } from "../services/vehicle.service";
-import { getAdminUser } from "@/modules/admin/lib/auth";
+import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db';
+import { createVehicleService } from '../services/vehicle.service';
+import { getAdminUser } from '@/modules/admin/lib/auth';
 import type {
   CreateVehicleMakeInput,
   UpdateVehicleMakeInput,
@@ -11,7 +11,7 @@ import type {
   UpdateVehicleModelInput,
   CreateVehicleVariantInput,
   UpdateVehicleVariantInput,
-} from "../types/vehicle.types";
+} from '../types/vehicle.types';
 
 const vehicleService = createVehicleService(prisma);
 
@@ -22,16 +22,16 @@ type ActionResult<T = unknown> =
 function slugify(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 async function writeAuditLog(
   entityType: string,
   entityId: string,
-  action: "CREATE" | "UPDATE" | "DELETE",
+  action: 'CREATE' | 'UPDATE' | 'DELETE',
   changedBy: string,
-  changes: object
+  changes: object,
 ) {
   await prisma.auditLog.create({
     data: {
@@ -63,26 +63,26 @@ export async function getMakeBySlugAction(slug: string) {
 }
 
 export async function createMakeAction(
-  input: Omit<CreateVehicleMakeInput, "slug">
+  input: Omit<CreateVehicleMakeInput, 'slug'>,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     const slug = slugify(input.name);
     const make = await vehicleService.createMake({ ...input, slug });
-    await writeAuditLog("VehicleMake", make.id, "CREATE", user.id, {
+    await writeAuditLog('VehicleMake', make.id, 'CREATE', user.id, {
       ...input,
       slug,
     });
-    revalidatePath("/admin/catalogue/vehicles");
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: make };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to create make";
-    if (msg.includes("Unique constraint")) {
+    const msg = e instanceof Error ? e.message : 'Failed to create make';
+    if (msg.includes('Unique constraint')) {
       return {
         success: false,
-        error: "A make with this name already exists.",
+        error: 'A make with this name already exists.',
       };
     }
     return { success: false, error: msg };
@@ -91,25 +91,25 @@ export async function createMakeAction(
 
 export async function updateMakeAction(
   id: string,
-  input: UpdateVehicleMakeInput
+  input: UpdateVehicleMakeInput,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     if (input.name && !input.slug) {
       input.slug = slugify(input.name);
     }
     const make = await vehicleService.updateMake(id, input);
-    await writeAuditLog("VehicleMake", id, "UPDATE", user.id, input);
-    revalidatePath("/admin/catalogue/vehicles");
+    await writeAuditLog('VehicleMake', id, 'UPDATE', user.id, input);
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: make };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to update make";
-    if (msg.includes("Unique constraint")) {
+    const msg = e instanceof Error ? e.message : 'Failed to update make';
+    if (msg.includes('Unique constraint')) {
       return {
         success: false,
-        error: "A make with this name already exists.",
+        error: 'A make with this name already exists.',
       };
     }
     return { success: false, error: msg };
@@ -118,56 +118,53 @@ export async function updateMakeAction(
 
 export async function deleteMakeAction(id: string): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     await vehicleService.deleteMake(id);
-    await writeAuditLog("VehicleMake", id, "DELETE", user.id, {});
-    revalidatePath("/admin/catalogue/vehicles");
+    await writeAuditLog('VehicleMake', id, 'DELETE', user.id, {});
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: null };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to delete make";
+    const msg = e instanceof Error ? e.message : 'Failed to delete make';
     return { success: false, error: msg };
   }
 }
 
 // ── Models ─────────────────────────────────────────
 
-export async function listModelsByMakeAction(
-  makeId: string,
-  cursor?: string
-) {
+export async function listModelsByMakeAction(makeId: string, cursor?: string) {
   return vehicleService.listModelsByMake(makeId, { cursor, limit: 25 });
 }
 
 export async function getModelBySlugAction(
   makeSlug: string,
-  modelSlug: string
+  modelSlug: string,
 ) {
   return vehicleService.getModelBySlug(makeSlug, modelSlug);
 }
 
 export async function createModelAction(
-  input: Omit<CreateVehicleModelInput, "slug">
+  input: Omit<CreateVehicleModelInput, 'slug'>,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     const slug = slugify(input.name);
     const model = await vehicleService.createModel({ ...input, slug });
-    await writeAuditLog("VehicleModel", model.id, "CREATE", user.id, {
+    await writeAuditLog('VehicleModel', model.id, 'CREATE', user.id, {
       ...input,
       slug,
     });
-    revalidatePath("/admin/catalogue/vehicles");
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: model };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to create model";
-    if (msg.includes("Unique constraint")) {
+    const msg = e instanceof Error ? e.message : 'Failed to create model';
+    if (msg.includes('Unique constraint')) {
       return {
         success: false,
-        error: "A model with this name already exists for this make.",
+        error: 'A model with this name already exists for this make.',
       };
     }
     return { success: false, error: msg };
@@ -176,25 +173,25 @@ export async function createModelAction(
 
 export async function updateModelAction(
   id: string,
-  input: UpdateVehicleModelInput
+  input: UpdateVehicleModelInput,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     if (input.name && !input.slug) {
       input.slug = slugify(input.name);
     }
     const model = await vehicleService.updateModel(id, input);
-    await writeAuditLog("VehicleModel", id, "UPDATE", user.id, input);
-    revalidatePath("/admin/catalogue/vehicles");
+    await writeAuditLog('VehicleModel', id, 'UPDATE', user.id, input);
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: model };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to update model";
-    if (msg.includes("Unique constraint")) {
+    const msg = e instanceof Error ? e.message : 'Failed to update model';
+    if (msg.includes('Unique constraint')) {
       return {
         success: false,
-        error: "A model with this name already exists for this make.",
+        error: 'A model with this name already exists for this make.',
       };
     }
     return { success: false, error: msg };
@@ -203,15 +200,15 @@ export async function updateModelAction(
 
 export async function deleteModelAction(id: string): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     await vehicleService.deleteModel(id);
-    await writeAuditLog("VehicleModel", id, "DELETE", user.id, {});
-    revalidatePath("/admin/catalogue/vehicles");
+    await writeAuditLog('VehicleModel', id, 'DELETE', user.id, {});
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: null };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to delete model";
+    const msg = e instanceof Error ? e.message : 'Failed to delete model';
     return { success: false, error: msg };
   }
 }
@@ -220,7 +217,7 @@ export async function deleteModelAction(id: string): Promise<ActionResult> {
 
 export async function listVariantsByModelAction(
   modelId: string,
-  cursor?: string
+  cursor?: string,
 ) {
   return vehicleService.listVariantsByModel(modelId, { cursor, limit: 25 });
 }
@@ -230,27 +227,27 @@ export async function getVariantByIdAction(id: string) {
 }
 
 export async function createVariantAction(
-  input: Omit<CreateVehicleVariantInput, "slug">
+  input: Omit<CreateVehicleVariantInput, 'slug'>,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     const slug = slugify(input.name);
     const variant = await vehicleService.createVariant({ ...input, slug });
-    await writeAuditLog("VehicleVariant", variant.id, "CREATE", user.id, {
+    await writeAuditLog('VehicleVariant', variant.id, 'CREATE', user.id, {
       ...input,
       slug,
     });
-    revalidatePath("/admin/catalogue/vehicles");
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: variant };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to create variant";
-    if (msg.includes("Unique constraint")) {
+    const msg = e instanceof Error ? e.message : 'Failed to create variant';
+    if (msg.includes('Unique constraint')) {
       return {
         success: false,
         error:
-          "A variant with this name already exists for this model, or the year range overlaps with an existing variant.",
+          'A variant with this name already exists for this model, or the year range overlaps with an existing variant.',
       };
     }
     return { success: false, error: msg };
@@ -259,26 +256,26 @@ export async function createVariantAction(
 
 export async function updateVariantAction(
   id: string,
-  input: UpdateVehicleVariantInput
+  input: UpdateVehicleVariantInput,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     if (input.name && !input.slug) {
       input.slug = slugify(input.name);
     }
     const variant = await vehicleService.updateVariant(id, input);
-    await writeAuditLog("VehicleVariant", id, "UPDATE", user.id, input);
-    revalidatePath("/admin/catalogue/vehicles");
+    await writeAuditLog('VehicleVariant', id, 'UPDATE', user.id, input);
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: variant };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to update variant";
-    if (msg.includes("Unique constraint")) {
+    const msg = e instanceof Error ? e.message : 'Failed to update variant';
+    if (msg.includes('Unique constraint')) {
       return {
         success: false,
         error:
-          "A variant with this name already exists for this model, or the year range overlaps.",
+          'A variant with this name already exists for this model, or the year range overlaps.',
       };
     }
     return { success: false, error: msg };
@@ -287,22 +284,26 @@ export async function updateVariantAction(
 
 export async function deleteVariantAction(id: string): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     await vehicleService.deleteVariant(id);
-    await writeAuditLog("VehicleVariant", id, "DELETE", user.id, {});
-    revalidatePath("/admin/catalogue/vehicles");
+    await writeAuditLog('VehicleVariant', id, 'DELETE', user.id, {});
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: null };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to delete variant";
+    const msg = e instanceof Error ? e.message : 'Failed to delete variant';
     return { success: false, error: msg };
   }
 }
 
 // ── Admin range actions ─────────────────────────────
 
-function yearRangeSlug(nameSlug: string, yearFrom: number, yearTo: number): string {
+function yearRangeSlug(
+  nameSlug: string,
+  yearFrom: number,
+  yearTo: number,
+): string {
   return `${nameSlug}-${yearFrom}-${yearTo}`;
 }
 
@@ -314,7 +315,7 @@ async function checkOverlap(
   modelId: string,
   yearFrom: number,
   yearTo: number,
-  excludeId?: string
+  excludeId?: string,
 ): Promise<{ yearFrom: number; yearTo: number } | null> {
   return prisma.vehicleVariant.findFirst({
     where: {
@@ -330,10 +331,10 @@ async function checkOverlap(
 export async function splitVariantRangeAction(
   variantId: string,
   anomalyYearFrom: number,
-  anomalyYearTo: number
+  anomalyYearTo: number,
 ): Promise<ActionResult<{ created: number; variantIds: string[] }>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     const source = await prisma.vehicleVariant.findUniqueOrThrow({
@@ -341,10 +342,13 @@ export async function splitVariantRangeAction(
     });
 
     if (anomalyYearFrom < source.yearFrom || anomalyYearTo > source.yearTo) {
-      return { success: false, error: "Anomaly range must be within the existing variant range" };
+      return {
+        success: false,
+        error: 'Anomaly range must be within the existing variant range',
+      };
     }
     if (anomalyYearFrom > anomalyYearTo) {
-      return { success: false, error: "Anomaly year from must be ≤ year to" };
+      return { success: false, error: 'Anomaly year from must be ≤ year to' };
     }
 
     const nameSlug = slugify(source.name);
@@ -391,49 +395,72 @@ export async function splitVariantRangeAction(
         createdIds.push(created.id);
         await tx.auditLog.create({
           data: {
-            entityType: "VehicleVariant",
+            entityType: 'VehicleVariant',
             entityId: created.id,
-            action: "CREATE",
+            action: 'CREATE',
             changedBy: user.id,
-            changes: { splitFrom: variantId, yearFrom: seg.yearFrom, yearTo: seg.yearTo },
+            changes: {
+              splitFrom: variantId,
+              yearFrom: seg.yearFrom,
+              yearTo: seg.yearTo,
+            },
           },
         });
       }
       await tx.vehicleVariant.delete({ where: { id: variantId } });
       await tx.auditLog.create({
         data: {
-          entityType: "VehicleVariant",
+          entityType: 'VehicleVariant',
           entityId: variantId,
-          action: "DELETE",
+          action: 'DELETE',
           changedBy: user.id,
-          changes: { reason: "split", anomalyYearFrom, anomalyYearTo, replacedBy: createdIds },
+          changes: {
+            reason: 'split',
+            anomalyYearFrom,
+            anomalyYearTo,
+            replacedBy: createdIds,
+          },
         },
       });
     });
 
-    revalidatePath("/admin/catalogue/vehicles");
-    return { success: true, data: { created: segments.length, variantIds: createdIds } };
+    revalidatePath('/admin/catalogue/vehicles');
+    return {
+      success: true,
+      data: { created: segments.length, variantIds: createdIds },
+    };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to split variant range";
+    const msg =
+      e instanceof Error ? e.message : 'Failed to split variant range';
     return { success: false, error: msg };
   }
 }
 
 export async function advanceYearToAction(
   variantId: string,
-  newYearTo: number
+  newYearTo: number,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
-    const source = await prisma.vehicleVariant.findUniqueOrThrow({ where: { id: variantId } });
+    const source = await prisma.vehicleVariant.findUniqueOrThrow({
+      where: { id: variantId },
+    });
 
     if (newYearTo <= source.yearTo) {
-      return { success: false, error: "New year to must be greater than current year to" };
+      return {
+        success: false,
+        error: 'New year to must be greater than current year to',
+      };
     }
 
-    const overlap = await checkOverlap(source.modelId, source.yearFrom, newYearTo, variantId);
+    const overlap = await checkOverlap(
+      source.modelId,
+      source.yearFrom,
+      newYearTo,
+      variantId,
+    );
     if (overlap) {
       return {
         success: false,
@@ -453,7 +480,7 @@ export async function advanceYearToAction(
       if (oldSlug !== newSlug) {
         await tx.variantSlugRedirect.create({
           data: {
-            entityType: "VehicleVariant",
+            entityType: 'VehicleVariant',
             entityId: variantId,
             modelId: source.modelId,
             fromSlug: oldSlug,
@@ -463,9 +490,9 @@ export async function advanceYearToAction(
       }
       await tx.auditLog.create({
         data: {
-          entityType: "VehicleVariant",
+          entityType: 'VehicleVariant',
           entityId: variantId,
-          action: "UPDATE",
+          action: 'UPDATE',
           changedBy: user.id,
           changes: {
             yearTo: { from: source.yearTo, to: newYearTo },
@@ -475,25 +502,30 @@ export async function advanceYearToAction(
       });
     });
 
-    revalidatePath("/admin/catalogue/vehicles");
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: null };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to advance year to";
+    const msg = e instanceof Error ? e.message : 'Failed to advance year to';
     return { success: false, error: msg };
   }
 }
 
 export async function closeCurrentProductionAction(
-  variantId: string
+  variantId: string,
 ): Promise<ActionResult> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
-    const source = await prisma.vehicleVariant.findUniqueOrThrow({ where: { id: variantId } });
+    const source = await prisma.vehicleVariant.findUniqueOrThrow({
+      where: { id: variantId },
+    });
 
     if (!source.isCurrentProduction) {
-      return { success: false, error: "Variant is not marked as current production" };
+      return {
+        success: false,
+        error: 'Variant is not marked as current production',
+      };
     }
 
     const currentYear = new Date().getFullYear();
@@ -504,12 +536,16 @@ export async function closeCurrentProductionAction(
     await prisma.$transaction(async (tx) => {
       await tx.vehicleVariant.update({
         where: { id: variantId },
-        data: { isCurrentProduction: false, yearTo: currentYear, slug: newSlug },
+        data: {
+          isCurrentProduction: false,
+          yearTo: currentYear,
+          slug: newSlug,
+        },
       });
       if (oldSlug !== newSlug) {
         await tx.variantSlugRedirect.create({
           data: {
-            entityType: "VehicleVariant",
+            entityType: 'VehicleVariant',
             entityId: variantId,
             modelId: source.modelId,
             fromSlug: oldSlug,
@@ -519,9 +555,9 @@ export async function closeCurrentProductionAction(
       }
       await tx.auditLog.create({
         data: {
-          entityType: "VehicleVariant",
+          entityType: 'VehicleVariant',
           entityId: variantId,
-          action: "UPDATE",
+          action: 'UPDATE',
           changedBy: user.id,
           changes: {
             isCurrentProduction: { from: true, to: false },
@@ -532,10 +568,11 @@ export async function closeCurrentProductionAction(
       });
     });
 
-    revalidatePath("/admin/catalogue/vehicles");
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: null };
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "Failed to close current production";
+    const msg =
+      e instanceof Error ? e.message : 'Failed to close current production';
     return { success: false, error: msg };
   }
 }
@@ -544,10 +581,10 @@ export async function getVariantOverlapAction(
   modelId: string,
   yearFrom: number,
   yearTo: number,
-  excludeId?: string
+  excludeId?: string,
 ): Promise<ActionResult<{ yearFrom: number; yearTo: number } | null>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
   const overlap = await checkOverlap(modelId, yearFrom, yearTo, excludeId);
   return { success: true, data: overlap };
 }

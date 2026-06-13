@@ -15,7 +15,7 @@ export function AdminShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-tb-neutral-50">
+    <div className="bg-tb-neutral-50 flex h-screen overflow-hidden">
       <AdminSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

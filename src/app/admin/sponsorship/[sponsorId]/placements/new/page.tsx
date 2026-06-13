@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   getSponsorByIdAction,
   listCategoryOptionsAction,
   listAccessoryOptionsAction,
-} from "@/modules/sponsorship/actions/sponsor-admin.actions";
-import { PlacementForm } from "./_components/PlacementForm";
+} from '@/modules/sponsorship/actions/sponsor-admin.actions';
+import { PlacementForm } from './_components/PlacementForm';
 
 export default async function NewPlacementPage({
   params,

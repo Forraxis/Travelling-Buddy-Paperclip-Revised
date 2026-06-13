@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   getAccessoryProfileData,
   getAllActiveAccessorySlugsForSSG,
-} from "@/modules/catalogue/queries/accessory-profile.queries";
+} from '@/modules/catalogue/queries/accessory-profile.queries';
 import type {
   AccessoryProfileData,
   AccessoryFitmentRow,
-} from "@/modules/catalogue/queries/accessory-profile.queries";
+} from '@/modules/catalogue/queries/accessory-profile.queries';
 
 export const revalidate = 86400;
 
@@ -32,11 +32,16 @@ export async function generateStaticParams(): Promise<PageParams[]> {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatMountingLocation(loc: string): string {
-  return loc.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return loc
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function uniqueMountingLocations(fitments: AccessoryFitmentRow[]): string[] {
-  return [...new Set(fitments.map((f) => f.mountingLocation))].map(formatMountingLocation);
+  return [...new Set(fitments.map((f) => f.mountingLocation))].map(
+    formatMountingLocation,
+  );
 }
 
 function representativeWeight(fitments: AccessoryFitmentRow[]): number | null {
@@ -65,17 +70,21 @@ function priceRangeLabel(data: AccessoryProfileData): string | null {
   return `Up to ${currencyCode} ${priceMax!.toFixed(0)}`;
 }
 
-function vehicleProfileUrl(v: AccessoryFitmentRow["vehicleVariant"]): string {
-  if (!v) return "#";
+function vehicleProfileUrl(v: AccessoryFitmentRow['vehicleVariant']): string {
+  if (!v) return '#';
   return `/vehicles/${v.model.make.slug}/${v.model.slug}/${v.slug}/`;
 }
 
-function caravanProfileUrl(c: AccessoryFitmentRow["caravanVariant"]): string {
-  if (!c) return "#";
+function caravanProfileUrl(c: AccessoryFitmentRow['caravanVariant']): string {
+  if (!c) return '#';
   return `/caravans/${c.model.make.slug}/${c.model.slug}/${c.slug}/`;
 }
 
-function yearRangeLabel(v: { yearFrom: number; yearTo: number; isCurrentProduction: boolean }): string {
+function yearRangeLabel(v: {
+  yearFrom: number;
+  yearTo: number;
+  isCurrentProduction: boolean;
+}): string {
   if (v.isCurrentProduction) return `${v.yearFrom}–present`;
   if (v.yearFrom === v.yearTo) return String(v.yearFrom);
   return `${v.yearFrom}–${v.yearTo}`;
@@ -88,23 +97,33 @@ function buildProductJsonLd(data: AccessoryProfileData): object {
   const repWeight = representativeWeight(data.fitments);
 
   return {
-    "@context": "https://schema.org",
-    "@type": "Product",
+    '@context': 'https://schema.org',
+    '@type': 'Product',
     name: `${brand.name} ${accessory.name}`,
-    brand: { "@type": "Brand", name: brand.name },
+    brand: { '@type': 'Brand', name: brand.name },
     category: category.name,
     ...(accessory.description ? { description: accessory.description } : {}),
     ...(accessory.imageUrls.length > 0 ? { image: accessory.imageUrls } : {}),
     ...(repWeight != null
-      ? { weight: { "@type": "QuantitativeValue", value: repWeight, unitCode: "KGM" } }
+      ? {
+          weight: {
+            '@type': 'QuantitativeValue',
+            value: repWeight,
+            unitCode: 'KGM',
+          },
+        }
       : {}),
     ...(accessory.priceMin != null || accessory.priceMax != null
       ? {
           offers: {
-            "@type": "AggregateOffer",
+            '@type': 'AggregateOffer',
             priceCurrency: accessory.currencyCode,
-            ...(accessory.priceMin != null ? { lowPrice: accessory.priceMin } : {}),
-            ...(accessory.priceMax != null ? { highPrice: accessory.priceMax } : {}),
+            ...(accessory.priceMin != null
+              ? { lowPrice: accessory.priceMin }
+              : {}),
+            ...(accessory.priceMax != null
+              ? { highPrice: accessory.priceMax }
+              : {}),
           },
         }
       : {}),
@@ -116,7 +135,7 @@ function buildProductJsonLd(data: AccessoryProfileData): object {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { brand, accessory } = await params;
   const data = await getAccessoryProfileData(brand, accessory);
-  if (!data) return { title: "Not Found" };
+  if (!data) return { title: 'Not Found' };
 
   const title = `${data.brand.name} ${data.accessory.name} — Weight, Fitment & Specs`;
   const fitmentCount = data.fitments.length;
@@ -125,11 +144,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = [
     `${data.brand.name} ${data.accessory.name} specifications`,
     weightLabel ? `— weighs ${weightLabel}` : null,
-    fitmentCount > 0 ? `— fits ${fitmentCount} vehicle/caravan configuration${fitmentCount !== 1 ? "s" : ""}` : null,
+    fitmentCount > 0
+      ? `— fits ${fitmentCount} vehicle/caravan configuration${fitmentCount !== 1 ? 's' : ''}`
+      : null,
     `Australian market data.`,
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   const canonicalUrl = `/accessories/${brand}/${accessory}/`;
 
@@ -157,14 +178,17 @@ function FitmentList({ fitments }: { fitments: AccessoryFitmentRow[] }) {
     <div className="space-y-5">
       {vehicleFitments.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h3 className="mb-2 text-sm font-semibold tracking-wide text-gray-500 uppercase">
             Vehicles ({vehicleFitments.length})
           </h3>
           <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
             {vehicleFitments.map((f) => {
               const v = f.vehicleVariant!;
               return (
-                <li key={f.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                <li
+                  key={f.id}
+                  className="flex items-center justify-between px-4 py-3 text-sm"
+                >
                   <Link
                     href={vehicleProfileUrl(v)}
                     className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
@@ -173,8 +197,10 @@ function FitmentList({ fitments }: { fitments: AccessoryFitmentRow[] }) {
                   </Link>
                   <span className="ml-4 shrink-0 text-gray-500">
                     {yearRangeLabel(v)} · {f.installedWeightKg.toFixed(1)} kg
-                    {f.confidence !== "VERIFIED" && (
-                      <span className="ml-1 text-xs text-gray-400">({f.confidence.toLowerCase()})</span>
+                    {f.confidence !== 'VERIFIED' && (
+                      <span className="ml-1 text-xs text-gray-400">
+                        ({f.confidence.toLowerCase()})
+                      </span>
                     )}
                   </span>
                 </li>
@@ -186,14 +212,17 @@ function FitmentList({ fitments }: { fitments: AccessoryFitmentRow[] }) {
 
       {caravanFitments.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <h3 className="mb-2 text-sm font-semibold tracking-wide text-gray-500 uppercase">
             Caravans ({caravanFitments.length})
           </h3>
           <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
             {caravanFitments.map((f) => {
               const c = f.caravanVariant!;
               return (
-                <li key={f.id} className="flex items-center justify-between px-4 py-3 text-sm">
+                <li
+                  key={f.id}
+                  className="flex items-center justify-between px-4 py-3 text-sm"
+                >
                   <Link
                     href={caravanProfileUrl(c)}
                     className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
@@ -202,8 +231,10 @@ function FitmentList({ fitments }: { fitments: AccessoryFitmentRow[] }) {
                   </Link>
                   <span className="ml-4 shrink-0 text-gray-500">
                     {yearRangeLabel(c)} · {f.installedWeightKg.toFixed(1)} kg
-                    {f.confidence !== "VERIFIED" && (
-                      <span className="ml-1 text-xs text-gray-400">({f.confidence.toLowerCase()})</span>
+                    {f.confidence !== 'VERIFIED' && (
+                      <span className="ml-1 text-xs text-gray-400">
+                        ({f.confidence.toLowerCase()})
+                      </span>
                     )}
                   </span>
                 </li>
@@ -223,7 +254,13 @@ export default async function AccessoryProfilePage({ params }: Props) {
   const data = await getAccessoryProfileData(brand, accessory);
   if (!data) notFound();
 
-  const { accessory: acc, brand: brandData, category, fitments, relatedAccessories } = data;
+  const {
+    accessory: acc,
+    brand: brandData,
+    category,
+    fitments,
+    relatedAccessories,
+  } = data;
 
   const canonicalUrl = `/accessories/${brand}/${accessory}/`;
   const productJsonLd = buildProductJsonLd(data);
@@ -243,10 +280,18 @@ export default async function AccessoryProfilePage({ params }: Props) {
 
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
         {/* Breadcrumbs */}
-        <nav className="mb-6 flex items-center gap-1 text-sm text-gray-500" aria-label="Breadcrumb">
-          <Link href="/accessories/" className="hover:text-blue-700">Accessories</Link>
+        <nav
+          className="mb-6 flex items-center gap-1 text-sm text-gray-500"
+          aria-label="Breadcrumb"
+        >
+          <Link href="/accessories/" className="hover:text-blue-700">
+            Accessories
+          </Link>
           <span>/</span>
-          <Link href={`/accessories/${category.slug}/`} className="hover:text-blue-700">
+          <Link
+            href={`/accessories/${category.slug}/`}
+            className="hover:text-blue-700"
+          >
             {category.name}
           </Link>
           <span>/</span>
@@ -259,7 +304,9 @@ export default async function AccessoryProfilePage({ params }: Props) {
         </h1>
 
         {acc.description && (
-          <p className="mt-4 text-base leading-relaxed text-gray-600">{acc.description}</p>
+          <p className="mt-4 text-base leading-relaxed text-gray-600">
+            {acc.description}
+          </p>
         )}
 
         <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -279,7 +326,7 @@ export default async function AccessoryProfilePage({ params }: Props) {
           <div className="space-y-4">
             {/* Spec table */}
             <div className="rounded-xl border border-gray-200 bg-gray-50">
-              <h2 className="border-b border-gray-200 px-5 py-3 text-sm font-semibold uppercase tracking-wide text-gray-600">
+              <h2 className="border-b border-gray-200 px-5 py-3 text-sm font-semibold tracking-wide text-gray-600 uppercase">
                 Specifications
               </h2>
               <dl className="divide-y divide-gray-100">
@@ -309,7 +356,9 @@ export default async function AccessoryProfilePage({ params }: Props) {
                 {mountingLocations.length > 0 && (
                   <div className="flex items-start justify-between px-5 py-3 text-sm">
                     <dt className="font-medium text-gray-700">Mounting</dt>
-                    <dd className="text-right text-gray-900">{mountingLocations.join(", ")}</dd>
+                    <dd className="text-right text-gray-900">
+                      {mountingLocations.join(', ')}
+                    </dd>
                   </div>
                 )}
                 <div className="flex items-center justify-between px-5 py-3 text-sm">
@@ -326,7 +375,8 @@ export default async function AccessoryProfilePage({ params }: Props) {
                   Sponsored — partner link
                 </p>
                 <p className="mt-0.5 text-xs text-amber-700">
-                  We may receive a commission if you purchase through this link at no extra cost to you.
+                  We may receive a commission if you purchase through this link
+                  at no extra cost to you.
                 </p>
                 <a
                   href={acc.affiliateUrl}
@@ -355,8 +405,8 @@ export default async function AccessoryProfilePage({ params }: Props) {
             Check your towing compliance
           </p>
           <p className="mt-1 text-xs text-blue-700">
-            Use the TravellingBuddy calculator to see how the{" "}
-            {brandData.name} {acc.name} affects your rig&apos;s GVM, GCM, and tow capacity.
+            Use the TravellingBuddy calculator to see how the {brandData.name}{' '}
+            {acc.name} affects your rig&apos;s GVM, GCM, and tow capacity.
           </p>
           <Link
             href="/calculator/"

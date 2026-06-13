@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { processPhoto, uploadPhoto } from "@/lib/client/photo-processing";
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { processPhoto, uploadPhoto } from '@/lib/client/photo-processing';
 
 interface DuplicateMatch {
   id: string;
   name: string;
-  kind: "canonical" | "community";
+  kind: 'canonical' | 'community';
   url: string;
 }
 
-type Step = "photo" | "form" | "confirm" | "success" | "duplicate" | "signup";
+type Step = 'photo' | 'form' | 'confirm' | 'success' | 'duplicate' | 'signup';
 
 interface FormValues {
   makeId: string;
@@ -37,30 +37,39 @@ interface OcrResult {
   confidence: number;
 }
 
-const BODY_TYPES = ["Dual-cab ute", "Wagon", "SUV", "Troopcarrier", "Van", "Coupe", "Sedan", "Other"];
-const DRIVETRAINS = ["4WD", "AWD", "FWD", "RWD"];
-const TRANSMISSIONS = ["Automatic", "Manual", "CVT"];
-const FUEL_TYPES = ["Petrol", "Diesel", "Hybrid", "Electric", "LPG", "Other"];
+const BODY_TYPES = [
+  'Dual-cab ute',
+  'Wagon',
+  'SUV',
+  'Troopcarrier',
+  'Van',
+  'Coupe',
+  'Sedan',
+  'Other',
+];
+const DRIVETRAINS = ['4WD', 'AWD', 'FWD', 'RWD'];
+const TRANSMISSIONS = ['Automatic', 'Manual', 'CVT'];
+const FUEL_TYPES = ['Petrol', 'Diesel', 'Hybrid', 'Electric', 'LPG', 'Other'];
 
-const DRAFT_KEY = "vehicle_submission_draft";
+const DRAFT_KEY = 'vehicle_submission_draft';
 
 const EMPTY_FORM: FormValues = {
-  makeId: "",
-  newMakeName: "",
-  modelId: "",
-  newModelName: "",
+  makeId: '',
+  newMakeName: '',
+  modelId: '',
+  newModelName: '',
   year: String(new Date().getFullYear()),
-  variantName: "",
-  bodyType: "",
-  drivetrain: "",
-  transmission: "",
-  fuelType: "",
-  gvmKg: "",
-  gcmKg: "",
-  wheelbaseMm: "",
-  totalLengthMm: "",
-  fuelTankLitres: "",
-  notes: "",
+  variantName: '',
+  bodyType: '',
+  drivetrain: '',
+  transmission: '',
+  fuelType: '',
+  gvmKg: '',
+  gcmKg: '',
+  wheelbaseMm: '',
+  totalLengthMm: '',
+  fuelTankLitres: '',
+  notes: '',
 };
 
 function saveDraft(form: FormValues) {
@@ -91,7 +100,7 @@ interface Props {
 
 export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>(initialValues ? "form" : "photo");
+  const [step, setStep] = useState<Step>(initialValues ? 'form' : 'photo');
   const [platePhotoFile, setPlatePhotoFile] = useState<File | null>(null);
   const [platePreview, setPlatePreview] = useState<string | null>(null);
   const [platePhotoKey, setPlatePhotoKey] = useState<string | null>(null);
@@ -101,7 +110,9 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
   const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [duplicateInfo, setDuplicateInfo] = useState<{ existingId: string } | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    existingId: string;
+  } | null>(null);
   // Mid-flow duplicate detection state
   const [dupWarning, setDupWarning] = useState<DuplicateMatch[] | null>(null);
   const [dupSuspected, setDupSuspected] = useState(false);
@@ -109,7 +120,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormValues>(
-    initialValues ? { ...EMPTY_FORM, ...initialValues } : EMPTY_FORM
+    initialValues ? { ...EMPTY_FORM, ...initialValues } : EMPTY_FORM,
   );
 
   // Restore draft for anonymous users on mount (skip if pre-filling from rejected submission)
@@ -142,14 +153,17 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
     dupCheckTimerRef.current = setTimeout(async () => {
       try {
         const params = new URLSearchParams({
-          type: "vehicle",
+          type: 'vehicle',
           makeName,
           modelName,
           year: String(year),
         });
         const res = await fetch(`/api/submissions/check-duplicate?${params}`);
         if (!res.ok) return;
-        const data = await res.json() as { hasDuplicate: boolean; matches: DuplicateMatch[] };
+        const data = (await res.json()) as {
+          hasDuplicate: boolean;
+          matches: DuplicateMatch[];
+        };
         setDupWarning(data.hasDuplicate ? data.matches : null);
         if (!data.hasDuplicate) setDupSuspected(false);
       } catch {
@@ -165,7 +179,9 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
   const field = (key: keyof FormValues) => ({
     value: form[key],
     onChange: (
-      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >,
     ) => setForm((f) => ({ ...f, [key]: e.target.value })),
   });
 
@@ -177,7 +193,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
       setPlatePhotoFile(processed.file);
       setPlatePreview(processed.previewUrl);
     } catch {
-      setError("Could not process photo.");
+      setError('Could not process photo.');
     } finally {
       setUploading(false);
     }
@@ -187,20 +203,28 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
     setOcrRunning(true);
     try {
       const fd = new FormData();
-      fd.append("image", file);
-      const res = await fetch("/api/ocr/compliance-plate", { method: "POST", body: fd });
+      fd.append('image', file);
+      const res = await fetch('/api/ocr/compliance-plate', {
+        method: 'POST',
+        body: fd,
+      });
       if (!res.ok) return;
       const data = (await res.json()) as OcrResult;
       setOcrResult(data);
       // Pre-fill form fields from OCR — only overwrite if field is currently empty
       setForm((f) => ({
         ...f,
-        gvmKg: f.gvmKg || (data.extracted.gvmKg ? String(data.extracted.gvmKg) : f.gvmKg),
-        gcmKg: f.gcmKg || (data.extracted.gcmKg ? String(data.extracted.gcmKg) : f.gcmKg),
+        gvmKg:
+          f.gvmKg ||
+          (data.extracted.gvmKg ? String(data.extracted.gvmKg) : f.gvmKg),
+        gcmKg:
+          f.gcmKg ||
+          (data.extracted.gcmKg ? String(data.extracted.gcmKg) : f.gcmKg),
         newMakeName: f.newMakeName || data.extracted.make || f.newMakeName,
-        year: f.year === String(new Date().getFullYear()) && data.extracted.year
-          ? String(data.extracted.year)
-          : f.year,
+        year:
+          f.year === String(new Date().getFullYear()) && data.extracted.year
+            ? String(data.extracted.year)
+            : f.year,
       }));
     } catch {
       // OCR failure is non-fatal — user fills in manually
@@ -211,7 +235,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
 
   const handlePhotoUpload = useCallback(async () => {
     if (!platePhotoFile) {
-      setStep("form");
+      setStep('form');
       return;
     }
     setUploading(true);
@@ -223,9 +247,9 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
       ]);
       setPlatePhotoKey(uploadResult.key);
       setPlatePhotoUrl(uploadResult.url);
-      setStep("form");
+      setStep('form');
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed.");
+      setError(e instanceof Error ? e.message : 'Upload failed.');
     } finally {
       setUploading(false);
     }
@@ -236,20 +260,20 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
       // Anonymous users must sign up first; save draft then redirect
       if (!isAuthenticated) {
         saveDraft(form);
-        setStep("signup");
+        setStep('signup');
         return;
       }
 
       setSubmitting(true);
       setError(null);
       try {
-        const res = await fetch("/api/submissions/vehicles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api/submissions/vehicles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            makeId: form.makeId || "new",
+            makeId: form.makeId || 'new',
             newMakeName: form.newMakeName || undefined,
-            modelId: form.modelId || "new",
+            modelId: form.modelId || 'new',
             newModelName: form.newModelName || undefined,
             year: parseInt(form.year, 10),
             variantName: form.variantName,
@@ -259,9 +283,15 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
             fuelType: form.fuelType,
             gvmKg: form.gvmKg ? parseInt(form.gvmKg, 10) : undefined,
             gcmKg: form.gcmKg ? parseInt(form.gcmKg, 10) : undefined,
-            wheelbaseMm: form.wheelbaseMm ? parseFloat(form.wheelbaseMm) : undefined,
-            totalLengthMm: form.totalLengthMm ? parseFloat(form.totalLengthMm) : undefined,
-            fuelTankLitres: form.fuelTankLitres ? parseFloat(form.fuelTankLitres) : undefined,
+            wheelbaseMm: form.wheelbaseMm
+              ? parseFloat(form.wheelbaseMm)
+              : undefined,
+            totalLengthMm: form.totalLengthMm
+              ? parseFloat(form.totalLengthMm)
+              : undefined,
+            fuelTankLitres: form.fuelTankLitres
+              ? parseFloat(form.fuelTankLitres)
+              : undefined,
             notes: form.notes || undefined,
             compliancePlatePhotoUrl: platePhotoUrl || undefined,
             compliancePlatePhotoKey: platePhotoKey || undefined,
@@ -273,45 +303,59 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
         if (res.status === 409) {
           const body = await res.json();
           setDuplicateInfo({ existingId: body.existingId });
-          setStep("duplicate");
+          setStep('duplicate');
           return;
         }
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          setError((body as { error?: string }).error ?? "Submission failed.");
+          setError((body as { error?: string }).error ?? 'Submission failed.');
           return;
         }
 
         clearDraft();
-        setStep("success");
+        setStep('success');
       } finally {
         setSubmitting(false);
       }
     },
-    [form, isAuthenticated, platePhotoKey, platePhotoUrl]
+    [form, isAuthenticated, platePhotoKey, platePhotoUrl],
   );
 
   // ── Sign-up gate (anonymous users) ────────────────────────────────────
 
-  if (step === "signup") {
+  if (step === 'signup') {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-tb-primary/10">
-          <svg className="h-6 w-6 text-tb-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+      <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+        <div className="bg-tb-primary/10 mx-auto flex h-12 w-12 items-center justify-center rounded-full">
+          <svg
+            className="text-tb-primary h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
         </div>
         <div className="text-center">
-          <p className="font-semibold text-gray-900">Create a free account to submit</p>
+          <p className="font-semibold text-gray-900">
+            Create a free account to submit
+          </p>
           <p className="mt-2 text-sm text-gray-500">
-            Your progress is saved. Sign up to submit your vehicle and track its review status. Your vehicle will be immediately available in your own calculations.
+            Your progress is saved. Sign up to submit your vehicle and track its
+            review status. Your vehicle will be immediately available in your
+            own calculations.
           </p>
         </div>
         <div className="flex flex-col gap-2">
           <a
             href={`/auth/signup?callbackUrl=/submit/vehicle&reason=submit`}
-            className="w-full rounded-lg bg-tb-primary px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-tb-primary-dark"
+            className="bg-tb-primary hover:bg-tb-primary-dark w-full rounded-lg px-4 py-2.5 text-center text-sm font-medium text-white"
           >
             Create account &amp; submit
           </a>
@@ -323,7 +367,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
           </a>
           <button
             type="button"
-            onClick={() => setStep("confirm")}
+            onClick={() => setStep('confirm')}
             className="text-xs text-gray-400 underline-offset-2 hover:underline"
           >
             Back to review
@@ -335,24 +379,35 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
 
   // ── Success ────────────────────────────────────────────────────────────
 
-  if (step === "success") {
+  if (step === 'success') {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm text-center space-y-4">
+      <div className="space-y-4 rounded-xl bg-white p-6 text-center shadow-sm">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-50">
-          <svg className="h-6 w-6 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          <svg
+            className="h-6 w-6 text-green-600"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
           </svg>
         </div>
         <div>
-          <p className="font-semibold text-gray-900">Vehicle submitted for review</p>
+          <p className="font-semibold text-gray-900">
+            Vehicle submitted for review
+          </p>
           <p className="mt-1 text-sm text-gray-500">
-            You can use this vehicle in your own calculations now. It will appear in community search after a moderator approves it.
+            You can use this vehicle in your own calculations now. It will
+            appear in community search after a moderator approves it.
           </p>
         </div>
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => router.push("/account/submissions?submitted=1")}
+            onClick={() => router.push('/account/submissions?submitted=1')}
             className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
           >
             View my submissions
@@ -360,7 +415,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
           <button
             type="button"
             onClick={() => router.back()}
-            className="w-full rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark"
+            className="bg-tb-primary hover:bg-tb-primary-dark w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white"
           >
             Back to calculator
           </button>
@@ -371,21 +426,26 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
 
   // ── Duplicate ──────────────────────────────────────────────────────────
 
-  if (step === "duplicate") {
+  if (step === 'duplicate') {
     return (
-      <div className="rounded-xl bg-white p-6 shadow-sm space-y-4">
-        <h2 className="font-semibold text-gray-900">Possible duplicate found</h2>
+      <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm">
+        <h2 className="font-semibold text-gray-900">
+          Possible duplicate found
+        </h2>
         <p className="text-sm text-gray-600">
-          We may already have this vehicle variant in the catalogue or pending review. Is yours different?
+          We may already have this vehicle variant in the catalogue or pending
+          review. Is yours different?
         </p>
         <div className="flex flex-col gap-2">
           <button
             type="button"
             onClick={() => handleSubmit(true)}
             disabled={submitting}
-            className="w-full rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+            className="bg-tb-primary hover:bg-tb-primary-dark w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {submitting ? "Submitting…" : "Yes, mine is different — submit anyway"}
+            {submitting
+              ? 'Submitting…'
+              : 'Yes, mine is different — submit anyway'}
           </button>
           <button
             type="button"
@@ -406,25 +466,33 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
       {/* Anonymous banner */}
       {!isAuthenticated && (
         <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-700">
-          Your progress is saved locally. You&apos;ll be prompted to create a free account before submitting.
+          Your progress is saved locally. You&apos;ll be prompted to create a
+          free account before submitting.
         </div>
       )}
 
       {/* Step: photo */}
-      {step === "photo" && (
-        <div className="rounded-xl bg-white p-4 shadow-sm space-y-4">
+      {step === 'photo' && (
+        <div className="space-y-4 rounded-xl bg-white p-4 shadow-sm">
           <div>
-            <h2 className="font-medium text-gray-900">Compliance plate photo</h2>
+            <h2 className="font-medium text-gray-900">
+              Compliance plate photo
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
-              The compliance plate is usually on the driver-side door jamb or under the bonnet.
-              A photo lets us OCR the GVM, GCM and build date automatically.
+              The compliance plate is usually on the driver-side door jamb or
+              under the bonnet. A photo lets us OCR the GVM, GCM and build date
+              automatically.
             </p>
           </div>
 
           {/* Explainer image placeholder */}
           <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3 text-center">
-            <p className="text-xs text-gray-400">📋 AU compliance plate — usually silver/white label on door jamb</p>
-            <p className="text-xs text-gray-400 mt-0.5">Shows: GVM, GCM, build date, manufacturer</p>
+            <p className="text-xs text-gray-400">
+              📋 AU compliance plate — usually silver/white label on door jamb
+            </p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              Shows: GVM, GCM, build date, manufacturer
+            </p>
           </div>
 
           <input
@@ -453,9 +521,13 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                   setPlatePhotoFile(null);
                   setPlatePreview(null);
                 }}
-                className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-gray-600 hover:bg-white"
+                className="absolute top-2 right-2 rounded-full bg-white/90 p-1.5 text-gray-600 hover:bg-white"
               >
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -469,7 +541,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="flex h-36 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 text-gray-400 hover:border-tb-primary hover:text-tb-primary"
+              className="hover:border-tb-primary hover:text-tb-primary flex h-36 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-200 text-gray-400"
             >
               <svg
                 className="h-8 w-8"
@@ -489,7 +561,9 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                   d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"
                 />
               </svg>
-              <span className="text-sm">Take or choose compliance plate photo</span>
+              <span className="text-sm">
+                Take or choose compliance plate photo
+              </span>
             </button>
           )}
 
@@ -498,7 +572,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setStep("form")}
+              onClick={() => setStep('form')}
               className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
             >
               Skip photo
@@ -507,75 +581,107 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
               type="button"
               onClick={handlePhotoUpload}
               disabled={uploading || !platePhotoFile}
-              className="flex-1 rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+              className="bg-tb-primary hover:bg-tb-primary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
-              {uploading ? "Uploading & scanning…" : "Upload & continue"}
+              {uploading ? 'Uploading & scanning…' : 'Upload & continue'}
             </button>
           </div>
         </div>
       )}
 
       {/* Step: form */}
-      {step === "form" && (
-        <div className="rounded-xl bg-white p-4 shadow-sm space-y-3">
+      {step === 'form' && (
+        <div className="space-y-3 rounded-xl bg-white p-4 shadow-sm">
           {ocrRunning && (
             <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-2">
-              <svg className="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              <svg
+                className="h-4 w-4 animate-spin text-blue-500"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8H4z"
+                />
               </svg>
-              <span className="text-xs text-blue-700">Scanning compliance plate for GVM, GCM…</span>
+              <span className="text-xs text-blue-700">
+                Scanning compliance plate for GVM, GCM…
+              </span>
             </div>
           )}
 
           {ocrResult && !ocrRunning && (
             <div className="rounded-lg bg-green-50 p-2 text-xs text-green-700">
-              Plate scanned — pre-filled fields where found. Please verify all values.
+              Plate scanned — pre-filled fields where found. Please verify all
+              values.
             </div>
           )}
 
           {platePreview && (
             <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={platePreview} alt="" className="h-10 w-16 rounded object-cover" />
-              <span className="text-xs text-gray-500">Compliance plate photo attached</span>
+              <img
+                src={platePreview}
+                alt=""
+                className="h-10 w-16 rounded object-cover"
+              />
+              <span className="text-xs text-gray-500">
+                Compliance plate photo attached
+              </span>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gray-600">Make *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Make *
+              </label>
               <input
                 type="text"
                 placeholder="e.g. Toyota"
-                {...field("newMakeName")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('newMakeName')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
             <div className="col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gray-600">Model *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Model *
+              </label>
               <input
                 type="text"
                 placeholder="e.g. Hilux"
-                {...field("newModelName")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('newModelName')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Year *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Year *
+              </label>
               <input
                 type="number"
                 min="1950"
                 max={new Date().getFullYear() + 2}
-                {...field("year")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('year')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
 
             {/* Mid-flow duplicate warning */}
             {dupWarning && dupWarning.length > 0 && !dupSuspected && (
               <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
-                <p className="font-medium text-amber-800">We may already have this vehicle</p>
+                <p className="font-medium text-amber-800">
+                  We may already have this vehicle
+                </p>
                 <ul className="mt-1 space-y-0.5">
                   {dupWarning.slice(0, 3).map((m) => (
                     <li key={m.id}>
@@ -587,7 +693,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                       >
                         {m.name}
                       </a>
-                      {m.kind === "canonical" && (
+                      {m.kind === 'canonical' && (
                         <span className="ml-1 text-amber-600">(catalogue)</span>
                       )}
                     </li>
@@ -609,19 +715,23 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
             )}
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Variant name *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Variant name *
+              </label>
               <input
                 type="text"
                 placeholder="e.g. SR5 Dual Cab"
-                {...field("variantName")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('variantName')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Body type *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Body type *
+              </label>
               <select
-                {...field("bodyType")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('bodyType')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               >
                 <option value="">Select…</option>
                 {BODY_TYPES.map((b) => (
@@ -632,10 +742,12 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Drivetrain *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Drivetrain *
+              </label>
               <select
-                {...field("drivetrain")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('drivetrain')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               >
                 <option value="">Select…</option>
                 {DRIVETRAINS.map((d) => (
@@ -646,10 +758,12 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Transmission *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Transmission *
+              </label>
               <select
-                {...field("transmission")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('transmission')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               >
                 <option value="">Select…</option>
                 {TRANSMISSIONS.map((t) => (
@@ -660,10 +774,12 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Fuel type *</label>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Fuel type *
+              </label>
               <select
-                {...field("fuelType")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('fuelType')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               >
                 <option value="">Select…</option>
                 {FUEL_TYPES.map((f) => (
@@ -681,7 +797,9 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                 {form.gvmKg && ocrResult?.extracted.gvmKg ? (
                   <span className="ml-1 text-green-600">✓ from plate</span>
                 ) : (
-                  <span className="ml-1 text-gray-400">from compliance plate</span>
+                  <span className="ml-1 text-gray-400">
+                    from compliance plate
+                  </span>
                 )}
               </label>
               <input
@@ -689,8 +807,8 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                 min="1000"
                 max="30000"
                 placeholder="e.g. 3500"
-                {...field("gvmKg")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('gvmKg')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
             <div>
@@ -699,7 +817,9 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                 {form.gcmKg && ocrResult?.extracted.gcmKg ? (
                   <span className="ml-1 text-green-600">✓ from plate</span>
                 ) : (
-                  <span className="ml-1 text-gray-400">from compliance plate</span>
+                  <span className="ml-1 text-gray-400">
+                    from compliance plate
+                  </span>
                 )}
               </label>
               <input
@@ -707,8 +827,8 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                 min="1000"
                 max="50000"
                 placeholder="e.g. 6500"
-                {...field("gcmKg")}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                {...field('gcmKg')}
+                className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
               />
             </div>
           </div>
@@ -726,8 +846,8 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                   type="number"
                   min="0"
                   placeholder="2850"
-                  {...field("wheelbaseMm")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('wheelbaseMm')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div>
@@ -738,8 +858,8 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                   type="number"
                   min="0"
                   placeholder="5330"
-                  {...field("totalLengthMm")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('totalLengthMm')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
               <div>
@@ -751,8 +871,8 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                   min="0"
                   step="0.5"
                   placeholder="80"
-                  {...field("fuelTankLitres")}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+                  {...field('fuelTankLitres')}
+                  className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
                 />
               </div>
             </div>
@@ -765,28 +885,29 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
             <textarea
               rows={2}
               placeholder="Any other information…"
-              {...field("notes")}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-tb-primary focus:outline-none"
+              {...field('notes')}
+              className="focus:border-tb-primary w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
             />
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <p className="text-xs text-gray-400">
-            Fields without a value from the plate will show as &ldquo;Awaiting review&rdquo; in your calculations until approved.
+            Fields without a value from the plate will show as &ldquo;Awaiting
+            review&rdquo; in your calculations until approved.
           </p>
 
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setStep("photo")}
+              onClick={() => setStep('photo')}
               className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
             >
               Back
             </button>
             <button
               type="button"
-              onClick={() => setStep("confirm")}
+              onClick={() => setStep('confirm')}
               disabled={
                 !form.newMakeName ||
                 !form.newModelName ||
@@ -796,7 +917,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
                 !form.transmission ||
                 !form.fuelType
               }
-              className="flex-1 rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+              className="bg-tb-primary hover:bg-tb-primary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
               Review
             </button>
@@ -805,21 +926,23 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
       )}
 
       {/* Step: confirm */}
-      {step === "confirm" && (
-        <div className="rounded-xl bg-white p-4 shadow-sm space-y-4">
-          <div className="rounded-lg bg-gray-50 p-3 text-sm space-y-1">
+      {step === 'confirm' && (
+        <div className="space-y-4 rounded-xl bg-white p-4 shadow-sm">
+          <div className="space-y-1 rounded-lg bg-gray-50 p-3 text-sm">
             <p className="font-medium text-gray-800">
               {form.newMakeName} {form.newModelName} {form.variantName}
             </p>
             <p className="text-gray-500">
-              {form.year} · {form.bodyType} · {form.drivetrain} · {form.transmission} ·{" "}
-              {form.fuelType}
+              {form.year} · {form.bodyType} · {form.drivetrain} ·{' '}
+              {form.transmission} · {form.fuelType}
             </p>
             {(form.gvmKg || form.gcmKg) && (
-              <p className="text-gray-500 text-xs">
-                {form.gvmKg && `GVM: ${parseInt(form.gvmKg, 10).toLocaleString()} kg`}
-                {form.gvmKg && form.gcmKg && " · "}
-                {form.gcmKg && `GCM: ${parseInt(form.gcmKg, 10).toLocaleString()} kg`}
+              <p className="text-xs text-gray-500">
+                {form.gvmKg &&
+                  `GVM: ${parseInt(form.gvmKg, 10).toLocaleString()} kg`}
+                {form.gvmKg && form.gcmKg && ' · '}
+                {form.gcmKg &&
+                  `GCM: ${parseInt(form.gcmKg, 10).toLocaleString()} kg`}
               </p>
             )}
             {!form.gvmKg && !form.gcmKg && (
@@ -838,8 +961,9 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
           </div>
           <p className="text-xs text-gray-500">
             This vehicle will be immediately available in your own calculations
-            {isAuthenticated ? " " : " once you create an account "}
-            with an &ldquo;Awaiting review&rdquo; badge. It won&apos;t appear in other users&apos; searches until approved.
+            {isAuthenticated ? ' ' : ' once you create an account '}
+            with an &ldquo;Awaiting review&rdquo; badge. It won&apos;t appear in
+            other users&apos; searches until approved.
           </p>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -847,7 +971,7 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setStep("form")}
+              onClick={() => setStep('form')}
               className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50"
             >
               Back
@@ -856,13 +980,13 @@ export function VehicleSubmitForm({ isAuthenticated, initialValues }: Props) {
               type="button"
               onClick={() => handleSubmit(false)}
               disabled={submitting}
-              className="flex-1 rounded-lg bg-tb-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-tb-primary-dark disabled:opacity-50"
+              className="bg-tb-primary hover:bg-tb-primary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
               {submitting
-                ? "Submitting…"
+                ? 'Submitting…'
                 : isAuthenticated
-                ? "Submit vehicle"
-                : "Continue to sign up"}
+                  ? 'Submit vehicle'
+                  : 'Continue to sign up'}
             </button>
           </div>
         </div>

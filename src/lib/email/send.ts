@@ -1,11 +1,11 @@
-import { render } from "@react-email/render";
-import { resend, FROM_EMAIL } from "./client";
-import { SubmissionApprovedEmail } from "./templates/submission-approved";
-import { SubmissionRejectedEmail } from "./templates/submission-rejected";
-import { TrustTierPromotedEmail } from "./templates/trust-tier-promoted";
-import { prisma } from "@/lib/db";
+import { render } from '@react-email/render';
+import { resend, FROM_EMAIL } from './client';
+import { SubmissionApprovedEmail } from './templates/submission-approved';
+import { SubmissionRejectedEmail } from './templates/submission-rejected';
+import { TrustTierPromotedEmail } from './templates/trust-tier-promoted';
+import { prisma } from '@/lib/db';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3070";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3070';
 
 interface NotificationPreferences {
   submissionApproved?: boolean;
@@ -14,7 +14,7 @@ interface NotificationPreferences {
 }
 
 async function getUserEmailAndPrefs(
-  userId: string
+  userId: string,
 ): Promise<{ email: string | null; prefs: NotificationPreferences }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -28,7 +28,7 @@ async function getUserEmailAndPrefs(
   };
 
   const stored =
-    typeof user?.notificationPreferences === "object" &&
+    typeof user?.notificationPreferences === 'object' &&
     user.notificationPreferences !== null
       ? (user.notificationPreferences as NotificationPreferences)
       : {};
@@ -42,13 +42,13 @@ async function getUserEmailAndPrefs(
 export async function sendSubmissionApprovedEmail(
   userId: string,
   entityName: string,
-  catalogueUrl: string
+  catalogueUrl: string,
 ): Promise<void> {
   const { email, prefs } = await getUserEmailAndPrefs(userId);
   if (!email || prefs.submissionApproved === false) return;
 
   const html = await render(
-    SubmissionApprovedEmail({ entityName, catalogueUrl, siteUrl: SITE_URL })
+    SubmissionApprovedEmail({ entityName, catalogueUrl, siteUrl: SITE_URL }),
   );
 
   await resend.emails.send({
@@ -63,7 +63,7 @@ export async function sendSubmissionRejectedEmail(
   userId: string,
   entityName: string,
   submissionId: string,
-  rejectionReason: string | null
+  rejectionReason: string | null,
 ): Promise<void> {
   const { email, prefs } = await getUserEmailAndPrefs(userId);
   if (!email || prefs.submissionRejected === false) return;
@@ -75,7 +75,7 @@ export async function sendSubmissionRejectedEmail(
       rejectionReason,
       editUrl,
       siteUrl: SITE_URL,
-    })
+    }),
   );
 
   await resend.emails.send({
@@ -88,16 +88,16 @@ export async function sendSubmissionRejectedEmail(
 
 export async function sendTrustTierPromotedEmail(
   userId: string,
-  newTier: "BASIC" | "TRUSTED"
+  newTier: 'BASIC' | 'TRUSTED',
 ): Promise<void> {
   const { email, prefs } = await getUserEmailAndPrefs(userId);
   if (!email || prefs.trustTierPromoted === false) return;
 
   const html = await render(
-    TrustTierPromotedEmail({ newTier, siteUrl: SITE_URL })
+    TrustTierPromotedEmail({ newTier, siteUrl: SITE_URL }),
   );
 
-  const tierLabel = newTier === "BASIC" ? "Contributor" : "Trusted";
+  const tierLabel = newTier === 'BASIC' ? 'Contributor' : 'Trusted';
 
   await resend.emails.send({
     from: FROM_EMAIL,

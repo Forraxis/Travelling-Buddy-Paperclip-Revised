@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const tabs = [
-  { label: "My Setups", href: "/account/setups" },
-  { label: "Submissions", href: "/account/submissions" },
-  { label: "Settings", href: "/account/settings" },
+  { label: 'My Setups', href: '/account/setups' },
+  { label: 'Submissions', href: '/account/submissions' },
+  { label: 'Settings', href: '/account/settings' },
 ] as const;
 
 export default function AccountLayout({
@@ -17,12 +17,12 @@ export default function AccountLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-tb-neutral-50">
-      <header className="border-b border-tb-neutral-200 bg-white">
+    <div className="bg-tb-neutral-50 min-h-screen">
+      <header className="border-tb-neutral-200 border-b bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link
             href="/"
-            className="text-sm font-semibold text-tb-primary hover:underline"
+            className="text-tb-primary text-sm font-semibold hover:underline"
           >
             TravellingBuddy
           </Link>
@@ -36,8 +36,8 @@ export default function AccountLayout({
                 href={tab.href}
                 className={`border-b-2 pb-2 text-sm font-medium transition-colors ${
                   active
-                    ? "border-tb-primary text-tb-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    ? 'border-tb-primary text-tb-primary'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {tab.label}

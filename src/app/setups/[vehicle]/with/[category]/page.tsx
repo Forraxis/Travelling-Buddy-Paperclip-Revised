@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   getVehicleAccessoryComboPageData,
   getAllVehicleAccessoryComboPairsForSSG,
-} from "@/modules/catalogue/queries/vehicle-accessory-combo.queries";
+} from '@/modules/catalogue/queries/vehicle-accessory-combo.queries';
 import type {
   VehicleAccessoryComboPageData,
   VehicleAccessoryComboRelatedCategory,
-} from "@/modules/catalogue/queries/vehicle-accessory-combo.queries";
+} from '@/modules/catalogue/queries/vehicle-accessory-combo.queries';
 
 export const revalidate = 86400;
 
@@ -42,45 +42,45 @@ function yearRangeLabel(v: {
 }
 
 function formatKg(n: number | null): string {
-  return n != null ? `${n.toLocaleString()} kg` : "—";
+  return n != null ? `${n.toLocaleString()} kg` : '—';
 }
 
 function headroomClass(kg: number | null): string {
-  if (kg == null) return "text-gray-500";
-  if (kg < 0) return "text-red-600 font-semibold";
-  if (kg < 100) return "text-amber-600 font-semibold";
-  return "text-green-700";
+  if (kg == null) return 'text-gray-500';
+  if (kg < 0) return 'text-red-600 font-semibold';
+  if (kg < 100) return 'text-amber-600 font-semibold';
+  return 'text-green-700';
 }
 
 // ── JSON-LD ─────────────────────────────────────────────────────────────────
 
 function buildItemListJsonLd(data: VehicleAccessoryComboPageData): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
     name: `${data.vehicle.model.make.name} ${data.vehicle.model.name} ${data.vehicle.name} — ${data.category.name}`,
     itemListElement: data.accessories.map((acc, i) => ({
-      "@type": "ListItem",
+      '@type': 'ListItem',
       position: i + 1,
       item: {
-        "@type": "Product",
+        '@type': 'Product',
         name: acc.name,
-        brand: { "@type": "Brand", name: acc.brandName },
+        brand: { '@type': 'Brand', name: acc.brandName },
         url: `/accessories/${acc.brandSlug}/${acc.slug}/`,
         ...(acc.priceMin != null
           ? {
               offers: {
-                "@type": "Offer",
+                '@type': 'Offer',
                 priceCurrency: acc.currencyCode,
                 price: acc.priceMin.toFixed(2),
-                availability: "https://schema.org/InStock",
+                availability: 'https://schema.org/InStock',
               },
             }
           : {}),
         weight: {
-          "@type": "QuantitativeValue",
+          '@type': 'QuantitativeValue',
           value: acc.installedWeightKg,
-          unitCode: "KGM",
+          unitCode: 'KGM',
         },
       },
     })),
@@ -92,7 +92,7 @@ function buildItemListJsonLd(data: VehicleAccessoryComboPageData): object {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { vehicle, category } = await params;
   const data = await getVehicleAccessoryComboPageData(vehicle, category);
-  if (!data) return { title: "Not Found" };
+  if (!data) return { title: 'Not Found' };
 
   const { vehicle: v, category: cat } = data;
   const makeName = v.model.make.name;
@@ -115,7 +115,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: [{ url: "/og/vehicle-default.png", width: 1200, height: 630 }],
+      images: [{ url: '/og/vehicle-default.png', width: 1200, height: 630 }],
     },
   };
 }
@@ -135,15 +135,21 @@ function GvmContextSection({ data }: { data: VehicleAccessoryComboPageData }) {
   const { vehicle: v, gvmHeadroomBeforeKg } = data;
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-bold text-gray-900">GVM headroom before accessories</h2>
+      <h2 className="text-xl font-bold text-gray-900">
+        GVM headroom before accessories
+      </h2>
       <p className="text-sm text-gray-600">
-        Before adding any {data.category.name.toLowerCase()}, here is the{" "}
-        {v.model.make.name} {v.model.name} {v.name}&apos;s available GVM headroom — the total
-        load capacity covering passengers, fuel, accessories, water, and cargo.
+        Before adding any {data.category.name.toLowerCase()}, here is the{' '}
+        {v.model.make.name} {v.model.name} {v.name}&apos;s available GVM
+        headroom — the total load capacity covering passengers, fuel,
+        accessories, water, and cargo.
       </p>
       <div className="rounded-xl border border-gray-200 bg-white px-5 py-1">
         <SpecRow label="GVM (gross vehicle mass)" value={formatKg(v.gvmKg)} />
-        <SpecRow label="Kerb weight (unladen)" value={formatKg(v.kerbWeightKg)} />
+        <SpecRow
+          label="Kerb weight (unladen)"
+          value={formatKg(v.kerbWeightKg)}
+        />
         <SpecRow
           label="Available GVM headroom"
           value={formatKg(gvmHeadroomBeforeKg)}
@@ -151,20 +157,21 @@ function GvmContextSection({ data }: { data: VehicleAccessoryComboPageData }) {
       </div>
       {gvmHeadroomBeforeKg != null && (
         <p className="text-xs text-gray-500">
-          The{" "}
-          <strong>
-            {formatKg(gvmHeadroomBeforeKg)} headroom
-          </strong>{" "}
-          must cover all passengers, fuel, accessories, water, food, and camping gear combined.
-          The figures below show how each {data.category.name.toLowerCase()} option reduces this
-          headroom.
+          The <strong>{formatKg(gvmHeadroomBeforeKg)} headroom</strong> must
+          cover all passengers, fuel, accessories, water, food, and camping gear
+          combined. The figures below show how each{' '}
+          {data.category.name.toLowerCase()} option reduces this headroom.
         </p>
       )}
     </section>
   );
 }
 
-function AccessoryListSection({ data }: { data: VehicleAccessoryComboPageData }) {
+function AccessoryListSection({
+  data,
+}: {
+  data: VehicleAccessoryComboPageData;
+}) {
   const { vehicle: v, category, accessories } = data;
   const fullName = `${v.model.make.name} ${v.model.name} ${v.name}`;
   return (
@@ -176,15 +183,15 @@ function AccessoryListSection({ data }: { data: VehicleAccessoryComboPageData })
         <p className="text-sm text-gray-600">{category.description}</p>
       )}
       <p className="text-sm text-gray-600">
-        {accessories.length} {category.name.toLowerCase()} accessories with confirmed fitment
-        data for this variant. GVM headroom shown is the remaining available payload{" "}
-        <em>after</em> adding that single accessory.
+        {accessories.length} {category.name.toLowerCase()} accessories with
+        confirmed fitment data for this variant. GVM headroom shown is the
+        remaining available payload <em>after</em> adding that single accessory.
       </p>
       <div className="overflow-x-auto rounded-xl border border-gray-200">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              <th className="py-3 pr-4 text-left pl-4">Accessory</th>
+            <tr className="border-b border-gray-200 bg-gray-50 text-xs font-semibold tracking-wide text-gray-500 uppercase">
+              <th className="py-3 pr-4 pl-4 text-left">Accessory</th>
               <th className="py-3 pr-4 text-right">Weight</th>
               <th className="py-3 pr-4 text-right">GVM headroom after</th>
               <th className="py-3 pr-2 text-right">Links</th>
@@ -240,24 +247,35 @@ function AccessoryListSection({ data }: { data: VehicleAccessoryComboPageData })
       </div>
       {data.accessories.some((a) => a.affiliateUrl) && (
         <p className="text-xs text-gray-400">
-          ↗ Sponsored links — we may receive a commission at no extra cost to you.
+          ↗ Sponsored links — we may receive a commission at no extra cost to
+          you.
         </p>
       )}
     </section>
   );
 }
 
-function CombinedImpactSection({ data }: { data: VehicleAccessoryComboPageData }) {
-  const { category, combinedWeightKg, combinedGvmHeadroomAfterKg, gvmHeadroomBeforeKg } = data;
-  const accessorySlugs = data.accessories.map((a) => a.slug).join(",");
+function CombinedImpactSection({
+  data,
+}: {
+  data: VehicleAccessoryComboPageData;
+}) {
+  const {
+    category,
+    combinedWeightKg,
+    combinedGvmHeadroomAfterKg,
+    gvmHeadroomBeforeKg,
+  } = data;
+  const accessorySlugs = data.accessories.map((a) => a.slug).join(',');
   const calculatorHref = `/calculator?v=${data.vehicle.slug}&a=${accessorySlugs}`;
 
   return (
     <section className="space-y-3">
       <h2 className="text-xl font-bold text-gray-900">Combined impact</h2>
       <p className="text-sm text-gray-600">
-        If you added <em>all</em> listed {category.name.toLowerCase()} accessories to this
-        vehicle, here is the total weight impact and remaining GVM headroom.
+        If you added <em>all</em> listed {category.name.toLowerCase()}{' '}
+        accessories to this vehicle, here is the total weight impact and
+        remaining GVM headroom.
       </p>
       <div className="rounded-xl border border-gray-200 bg-white px-5 py-1">
         <SpecRow
@@ -275,8 +293,9 @@ function CombinedImpactSection({ data }: { data: VehicleAccessoryComboPageData }
       </div>
       {combinedGvmHeadroomAfterKg != null && combinedGvmHeadroomAfterKg < 0 && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          Adding all {data.accessories.length} accessories exceeds the stock GVM. You would
-          need either a GVM upgrade or to reduce the number of accessories fitted.
+          Adding all {data.accessories.length} accessories exceeds the stock
+          GVM. You would need either a GVM upgrade or to reduce the number of
+          accessories fitted.
         </div>
       )}
       <div className="pt-2">
@@ -314,7 +333,9 @@ function RelatedCategoriesSection({
             className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-700"
           >
             <span className="font-medium">{cat.name}</span>
-            <span className="text-xs text-gray-400">{cat.accessoryCount} options</span>
+            <span className="text-xs text-gray-400">
+              {cat.accessoryCount} options
+            </span>
           </Link>
         ))}
       </div>
@@ -337,7 +358,7 @@ export default async function VehicleAccessoryComboPage({ params }: Props) {
   const canonicalUrl = `/setups/${vehicle}/with/${category}/`;
   const vehicleProfileHref = `/vehicles/${v.model.make.slug}/${v.model.slug}/${v.slug}/`;
   const touringSetupHref = `/touring-setups/${vehicle}/`;
-  const allAccessorySlugs = data.accessories.map((a) => a.slug).join(",");
+  const allAccessorySlugs = data.accessories.map((a) => a.slug).join(',');
   const calculatorHref = `/calculator?v=${v.slug}&a=${allAccessorySlugs}`;
 
   const itemListJsonLd = buildItemListJsonLd(data);
@@ -383,9 +404,10 @@ export default async function VehicleAccessoryComboPage({ params }: Props) {
 
         {/* Lead */}
         <p className="mt-4 text-base leading-relaxed text-gray-600">
-          This page covers {cat.name.toLowerCase()} accessories with confirmed fitment data for
-          the {fullName}. For each option, you can see the installed weight and the GVM headroom
-          remaining on this vehicle after adding it.
+          This page covers {cat.name.toLowerCase()} accessories with confirmed
+          fitment data for the {fullName}. For each option, you can see the
+          installed weight and the GVM headroom remaining on this vehicle after
+          adding it.
         </p>
 
         {/* Calculator CTA */}
@@ -428,7 +450,9 @@ export default async function VehicleAccessoryComboPage({ params }: Props) {
               href={touringSetupHref}
               className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-700"
             >
-              <span className="font-medium">{fullName} — full touring setup guide</span>
+              <span className="font-medium">
+                {fullName} — full touring setup guide
+              </span>
               <span className="text-xs text-gray-400">All accessories</span>
             </Link>
           </div>
@@ -451,8 +475,9 @@ export default async function VehicleAccessoryComboPage({ params }: Props) {
             Know your exact load before you leave
           </p>
           <p className="mt-1 text-xs text-blue-700">
-            Use the TravellingBuddy calculator to verify GVM, axle limits, and towing compliance
-            with your specific accessory list, passengers, fuel, and cargo.
+            Use the TravellingBuddy calculator to verify GVM, axle limits, and
+            towing compliance with your specific accessory list, passengers,
+            fuel, and cargo.
           </p>
           <Link
             href={calculatorHref}

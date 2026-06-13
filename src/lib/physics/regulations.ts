@@ -1,4 +1,4 @@
-import type { PhysicsInput, MetricStatus } from "./types";
+import type { PhysicsInput, MetricStatus } from './types';
 
 export interface RegulationLimits {
   gvmKg: number;
@@ -19,10 +19,7 @@ export function getRegulations(input: PhysicsInput): RegulationLimits {
   const { vehicle, caravan } = input;
 
   const towBallDownloadLimitKg = caravan
-    ? Math.min(
-        vehicle.maxTowBallDownloadKg,
-        caravan.atmKg * 0.1
-      )
+    ? Math.min(vehicle.maxTowBallDownloadKg, caravan.atmKg * 0.1)
     : null;
 
   return {
@@ -44,16 +41,16 @@ export function getRegulations(input: PhysicsInput): RegulationLimits {
 export function weightStatus(
   actual: number,
   limit: number,
-  warnThreshold = 0.9
+  warnThreshold = 0.9,
 ): MetricStatus {
   const ratio = actual / limit;
-  if (ratio > 1) return "fail";
-  if (ratio > warnThreshold) return "warn";
-  return "ok";
+  if (ratio > 1) return 'fail';
+  if (ratio > warnThreshold) return 'warn';
+  return 'ok';
 }
 
 export function tbmPctStatus(pct: number): MetricStatus {
-  if (pct < 7 || pct > 12) return "fail";
-  if (pct < 9 || pct > 11) return "warn";
-  return "ok";
+  if (pct < 7 || pct > 12) return 'fail';
+  if (pct < 9 || pct > 11) return 'warn';
+  return 'ok';
 }

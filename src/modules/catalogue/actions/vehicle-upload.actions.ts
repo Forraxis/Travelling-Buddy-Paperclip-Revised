@@ -1,12 +1,12 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
-import { getAdminUser } from "@/modules/admin/lib/auth";
+import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db';
+import { getAdminUser } from '@/modules/admin/lib/auth';
 import {
   validateAndPreviewVehicleCsv,
   type VehicleCsvPreviewResult,
-} from "../csv/vehicle-csv";
+} from '../csv/vehicle-csv';
 
 type ActionResult<T = unknown> =
   | { success: true; data: T }
@@ -15,30 +15,30 @@ type ActionResult<T = unknown> =
 function slugify(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export async function previewVehicleUploadAction(
-  csvText: string
+  csvText: string,
 ): Promise<ActionResult<VehicleCsvPreviewResult>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     const preview = validateAndPreviewVehicleCsv(csvText);
     return { success: true, data: preview };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to parse CSV";
+    const msg = e instanceof Error ? e.message : 'Failed to parse CSV';
     return { success: false, error: msg };
   }
 }
 
 export async function commitVehicleUploadAction(
-  csvText: string
+  csvText: string,
 ): Promise<ActionResult<{ imported: number; skipped: number }>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   const preview = validateAndPreviewVehicleCsv(csvText);
 
@@ -50,7 +50,7 @@ export async function commitVehicleUploadAction(
   }
 
   if (preview.deduplicated.length === 0) {
-    return { success: false, error: "No valid rows to import." };
+    return { success: false, error: 'No valid rows to import.' };
   }
 
   let imported = 0;
@@ -136,9 +136,9 @@ export async function commitVehicleUploadAction(
     try {
       await prisma.auditLog.create({
         data: {
-          entityType: "VehicleBulkImport",
+          entityType: 'VehicleBulkImport',
           entityId: `bulk-${Date.now()}`,
-          action: "CREATE",
+          action: 'CREATE',
           changedBy: user.id,
           changes: {
             imported,
@@ -152,10 +152,10 @@ export async function commitVehicleUploadAction(
       // Silently ignore audit log failures (e.g. dev user not in DB)
     }
 
-    revalidatePath("/admin/catalogue/vehicles");
+    revalidatePath('/admin/catalogue/vehicles');
     return { success: true, data: { imported, skipped } };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Import failed";
+    const msg = e instanceof Error ? e.message : 'Import failed';
     return { success: false, error: msg };
   }
 }

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from '@prisma/client';
 import type {
   AccessoryCategoryDto,
   AccessoryCategoryWithChildren,
@@ -9,20 +9,20 @@ import type {
   PaginationOptions,
   PaginatedResult,
   AccessoryCategorySearchResult,
-} from "../types/accessory-category.types";
+} from '../types/accessory-category.types';
 
 const DEFAULT_PAGE_SIZE = 25;
 
 export function createCategoryService(prisma: PrismaClient) {
   async function create(
-    input: CreateAccessoryCategoryInput
+    input: CreateAccessoryCategoryInput,
   ): Promise<AccessoryCategoryDto> {
     return prisma.accessoryCategory.create({ data: input });
   }
 
   async function update(
     id: string,
-    input: UpdateAccessoryCategoryInput
+    input: UpdateAccessoryCategoryInput,
   ): Promise<AccessoryCategoryDto> {
     return prisma.accessoryCategory.update({ where: { id }, data: input });
   }
@@ -32,7 +32,7 @@ export function createCategoryService(prisma: PrismaClient) {
   }
 
   async function getById(
-    id: string
+    id: string,
   ): Promise<AccessoryCategoryWithChildren | null> {
     return prisma.accessoryCategory.findUnique({
       where: { id },
@@ -41,7 +41,7 @@ export function createCategoryService(prisma: PrismaClient) {
   }
 
   async function getBySlug(
-    slug: string
+    slug: string,
   ): Promise<AccessoryCategoryWithChildren | null> {
     return prisma.accessoryCategory.findUnique({
       where: { slug },
@@ -51,17 +51,17 @@ export function createCategoryService(prisma: PrismaClient) {
 
   async function list(
     filter: AccessoryCategoryFilter = {},
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<AccessoryCategoryDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const where: Record<string, unknown> = {};
-    if ("parentId" in filter) where.parentId = filter.parentId ?? null;
+    if ('parentId' in filter) where.parentId = filter.parentId ?? null;
 
     const items = await prisma.accessoryCategory.findMany({
       where,
       take: limit + 1,
       ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
-      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -75,7 +75,7 @@ export function createCategoryService(prisma: PrismaClient) {
   // Returns the full category tree with nested children, built in memory.
   async function listHierarchy(): Promise<AccessoryCategoryTree[]> {
     const all = await prisma.accessoryCategory.findMany({
-      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
     });
 
     const map = new Map<string, AccessoryCategoryTree>();
@@ -96,22 +96,31 @@ export function createCategoryService(prisma: PrismaClient) {
 
   async function search(
     query: string,
-    limit = 10
+    limit = 10,
   ): Promise<AccessoryCategorySearchResult> {
     const categories = await prisma.accessoryCategory.findMany({
       where: {
         OR: [
-          { name: { contains: query, mode: "insensitive" } },
-          { description: { contains: query, mode: "insensitive" } },
+          { name: { contains: query, mode: 'insensitive' } },
+          { description: { contains: query, mode: 'insensitive' } },
         ],
       },
       take: limit,
-      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ displayOrder: 'asc' }, { name: 'asc' }],
     });
     return { categories };
   }
 
-  return { create, update, remove, getById, getBySlug, list, listHierarchy, search };
+  return {
+    create,
+    update,
+    remove,
+    getById,
+    getBySlug,
+    list,
+    listHierarchy,
+    search,
+  };
 }
 
 export type CategoryService = ReturnType<typeof createCategoryService>;

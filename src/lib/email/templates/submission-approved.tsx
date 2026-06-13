@@ -9,8 +9,8 @@ import {
   Preview,
   Section,
   Text,
-} from "@react-email/components";
-import * as React from "react";
+} from '@react-email/components';
+import * as React from 'react';
 
 interface SubmissionApprovedEmailProps {
   entityName: string;
@@ -49,7 +49,7 @@ export function SubmissionApprovedEmail({
             submissions help fellow travellers make better decisions.
           </Text>
           <Text style={footer}>
-            View all your submissions at{" "}
+            View all your submissions at{' '}
             <a href={`${siteUrl}/account/submissions`}>
               {siteUrl}/account/submissions
             </a>
@@ -60,25 +60,25 @@ export function SubmissionApprovedEmail({
   );
 }
 
-const body = { backgroundColor: "#f6f9fc", fontFamily: "sans-serif" };
+const body = { backgroundColor: '#f6f9fc', fontFamily: 'sans-serif' };
 const container = {
-  backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "24px",
-  borderRadius: "8px",
-  maxWidth: "560px",
+  backgroundColor: '#ffffff',
+  margin: '0 auto',
+  padding: '24px',
+  borderRadius: '8px',
+  maxWidth: '560px',
 };
-const heading = { fontSize: "24px", fontWeight: "bold", color: "#1a1a1a" };
-const text = { fontSize: "16px", color: "#444444", lineHeight: "1.5" };
-const buttonSection = { textAlign: "center" as const, margin: "24px 0" };
+const heading = { fontSize: '24px', fontWeight: 'bold', color: '#1a1a1a' };
+const text = { fontSize: '16px', color: '#444444', lineHeight: '1.5' };
+const buttonSection = { textAlign: 'center' as const, margin: '24px 0' };
 const button = {
-  backgroundColor: "#2563eb",
-  color: "#ffffff",
-  padding: "12px 24px",
-  borderRadius: "6px",
-  fontSize: "16px",
-  fontWeight: "bold",
-  textDecoration: "none",
+  backgroundColor: '#2563eb',
+  color: '#ffffff',
+  padding: '12px 24px',
+  borderRadius: '6px',
+  fontSize: '16px',
+  fontWeight: 'bold',
+  textDecoration: 'none',
 };
-const hr = { borderColor: "#e5e7eb", margin: "24px 0" };
-const footer = { fontSize: "13px", color: "#9ca3af" };
+const hr = { borderColor: '#e5e7eb', margin: '24px 0' };
+const footer = { fontSize: '13px', color: '#9ca3af' };

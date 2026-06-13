@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { submissionVlmQueue } from "@/lib/queue";
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { submissionVlmQueue } from '@/lib/queue';
 import {
   accessoryFingerprint,
   checkAccessoryDuplicate,
-} from "@/lib/duplicate-detection";
+} from '@/lib/duplicate-detection';
 
 const AccessorySubmissionSchema = z.object({
   categoryId: z.string().min(1),
@@ -31,28 +31,28 @@ function toSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   const parsed = AccessorySubmissionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Validation failed", issues: parsed.error.issues },
-      { status: 422 }
+      { error: 'Validation failed', issues: parsed.error.issues },
+      { status: 422 },
     );
   }
 
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       select: { id: true, name: true },
     });
     if (!brand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 422 });
+      return NextResponse.json({ error: 'Brand not found' }, { status: 422 });
     }
     resolvedBrandId = brand.id;
     resolvedBrandName = brand.name;
@@ -85,8 +85,8 @@ export async function POST(request: Request) {
     resolvedBrandName = brand.name;
   } else {
     return NextResponse.json(
-      { error: "Either brandId or newBrandName is required" },
-      { status: 422 }
+      { error: 'Either brandId or newBrandName is required' },
+      { status: 422 },
     );
   }
 
@@ -105,9 +105,9 @@ export async function POST(request: Request) {
           existingId: dupCheck.existingId,
           existingName: dupCheck.existingName,
           message:
-            "We may already have this accessory. Is yours different from the existing one?",
+            'We may already have this accessory. Is yours different from the existing one?',
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
   }
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
         categoryId: data.categoryId,
         name: data.modelName,
         slug: accessorySlug,
-        status: "COMMUNITY",
+        status: 'COMMUNITY',
         imageUrls: data.productPhotoUrl ? [data.productPhotoUrl] : [],
       },
     });
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
       data: {
         submitterId: userId,
         // PENDING = queued for moderation when shared; DRAFT = private only
-        status: data.isShared ? "PENDING" : "DRAFT",
+        status: data.isShared ? 'PENDING' : 'DRAFT',
         categoryId: data.categoryId,
         brandId: resolvedBrandId,
         submittedData,
@@ -166,17 +166,21 @@ export async function POST(request: Request) {
 
   // Queue VLM similarity check (non-blocking — fires and continues)
   if (data.productPhotoKey) {
-    const job = await submissionVlmQueue.add("analyse-accessory", {
-      submissionType: "accessory",
-      submissionId: submission.id,
-      photoKeys: [data.productPhotoKey],
-      submittedData: submittedData as Record<string, unknown>,
-    }, {
-      attempts: 3,
-      backoff: { type: "exponential", delay: 10_000 },
-      removeOnComplete: { count: 200 },
-      removeOnFail: { count: 500 },
-    });
+    const job = await submissionVlmQueue.add(
+      'analyse-accessory',
+      {
+        submissionType: 'accessory',
+        submissionId: submission.id,
+        photoKeys: [data.productPhotoKey],
+        submittedData: submittedData as Record<string, unknown>,
+      },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 10_000 },
+        removeOnComplete: { count: 200 },
+        removeOnFail: { count: 500 },
+      },
+    );
 
     await prisma.accessorySubmission.update({
       where: { id: submission.id },
@@ -193,9 +197,9 @@ export async function POST(request: Request) {
       status: submission.status,
       isShared: submission.isShared,
       message: data.isShared
-        ? "Accessory submitted for moderation. You can use it in your calculation now."
-        : "Accessory saved as private. You can use it in your calculation now.",
+        ? 'Accessory submitted for moderation. You can use it in your calculation now.'
+        : 'Accessory saved as private. You can use it in your calculation now.',
     },
-    { status: 201 }
+    { status: 201 },
   );
 }

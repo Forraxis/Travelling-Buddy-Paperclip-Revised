@@ -1,13 +1,13 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
-import { getAdminUser } from "@/modules/admin/lib/auth";
+import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db';
+import { getAdminUser } from '@/modules/admin/lib/auth';
 import {
   validateAndPreviewFitmentCsv,
   type FitmentCsvPreviewResult,
   type FitmentCsvRowParsed,
-} from "../csv/fitment-csv";
+} from '../csv/fitment-csv';
 
 type ActionResult<T = unknown> =
   | { success: true; data: T }
@@ -16,15 +16,13 @@ type ActionResult<T = unknown> =
 function slugify(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 // Resolve a variant slug path "make-slug/model-slug/variant-slug" for vehicles
-async function resolveVehicleVariant(
-  slugPath: string
-): Promise<string | null> {
-  const parts = slugPath.split("/");
+async function resolveVehicleVariant(slugPath: string): Promise<string | null> {
+  const parts = slugPath.split('/');
   if (parts.length !== 3) return null;
   const [makeSlug, modelSlug, variantSlug] = parts;
   const variant = await prisma.vehicleVariant.findFirst({
@@ -38,10 +36,8 @@ async function resolveVehicleVariant(
 }
 
 // Resolve a variant slug path "make-slug/model-slug/variant-slug" for caravans
-async function resolveCaravanVariant(
-  slugPath: string
-): Promise<string | null> {
-  const parts = slugPath.split("/");
+async function resolveCaravanVariant(slugPath: string): Promise<string | null> {
+  const parts = slugPath.split('/');
   if (parts.length !== 3) return null;
   const [makeSlug, modelSlug, variantSlug] = parts;
   const variant = await prisma.caravanVariant.findFirst({
@@ -57,7 +53,7 @@ async function resolveCaravanVariant(
 // Resolve an accessory by brand-slug + accessory-slug
 async function resolveAccessory(
   brandName: string,
-  accessorySlug: string
+  accessorySlug: string,
 ): Promise<string | null> {
   const brandSlug = slugify(brandName);
   const brand = await prisma.accessoryBrand.findUnique({
@@ -74,25 +70,25 @@ async function resolveAccessory(
 }
 
 export async function previewFitmentUploadAction(
-  csvText: string
+  csvText: string,
 ): Promise<ActionResult<FitmentCsvPreviewResult>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     const preview = validateAndPreviewFitmentCsv(csvText);
     return { success: true, data: preview };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to parse CSV";
+    const msg = e instanceof Error ? e.message : 'Failed to parse CSV';
     return { success: false, error: msg };
   }
 }
 
 export async function commitFitmentUploadAction(
-  csvText: string
+  csvText: string,
 ): Promise<ActionResult<{ imported: number; skipped: number }>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   const preview = validateAndPreviewFitmentCsv(csvText);
 
@@ -103,12 +99,10 @@ export async function commitFitmentUploadAction(
     };
   }
 
-  const validRows = preview.rows
-    .filter((r) => r.parsed)
-    .map((r) => r.parsed!);
+  const validRows = preview.rows.filter((r) => r.parsed).map((r) => r.parsed!);
 
   if (validRows.length === 0) {
-    return { success: false, error: "No valid rows to import." };
+    return { success: false, error: 'No valid rows to import.' };
   }
 
   // Resolve all variant + accessory IDs before opening the transaction
@@ -129,10 +123,13 @@ export async function commitFitmentUploadAction(
     const row = result.parsed;
     const rowNum = result.rowNumber;
 
-    const accessoryId = await resolveAccessory(row.brandName, row.accessorySlug);
+    const accessoryId = await resolveAccessory(
+      row.brandName,
+      row.accessorySlug,
+    );
     if (!accessoryId) {
       resolutionErrors.push(
-        `Row ${rowNum}: accessory "${row.accessorySlug}" not found for brand "${row.brandName}"`
+        `Row ${rowNum}: accessory "${row.accessorySlug}" not found for brand "${row.brandName}"`,
       );
       continue;
     }
@@ -144,7 +141,7 @@ export async function commitFitmentUploadAction(
       vehicleVariantId = await resolveVehicleVariant(row.vehicleVariantSlug);
       if (!vehicleVariantId) {
         resolutionErrors.push(
-          `Row ${rowNum}: vehicle variant "${row.vehicleVariantSlug}" not found (expected make-slug/model-slug/variant-slug)`
+          `Row ${rowNum}: vehicle variant "${row.vehicleVariantSlug}" not found (expected make-slug/model-slug/variant-slug)`,
         );
         continue;
       }
@@ -152,19 +149,25 @@ export async function commitFitmentUploadAction(
       caravanVariantId = await resolveCaravanVariant(row.caravanVariantSlug);
       if (!caravanVariantId) {
         resolutionErrors.push(
-          `Row ${rowNum}: caravan variant "${row.caravanVariantSlug}" not found (expected make-slug/model-slug/variant-slug)`
+          `Row ${rowNum}: caravan variant "${row.caravanVariantSlug}" not found (expected make-slug/model-slug/variant-slug)`,
         );
         continue;
       }
     }
 
-    resolved.push({ row, accessoryId, vehicleVariantId, caravanVariantId, rowNumber: rowNum });
+    resolved.push({
+      row,
+      accessoryId,
+      vehicleVariantId,
+      caravanVariantId,
+      rowNumber: rowNum,
+    });
   }
 
   if (resolutionErrors.length > 0) {
     return {
       success: false,
-      error: resolutionErrors.join("\n"),
+      error: resolutionErrors.join('\n'),
     };
   }
 
@@ -173,7 +176,12 @@ export async function commitFitmentUploadAction(
 
   try {
     await prisma.$transaction(async (tx) => {
-      for (const { row, accessoryId, vehicleVariantId, caravanVariantId } of resolved) {
+      for (const {
+        row,
+        accessoryId,
+        vehicleVariantId,
+        caravanVariantId,
+      } of resolved) {
         // Check for an existing identical fitment (same accessory + same variant + mounting_location)
         const existing = await tx.accessoryFitment.findFirst({
           where: {
@@ -204,7 +212,7 @@ export async function commitFitmentUploadAction(
             endXMm: row.endXMm,
             mountOffsetXMm: row.mountOffsetXMm,
             tankContentsKgPerL: row.fluidDensity,
-            source: "OEM",
+            source: 'OEM',
           },
         });
         imported++;
@@ -215,9 +223,9 @@ export async function commitFitmentUploadAction(
     try {
       await prisma.auditLog.create({
         data: {
-          entityType: "FitmentBulkImport",
+          entityType: 'FitmentBulkImport',
           entityId: `bulk-${Date.now()}`,
-          action: "CREATE",
+          action: 'CREATE',
           changedBy: user.id,
           changes: {
             imported,
@@ -230,10 +238,10 @@ export async function commitFitmentUploadAction(
       // Silently ignore audit log failures in dev
     }
 
-    revalidatePath("/admin/catalogue/accessories");
+    revalidatePath('/admin/catalogue/accessories');
     return { success: true, data: { imported, skipped } };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Import failed";
+    const msg = e instanceof Error ? e.message : 'Import failed';
     return { success: false, error: msg };
   }
 }

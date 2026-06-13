@@ -52,7 +52,9 @@ function AccessoryPickerModal({
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
@@ -78,11 +80,14 @@ function AccessoryPickerModal({
     dragCurrentY.current = 0;
   }, [onClose]);
 
-  const handleAdd = useCallback((item: AccessoryItem) => {
-    writeRecentAccessory(item);
-    onAdd(item);
-    onClose();
-  }, [onAdd, onClose]);
+  const handleAdd = useCallback(
+    (item: AccessoryItem) => {
+      writeRecentAccessory(item);
+      onAdd(item);
+      onClose();
+    },
+    [onAdd, onClose],
+  );
 
   if (!isOpen) return null;
 
@@ -102,7 +107,7 @@ function AccessoryPickerModal({
         className={[
           'fixed z-50 flex flex-col bg-white shadow-2xl',
           'inset-x-0 bottom-0 h-[92dvh] rounded-t-2xl',
-          'lg:inset-x-auto lg:bottom-0 lg:right-0 lg:top-0 lg:h-full lg:w-[480px] lg:rounded-none',
+          'lg:inset-x-auto lg:top-0 lg:right-0 lg:bottom-0 lg:h-full lg:w-[480px] lg:rounded-none',
           'transition-transform duration-300',
         ].join(' ')}
         onTouchStart={onTouchStart}
@@ -111,26 +116,35 @@ function AccessoryPickerModal({
       >
         {/* Mobile drag handle */}
         <div className="flex flex-none items-center justify-center pt-3 lg:hidden">
-          <div className="h-1 w-10 rounded-full bg-gray-300" aria-hidden="true" />
+          <div
+            className="h-1 w-10 rounded-full bg-gray-300"
+            aria-hidden="true"
+          />
         </div>
 
         {/* Header */}
-        <div className="flex flex-none items-center justify-between border-b border-tb-neutral-200 px-4 py-3">
-          <h2 className="text-base font-semibold text-gray-900">Add accessory</h2>
+        <div className="border-tb-neutral-200 flex flex-none items-center justify-between border-b px-4 py-3">
+          <h2 className="text-base font-semibold text-gray-900">
+            Add accessory
+          </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-tb-neutral-50 hover:text-gray-700"
+            className="hover:bg-tb-neutral-50 rounded-full p-1.5 text-gray-400 transition-colors hover:text-gray-700"
             aria-label="Close picker"
           >
             <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-none border-b border-tb-neutral-200">
+        <div className="border-tb-neutral-200 flex flex-none border-b">
           {(['search', 'browse'] as const).map((tab) => (
             <button
               key={tab}
@@ -139,7 +153,7 @@ function AccessoryPickerModal({
               className={[
                 'flex-1 py-2.5 text-sm font-medium transition-colors',
                 activeTab === tab
-                  ? 'border-b-2 border-tb-primary text-tb-primary'
+                  ? 'border-tb-primary text-tb-primary border-b-2'
                   : 'text-gray-500 hover:text-gray-700',
               ].join(' ')}
             >
@@ -151,18 +165,22 @@ function AccessoryPickerModal({
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto overscroll-contain py-3">
           {activeTab === 'search' ? (
-            <AccessorySearchTab recent={recent} onAdd={handleAdd} context={context} />
+            <AccessorySearchTab
+              recent={recent}
+              onAdd={handleAdd}
+              context={context}
+            />
           ) : (
             <AccessoryBrowseTab onAdd={handleAdd} context={context} />
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex flex-none items-center justify-between border-t border-tb-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="border-tb-neutral-200 flex flex-none items-center justify-between border-t bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             onClick={() => setSubmitOpen(true)}
-            className="text-sm text-tb-primary hover:underline"
+            className="text-tb-primary text-sm hover:underline"
           >
             Can&apos;t find it? Add manually
           </button>
@@ -190,28 +208,41 @@ function AccessoryPickerModal({
   );
 }
 
-export function AccessoryPicker({ onAdd, onRemove, addedFitmentIds, context = 'vehicle' }: AccessoryPickerProps) {
+export function AccessoryPicker({
+  onAdd,
+  onRemove,
+  addedFitmentIds,
+  context = 'vehicle',
+}: AccessoryPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [addedItems, setAddedItems] = useState<AccessoryItem[]>([]);
 
   const openPicker = useCallback(() => setIsOpen(true), []);
   const closePicker = useCallback(() => setIsOpen(false), []);
 
-  const handleAdd = useCallback((item: AccessoryItem) => {
-    setAddedItems((prev) => {
-      if (prev.some((a) => a.fitmentId === item.fitmentId)) return prev;
-      return [...prev, item];
-    });
-    onAdd(item);
-  }, [onAdd]);
+  const handleAdd = useCallback(
+    (item: AccessoryItem) => {
+      setAddedItems((prev) => {
+        if (prev.some((a) => a.fitmentId === item.fitmentId)) return prev;
+        return [...prev, item];
+      });
+      onAdd(item);
+    },
+    [onAdd],
+  );
 
-  const handleRemove = useCallback((fitmentId: string) => {
-    setAddedItems((prev) => prev.filter((a) => a.fitmentId !== fitmentId));
-    onRemove(fitmentId);
-  }, [onRemove]);
+  const handleRemove = useCallback(
+    (fitmentId: string) => {
+      setAddedItems((prev) => prev.filter((a) => a.fitmentId !== fitmentId));
+      onRemove(fitmentId);
+    },
+    [onRemove],
+  );
 
   // Sync removals made externally (e.g. reset)
-  const visibleItems = addedItems.filter((a) => addedFitmentIds.includes(a.fitmentId));
+  const visibleItems = addedItems.filter((a) =>
+    addedFitmentIds.includes(a.fitmentId),
+  );
 
   return (
     <>
@@ -219,7 +250,11 @@ export function AccessoryPicker({ onAdd, onRemove, addedFitmentIds, context = 'v
       {visibleItems.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {visibleItems.map((item) => (
-            <AccessoryChip key={item.fitmentId} item={item} onRemove={handleRemove} />
+            <AccessoryChip
+              key={item.fitmentId}
+              item={item}
+              onRemove={handleRemove}
+            />
           ))}
         </div>
       )}
@@ -228,7 +263,7 @@ export function AccessoryPicker({ onAdd, onRemove, addedFitmentIds, context = 'v
       <button
         type="button"
         onClick={openPicker}
-        className="w-full rounded-md border border-dashed border-[#e5e7eb] px-3 py-2 text-sm text-tb-primary-light transition-colors hover:border-tb-primary hover:bg-tb-primary-lighter"
+        className="text-tb-primary-light hover:border-tb-primary hover:bg-tb-primary-lighter w-full rounded-md border border-dashed border-[#e5e7eb] px-3 py-2 text-sm transition-colors"
       >
         + Add accessory
       </button>

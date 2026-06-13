@@ -1,10 +1,10 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   getSponsorByIdAction,
   listPlacementsForSponsorAction,
-} from "@/modules/sponsorship/actions/sponsor-admin.actions";
-import { SponsorDetail } from "./_components/SponsorDetail";
+} from '@/modules/sponsorship/actions/sponsor-admin.actions';
+import { SponsorDetail } from './_components/SponsorDetail';
 
 export default async function SponsorDetailPage({
   params,

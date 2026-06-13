@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useCalculatorState } from '@/modules/calculator/context';
-import type { AccessoryBrowseStep, AccessoryCategory, AccessoryBrand, AccessoryItem } from '../types';
+import type {
+  AccessoryBrowseStep,
+  AccessoryCategory,
+  AccessoryBrand,
+  AccessoryItem,
+} from '../types';
 
 interface BrowseState {
   step: AccessoryBrowseStep;
@@ -12,14 +17,18 @@ interface BrowseState {
 
 export function useAccessoryBrowse(context: 'vehicle' | 'caravan' = 'vehicle') {
   const { state } = useCalculatorState();
-  const vehicleVariantId = context === 'vehicle' ? state.vehicleVariantId : undefined;
-  const caravanVariantId = context === 'caravan' ? state.caravanVariantId : undefined;
+  const vehicleVariantId =
+    context === 'vehicle' ? state.vehicleVariantId : undefined;
+  const caravanVariantId =
+    context === 'caravan' ? state.caravanVariantId : undefined;
   const [browse, setBrowse] = useState<BrowseState>({ step: 'categories' });
   const [categories, setCategories] = useState<AccessoryCategory[]>([]);
   const [brands, setBrands] = useState<AccessoryBrand[]>([]);
   const [items, setItems] = useState<AccessoryItem[]>([]);
   const [allLocations, setAllLocations] = useState<string[]>([]);
-  const [activeLocation, setActiveLocation] = useState<string | undefined>(undefined);
+  const [activeLocation, setActiveLocation] = useState<string | undefined>(
+    undefined,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,9 +46,9 @@ export function useAccessoryBrowse(context: 'vehicle' | 'caravan' = 'vehicle') {
       .then((d: { items: AccessoryCategory[] }) => setCategories(d.items))
       .catch(() => setError('Could not load categories'))
       .finally(() => setIsLoading(false));
-  // Re-fetch only when the context type changes (vehicle ID or caravan presence), not
-  // every time the specific caravan variant changes — categories are variant-agnostic.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Re-fetch only when the context type changes (vehicle ID or caravan presence), not
+    // every time the specific caravan variant changes — categories are variant-agnostic.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vehicleVariantId, !!caravanVariantId]);
 
   // Load brands when a category is selected
@@ -55,7 +64,7 @@ export function useAccessoryBrowse(context: 'vehicle' | 'caravan' = 'vehicle') {
       .then((d: { items: AccessoryBrand[] }) => setBrands(d.items))
       .catch(() => setError('Could not load brands'))
       .finally(() => setIsLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [browse.category, vehicleVariantId, !!caravanVariantId]);
 
   // Load items when a brand is selected, re-fetch when location filter changes
@@ -76,7 +85,13 @@ export function useAccessoryBrowse(context: 'vehicle' | 'caravan' = 'vehicle') {
       })
       .catch(() => setError('Could not load accessories'))
       .finally(() => setIsLoading(false));
-  }, [browse.brand, browse.category, activeLocation, vehicleVariantId, caravanVariantId]);
+  }, [
+    browse.brand,
+    browse.category,
+    activeLocation,
+    vehicleVariantId,
+    caravanVariantId,
+  ]);
 
   const selectCategory = useCallback((category: AccessoryCategory) => {
     setBrowse({ step: 'brands', category });
@@ -93,7 +108,8 @@ export function useAccessoryBrowse(context: 'vehicle' | 'caravan' = 'vehicle') {
 
   const goBack = useCallback(() => {
     setBrowse((prev) => {
-      if (prev.step === 'items') return { step: 'brands', category: prev.category };
+      if (prev.step === 'items')
+        return { step: 'brands', category: prev.category };
       if (prev.step === 'brands') return { step: 'categories' };
       return prev;
     });

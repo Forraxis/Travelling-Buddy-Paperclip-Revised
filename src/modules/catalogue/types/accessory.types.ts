@@ -1,5 +1,5 @@
-import type { AccessoryStatus, Market } from "@prisma/client";
-import type { AccessoryFitmentDto } from "./fitment.types";
+import type { AccessoryStatus, Market } from '@prisma/client';
+import type { AccessoryFitmentDto } from './fitment.types';
 
 export interface AccessoryDto {
   id: string;
@@ -75,7 +75,12 @@ export interface AccessorySearchResult {
 
 export interface AccessoryDetailDto extends AccessoryDto {
   brand: { id: string; name: string; slug: string; logoUrl: string | null };
-  category: { id: string; name: string; slug: string; description: string | null };
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+  };
   fitments: AccessoryFitmentDto[];
 }
 

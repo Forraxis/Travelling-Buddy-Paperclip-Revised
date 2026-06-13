@@ -34,7 +34,9 @@ function apiItemToPickerVariant(item: PickerSearchItem): PickerVariant {
   const yearFrom = parseInt(yearFromStr, 10) || 0;
   const yearToStr = item.yearSpan.split('–')[1];
   const isCurrentProduction = yearToStr === 'present';
-  const yearTo = isCurrentProduction ? new Date().getFullYear() : (parseInt(yearToStr, 10) || yearFrom);
+  const yearTo = isCurrentProduction
+    ? new Date().getFullYear()
+    : parseInt(yearToStr, 10) || yearFrom;
 
   return {
     id: item.id,
@@ -93,7 +95,10 @@ export function useSearch(config: PickerConfig, limit = 15) {
         const url = `${config.apiBase}/search?q=${encodeURIComponent(query.trim())}&limit=${limit}`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-        const data = await res.json() as { items: PickerSearchItem[]; total: number };
+        const data = (await res.json()) as {
+          items: PickerSearchItem[];
+          total: number;
+        };
         setVariants(data.items.map(apiItemToPickerVariant));
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;

@@ -1,13 +1,13 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { listRegulationSetsAction } from "@/modules/regulations/actions/regulation.actions";
-import { auth } from "@/lib/auth";
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { listRegulationSetsAction } from '@/modules/regulations/actions/regulation.actions';
+import { auth } from '@/lib/auth';
 
 export default async function RegulationsPage() {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
-    redirect("/admin");
+  if (session?.user?.role !== 'ADMIN') {
+    redirect('/admin');
   }
 
   const sets = await listRegulationSetsAction();
@@ -19,36 +19,37 @@ export default async function RegulationsPage() {
         description="Manage versioned towing regulation sets for AU federal and state/territory jurisdictions."
       />
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-tb-neutral-200 bg-white">
-        <table className="min-w-full divide-y divide-tb-neutral-200">
+      <div className="border-tb-neutral-200 mt-6 overflow-hidden rounded-lg border bg-white">
+        <table className="divide-tb-neutral-200 min-w-full divide-y">
           <thead className="bg-tb-neutral-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-tb-neutral-500">
+              <th className="text-tb-neutral-500 px-4 py-3 text-left text-xs font-medium tracking-wide uppercase">
                 Name
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-tb-neutral-500">
+              <th className="text-tb-neutral-500 px-4 py-3 text-left text-xs font-medium tracking-wide uppercase">
                 Code
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-tb-neutral-500">
+              <th className="text-tb-neutral-500 px-4 py-3 text-left text-xs font-medium tracking-wide uppercase">
                 Market
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-tb-neutral-500">
+              <th className="text-tb-neutral-500 px-4 py-3 text-left text-xs font-medium tracking-wide uppercase">
                 Current Version
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-tb-neutral-500">
+              <th className="text-tb-neutral-500 px-4 py-3 text-left text-xs font-medium tracking-wide uppercase">
                 Last Updated
               </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-tb-neutral-100">
+          <tbody className="divide-tb-neutral-100 divide-y">
             {sets.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}
-                  className="px-4 py-8 text-center text-sm text-tb-neutral-400"
+                  className="text-tb-neutral-400 px-4 py-8 text-center text-sm"
                 >
-                  No regulation sets found. Seed the database to populate defaults.
+                  No regulation sets found. Seed the database to populate
+                  defaults.
                 </td>
               </tr>
             ) : (
@@ -57,29 +58,34 @@ export default async function RegulationsPage() {
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">
                     {s.name}
                   </td>
-                  <td className="px-4 py-3 text-sm font-mono text-tb-neutral-600">
+                  <td className="text-tb-neutral-600 px-4 py-3 font-mono text-sm">
                     {s.code}
                   </td>
-                  <td className="px-4 py-3 text-sm text-tb-neutral-600">
+                  <td className="text-tb-neutral-600 px-4 py-3 text-sm">
                     {s.market}
                   </td>
-                  <td className="px-4 py-3 text-sm text-tb-neutral-600">
-                    {s.currentVersionNumber != null && s.currentVersionNumber > 0 ? (
+                  <td className="text-tb-neutral-600 px-4 py-3 text-sm">
+                    {s.currentVersionNumber != null &&
+                    s.currentVersionNumber > 0 ? (
                       <span>
                         v{s.currentVersionNumber}
                         {s.currentVersionDate && (
-                          <span className="ml-1 text-tb-neutral-400">
-                            &mdash;{" "}
-                            {new Date(s.currentVersionDate).toLocaleDateString("en-AU")}
+                          <span className="text-tb-neutral-400 ml-1">
+                            &mdash;{' '}
+                            {new Date(s.currentVersionDate).toLocaleDateString(
+                              'en-AU',
+                            )}
                           </span>
                         )}
                       </span>
                     ) : (
-                      <span className="italic text-tb-neutral-400">No versions yet</span>
+                      <span className="text-tb-neutral-400 italic">
+                        No versions yet
+                      </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-tb-neutral-500">
-                    {new Date(s.lastUpdatedAt).toLocaleDateString("en-AU")}
+                  <td className="text-tb-neutral-500 px-4 py-3 text-sm">
+                    {new Date(s.lastUpdatedAt).toLocaleDateString('en-AU')}
                   </td>
                   <td className="px-4 py-3 text-right text-sm">
                     <Link

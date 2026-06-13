@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { AccessoryUploadClient } from "./AccessoryUploadClient";
+import Link from 'next/link';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { AccessoryUploadClient } from './AccessoryUploadClient';
 
 export default function AccessoryUploadPage() {
   return (
@@ -11,7 +11,7 @@ export default function AccessoryUploadPage() {
         actions={
           <Link
             href="/admin/catalogue/accessories"
-            className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
           >
             ← Back to accessories
           </Link>

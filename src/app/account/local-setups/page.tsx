@@ -1,9 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { listLocalSetups, deleteLocalSetup, type LocalSetup } from "@/lib/local-setups";
-import { stateToParams } from "@/modules/calculator/url-params";
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  listLocalSetups,
+  deleteLocalSetup,
+  type LocalSetup,
+} from '@/lib/local-setups';
+import { stateToParams } from '@/modules/calculator/url-params';
 
 export default function LocalSetupsPage() {
   const [setups, setSetups] = useState<LocalSetup[]>([]);
@@ -24,32 +28,35 @@ export default function LocalSetupsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-tb-neutral-900">
+      <h1 className="text-tb-neutral-900 mb-6 text-2xl font-bold">
         Saved Setups (This Device)
       </h1>
 
       {setups.length === 0 ? (
-        <p className="text-sm text-tb-neutral-500">
+        <p className="text-tb-neutral-500 text-sm">
           No setups saved on this device yet. Use the calculator and tap
           &ldquo;Save Setup&rdquo; to store a configuration locally.
         </p>
       ) : (
-        <ul className="divide-y divide-tb-neutral-200 rounded-lg border border-tb-neutral-200 bg-white">
+        <ul className="divide-tb-neutral-200 border-tb-neutral-200 divide-y rounded-lg border bg-white">
           {setups.map((setup) => (
-            <li key={setup.id} className="flex items-center justify-between px-4 py-3">
+            <li
+              key={setup.id}
+              className="flex items-center justify-between px-4 py-3"
+            >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-tb-neutral-900">
+                <p className="text-tb-neutral-900 truncate text-sm font-medium">
                   {setup.name}
                 </p>
-                <p className="text-xs text-tb-neutral-500">
-                  {setup.rigIdentifier} &middot; Last edited{" "}
+                <p className="text-tb-neutral-500 text-xs">
+                  {setup.rigIdentifier} &middot; Last edited{' '}
                   {new Date(setup.lastEditedAt).toLocaleDateString()}
                 </p>
               </div>
               <div className="ml-4 flex items-center gap-2">
                 <Link
                   href={buildCalculatorUrl(setup)}
-                  className="rounded-md bg-tb-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-tb-primary/90"
+                  className="bg-tb-primary hover:bg-tb-primary/90 rounded-md px-3 py-1.5 text-xs font-medium text-white"
                 >
                   Open
                 </Link>
@@ -68,7 +75,7 @@ export default function LocalSetupsPage() {
       <div className="mt-6">
         <Link
           href="/auth/signup"
-          className="text-sm font-medium text-tb-primary hover:underline"
+          className="text-tb-primary text-sm font-medium hover:underline"
         >
           Create an account to sync your setups across devices &rarr;
         </Link>

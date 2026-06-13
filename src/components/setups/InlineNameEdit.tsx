@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useRef, useState } from "react";
+import { useRef, useState } from 'react';
 
 interface InlineNameEditProps {
   setupId: string;
@@ -43,11 +43,11 @@ export function InlineNameEdit({
     setSaving(true);
     try {
       const res = await fetch(`/api/setups/${setupId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmed }),
       });
-      if (!res.ok) throw new Error("Failed to rename setup");
+      if (!res.ok) throw new Error('Failed to rename setup');
       setName(trimmed);
       onRename?.(trimmed);
     } catch {
@@ -60,10 +60,10 @@ export function InlineNameEdit({
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       e.preventDefault();
       save();
-    } else if (e.key === "Escape") {
+    } else if (e.key === 'Escape') {
       e.preventDefault();
       revert();
     }
@@ -81,7 +81,7 @@ export function InlineNameEdit({
         disabled={saving}
         className={
           className ??
-          "min-w-0 flex-1 rounded border border-blue-400 px-1 py-0.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+          'min-w-0 flex-1 rounded border border-blue-400 px-1 py-0.5 text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none'
         }
       />
     );
@@ -94,7 +94,7 @@ export function InlineNameEdit({
       title="Click to rename"
       className={
         className ??
-        "group flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left text-sm font-semibold hover:bg-gray-100"
+        'group flex min-w-0 items-center gap-1 rounded px-1 py-0.5 text-left text-sm font-semibold hover:bg-gray-100'
       }
     >
       <span className="truncate">{name}</span>

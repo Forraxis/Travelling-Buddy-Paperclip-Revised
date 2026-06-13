@@ -1,9 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { FormField, inputClassName } from "@/modules/admin/components/FormField";
-import { saveTrustTierConfigAction } from "@/modules/admin/actions/trust-tier-config.actions";
-import type { TrustTierConfig } from "@/modules/admin/actions/trust-tier-config.actions";
+import { useState, useTransition } from 'react';
+import {
+  FormField,
+  inputClassName,
+} from '@/modules/admin/components/FormField';
+import { saveTrustTierConfigAction } from '@/modules/admin/actions/trust-tier-config.actions';
+import type { TrustTierConfig } from '@/modules/admin/actions/trust-tier-config.actions';
 
 interface Props {
   initial: TrustTierConfig;
@@ -15,30 +18,32 @@ const FIELD_META: {
   hint: string;
 }[] = [
   {
-    key: "contributorApprovedCount",
-    label: "Approved submissions to reach Contributor",
-    hint: "Minimum approved submissions for NEW → BASIC tier promotion",
+    key: 'contributorApprovedCount',
+    label: 'Approved submissions to reach Contributor',
+    hint: 'Minimum approved submissions for NEW → BASIC tier promotion',
   },
   {
-    key: "trustedApprovedCount",
-    label: "Approved submissions to reach Trusted",
-    hint: "Minimum approved submissions for BASIC → TRUSTED tier promotion",
+    key: 'trustedApprovedCount',
+    label: 'Approved submissions to reach Trusted',
+    hint: 'Minimum approved submissions for BASIC → TRUSTED tier promotion',
   },
   {
-    key: "trustedMinAccountAgeDays",
-    label: "Minimum account age (days) for Trusted",
-    hint: "Account must be at least this many days old for TRUSTED promotion",
+    key: 'trustedMinAccountAgeDays',
+    label: 'Minimum account age (days) for Trusted',
+    hint: 'Account must be at least this many days old for TRUSTED promotion',
   },
   {
-    key: "trustedRejectionWindowDays",
-    label: "Rejection-free window (days) for Trusted",
-    hint: "No rejections allowed in this many days before TRUSTED promotion",
+    key: 'trustedRejectionWindowDays',
+    label: 'Rejection-free window (days) for Trusted',
+    hint: 'No rejections allowed in this many days before TRUSTED promotion',
   },
 ];
 
 export function TrustTierConfigForm({ initial }: Props) {
   const [values, setValues] = useState<TrustTierConfig>(initial);
-  const [errors, setErrors] = useState<Partial<Record<keyof TrustTierConfig, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof TrustTierConfig, string>>
+  >({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -57,7 +62,7 @@ export function TrustTierConfigForm({ initial }: Props) {
     for (const { key } of FIELD_META) {
       const v = values[key];
       if (!Number.isInteger(v) || v <= 0) {
-        next[key] = "Must be a positive integer";
+        next[key] = 'Must be a positive integer';
       }
     }
     setErrors(next);
@@ -76,7 +81,7 @@ export function TrustTierConfigForm({ initial }: Props) {
       if (result.success) {
         setSuccess(true);
       } else {
-        setGlobalError(result.error ?? "Failed to save");
+        setGlobalError(result.error ?? 'Failed to save');
       }
     });
   }
@@ -95,7 +100,7 @@ export function TrustTierConfigForm({ initial }: Props) {
             onChange={(e) => handleChange(key, e.target.value)}
             className={inputClassName}
           />
-          <p className="mt-1 text-xs text-tb-neutral-500">{hint}</p>
+          <p className="text-tb-neutral-500 mt-1 text-xs">{hint}</p>
         </FormField>
       ))}
 
@@ -115,9 +120,9 @@ export function TrustTierConfigForm({ initial }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-lg bg-tb-primary px-5 py-2 text-sm font-medium text-white hover:bg-tb-primary-light disabled:opacity-50"
+          className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-5 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
-          {isPending ? "Saving…" : "Save changes"}
+          {isPending ? 'Saving…' : 'Save changes'}
         </button>
       </div>
     </form>

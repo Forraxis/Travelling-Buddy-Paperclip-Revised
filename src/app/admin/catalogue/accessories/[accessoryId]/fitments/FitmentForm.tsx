@@ -1,50 +1,84 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
 import {
   FormField,
   inputClassName,
   selectClassName,
-} from "@/modules/admin/components/FormField";
+} from '@/modules/admin/components/FormField';
 import {
   createFitmentAction,
   updateFitmentAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import type { AccessoryFitmentDto } from "@/modules/catalogue/types/fitment.types";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import type { AccessoryFitmentDto } from '@/modules/catalogue/types/fitment.types';
 import type {
   MountingLocation,
   PositionType,
   FitmentConfidence,
   FitmentSource,
-} from "@prisma/client";
+} from '@prisma/client';
 
 const ALL_MOUNTING_LOCATIONS: MountingLocation[] = [
-  "CHASSIS_FRONT", "CHASSIS_MID", "CHASSIS_REAR",
-  "BULL_BAR", "ROOF_RACK", "ROOF_RAILS",
-  "TRAY_FLOOR", "TRAY_SIDE_LEFT", "TRAY_SIDE_RIGHT",
-  "TRAY_HEADBOARD", "TRAY_TAILGATE",
-  "CANOPY_EXTERIOR", "CANOPY_INTERIOR", "CANOPY_ROOF",
-  "TUB_INTERIOR", "TUB_EXTERIOR",
-  "BONNET", "REAR_BAR", "TOW_HITCH",
-  "WHEEL_ARCH_LEFT", "WHEEL_ARCH_RIGHT",
-  "UNDERBODY_FRONT", "UNDERBODY_MID", "UNDERBODY_REAR",
-  "A_PILLAR_LEFT", "A_PILLAR_RIGHT",
-  "WINDSCREEN", "CABIN_INTERIOR", "CABIN_ROOF", "CABIN_DASH",
-  "DOOR_LEFT", "DOOR_RIGHT", "SNORKEL",
-  "FENDER_LEFT", "FENDER_RIGHT",
-  "CARAVAN_DRAWBAR", "CARAVAN_A_FRAME",
-  "CARAVAN_CHASSIS_FRONT", "CARAVAN_CHASSIS_MID", "CARAVAN_CHASSIS_REAR",
-  "CARAVAN_UNDERBODY", "CARAVAN_ROOF",
-  "CARAVAN_WALL_LEFT", "CARAVAN_WALL_RIGHT",
-  "CARAVAN_WALL_FRONT", "CARAVAN_WALL_REAR",
-  "CARAVAN_BUMPER_BAR", "CARAVAN_BOOT", "CARAVAN_TUNNEL_BOOT",
-  "CARAVAN_TOOLBAR_EXTERNAL", "CARAVAN_TOOLBAR_INTERNAL",
+  'CHASSIS_FRONT',
+  'CHASSIS_MID',
+  'CHASSIS_REAR',
+  'BULL_BAR',
+  'ROOF_RACK',
+  'ROOF_RAILS',
+  'TRAY_FLOOR',
+  'TRAY_SIDE_LEFT',
+  'TRAY_SIDE_RIGHT',
+  'TRAY_HEADBOARD',
+  'TRAY_TAILGATE',
+  'CANOPY_EXTERIOR',
+  'CANOPY_INTERIOR',
+  'CANOPY_ROOF',
+  'TUB_INTERIOR',
+  'TUB_EXTERIOR',
+  'BONNET',
+  'REAR_BAR',
+  'TOW_HITCH',
+  'WHEEL_ARCH_LEFT',
+  'WHEEL_ARCH_RIGHT',
+  'UNDERBODY_FRONT',
+  'UNDERBODY_MID',
+  'UNDERBODY_REAR',
+  'A_PILLAR_LEFT',
+  'A_PILLAR_RIGHT',
+  'WINDSCREEN',
+  'CABIN_INTERIOR',
+  'CABIN_ROOF',
+  'CABIN_DASH',
+  'DOOR_LEFT',
+  'DOOR_RIGHT',
+  'SNORKEL',
+  'FENDER_LEFT',
+  'FENDER_RIGHT',
+  'CARAVAN_DRAWBAR',
+  'CARAVAN_A_FRAME',
+  'CARAVAN_CHASSIS_FRONT',
+  'CARAVAN_CHASSIS_MID',
+  'CARAVAN_CHASSIS_REAR',
+  'CARAVAN_UNDERBODY',
+  'CARAVAN_ROOF',
+  'CARAVAN_WALL_LEFT',
+  'CARAVAN_WALL_RIGHT',
+  'CARAVAN_WALL_FRONT',
+  'CARAVAN_WALL_REAR',
+  'CARAVAN_BUMPER_BAR',
+  'CARAVAN_BOOT',
+  'CARAVAN_TUNNEL_BOOT',
+  'CARAVAN_TOOLBAR_EXTERNAL',
+  'CARAVAN_TOOLBAR_INTERNAL',
 ];
 
 function locationLabel(loc: MountingLocation): string {
-  return loc.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return loc
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 interface FitmentFormProps {
@@ -53,75 +87,79 @@ interface FitmentFormProps {
   backHref: string;
 }
 
-export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps) {
+export function FitmentForm({
+  accessoryId,
+  fitment,
+  backHref,
+}: FitmentFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const isEdit = !!fitment;
 
   const [vehicleVariantId, setVehicleVariantId] = useState(
-    fitment?.vehicleVariantId ?? ""
+    fitment?.vehicleVariantId ?? '',
   );
   const [caravanVariantId, setCaravanVariantId] = useState(
-    fitment?.caravanVariantId ?? ""
+    fitment?.caravanVariantId ?? '',
   );
-  const [targetType, setTargetType] = useState<"vehicle" | "caravan">(
-    fitment?.caravanVariantId ? "caravan" : "vehicle"
+  const [targetType, setTargetType] = useState<'vehicle' | 'caravan'>(
+    fitment?.caravanVariantId ? 'caravan' : 'vehicle',
   );
 
   const [installedWeightKg, setInstalledWeightKg] = useState(
-    fitment?.installedWeightKg?.toString() ?? ""
+    fitment?.installedWeightKg?.toString() ?? '',
   );
   const [positionType, setPositionType] = useState<PositionType>(
-    fitment?.positionType ?? "FIXED"
+    fitment?.positionType ?? 'FIXED',
   );
   const [mountingLocation, setMountingLocation] = useState<MountingLocation>(
-    fitment?.mountingLocation ?? "CHASSIS_FRONT"
+    fitment?.mountingLocation ?? 'CHASSIS_FRONT',
   );
   const [providesMountingLocations, setProvidesMountingLocations] = useState<
     MountingLocation[]
   >(fitment?.providesMountingLocations ?? []);
 
-  const [cogXMm, setCogXMm] = useState(fitment?.cogXMm?.toString() ?? "");
-  const [startXMm, setStartXMm] = useState(fitment?.startXMm?.toString() ?? "");
-  const [endXMm, setEndXMm] = useState(fitment?.endXMm?.toString() ?? "");
+  const [cogXMm, setCogXMm] = useState(fitment?.cogXMm?.toString() ?? '');
+  const [startXMm, setStartXMm] = useState(fitment?.startXMm?.toString() ?? '');
+  const [endXMm, setEndXMm] = useState(fitment?.endXMm?.toString() ?? '');
   const [mountOffsetXMm, setMountOffsetXMm] = useState(
-    fitment?.mountOffsetXMm?.toString() ?? ""
+    fitment?.mountOffsetXMm?.toString() ?? '',
   );
 
   const [tankCapacityL, setTankCapacityL] = useState(
-    fitment?.tankCapacityL?.toString() ?? ""
+    fitment?.tankCapacityL?.toString() ?? '',
   );
   const [tankContentsKgPerL, setTankContentsKgPerL] = useState(
-    fitment?.tankContentsKgPerL?.toString() ?? ""
+    fitment?.tankContentsKgPerL?.toString() ?? '',
   );
 
   const [confidence, setConfidence] = useState<FitmentConfidence>(
-    fitment?.confidence ?? "ESTIMATED"
+    fitment?.confidence ?? 'ESTIMATED',
   );
   const [source, setSource] = useState<FitmentSource>(
-    fitment?.source ?? "USER_SUBMITTED"
+    fitment?.source ?? 'USER_SUBMITTED',
   );
-  const [notes, setNotes] = useState(fitment?.notes ?? "");
+  const [notes, setNotes] = useState(fitment?.notes ?? '');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   function toggleProvides(loc: MountingLocation) {
     setProvidesMountingLocations((prev) =>
-      prev.includes(loc) ? prev.filter((l) => l !== loc) : [...prev, loc]
+      prev.includes(loc) ? prev.filter((l) => l !== loc) : [...prev, loc],
     );
   }
 
   function validate(): boolean {
     const errs: Record<string, string> = {};
     if (!installedWeightKg || isNaN(parseFloat(installedWeightKg))) {
-      errs.installedWeightKg = "Weight is required";
+      errs.installedWeightKg = 'Weight is required';
     }
-    if (targetType === "vehicle" && !vehicleVariantId.trim()) {
-      errs.vehicleVariantId = "Vehicle variant ID is required";
+    if (targetType === 'vehicle' && !vehicleVariantId.trim()) {
+      errs.vehicleVariantId = 'Vehicle variant ID is required';
     }
-    if (targetType === "caravan" && !caravanVariantId.trim()) {
-      errs.caravanVariantId = "Caravan variant ID is required";
+    if (targetType === 'caravan' && !caravanVariantId.trim()) {
+      errs.caravanVariantId = 'Caravan variant ID is required';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -134,8 +172,10 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
 
     const input = {
       accessoryId,
-      vehicleVariantId: targetType === "vehicle" ? vehicleVariantId.trim() : null,
-      caravanVariantId: targetType === "caravan" ? caravanVariantId.trim() : null,
+      vehicleVariantId:
+        targetType === 'vehicle' ? vehicleVariantId.trim() : null,
+      caravanVariantId:
+        targetType === 'caravan' ? caravanVariantId.trim() : null,
       installedWeightKg: parseFloat(installedWeightKg),
       positionType,
       mountingLocation,
@@ -145,7 +185,9 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
       endXMm: endXMm ? parseInt(endXMm) : null,
       mountOffsetXMm: mountOffsetXMm ? parseInt(mountOffsetXMm) : null,
       tankCapacityL: tankCapacityL ? parseFloat(tankCapacityL) : null,
-      tankContentsKgPerL: tankContentsKgPerL ? parseFloat(tankContentsKgPerL) : null,
+      tankContentsKgPerL: tankContentsKgPerL
+        ? parseFloat(tankContentsKgPerL)
+        : null,
       confidence,
       source,
       notes: notes.trim() || null,
@@ -158,27 +200,27 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
     setSubmitting(false);
 
     if (result.success) {
-      toast(isEdit ? "Fitment updated" : "Fitment created");
+      toast(isEdit ? 'Fitment updated' : 'Fitment created');
       router.push(backHref);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Target */}
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Target Vehicle or Caravan
         </h3>
         <div className="mb-4 flex gap-4">
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="radio"
-              checked={targetType === "vehicle"}
-              onChange={() => setTargetType("vehicle")}
+              checked={targetType === 'vehicle'}
+              onChange={() => setTargetType('vehicle')}
               className="h-4 w-4"
             />
             Vehicle variant
@@ -186,14 +228,14 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="radio"
-              checked={targetType === "caravan"}
-              onChange={() => setTargetType("caravan")}
+              checked={targetType === 'caravan'}
+              onChange={() => setTargetType('caravan')}
               className="h-4 w-4"
             />
             Caravan variant
           </label>
         </div>
-        {targetType === "vehicle" ? (
+        {targetType === 'vehicle' ? (
           <FormField
             label="Vehicle Variant ID"
             name="vehicleVariantId"
@@ -227,8 +269,8 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
       </div>
 
       {/* Mounting location */}
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Mounting Location
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -266,12 +308,12 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
           <p className="mb-2 text-sm font-medium text-gray-700">
             Provides Mounting Locations
           </p>
-          <div className="max-h-48 overflow-y-auto rounded-lg border border-tb-neutral-200 p-3">
+          <div className="border-tb-neutral-200 max-h-48 overflow-y-auto rounded-lg border p-3">
             <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
               {ALL_MOUNTING_LOCATIONS.map((loc) => (
                 <label
                   key={loc}
-                  className="flex items-center gap-1.5 rounded px-1 py-0.5 text-xs text-gray-700 hover:bg-tb-neutral-50"
+                  className="hover:bg-tb-neutral-50 flex items-center gap-1.5 rounded px-1 py-0.5 text-xs text-gray-700"
                 >
                   <input
                     type="checkbox"
@@ -287,15 +329,15 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
           {providesMountingLocations.length > 0 && (
             <p className="mt-1 text-xs text-gray-500">
               {providesMountingLocations.length} location
-              {providesMountingLocations.length !== 1 ? "s" : ""} unlocked
+              {providesMountingLocations.length !== 1 ? 's' : ''} unlocked
             </p>
           )}
         </div>
       </div>
 
       {/* Position data */}
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Position &amp; Weight
         </h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -359,8 +401,8 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
       </div>
 
       {/* Tank / fluid */}
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Tank / Fluid (optional)
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -392,8 +434,8 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
       </div>
 
       {/* Metadata */}
-      <div className="rounded-lg border border-tb-neutral-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-500 uppercase">
           Data Quality
         </h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -401,7 +443,9 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
             <select
               id="confidence"
               value={confidence}
-              onChange={(e) => setConfidence(e.target.value as FitmentConfidence)}
+              onChange={(e) =>
+                setConfidence(e.target.value as FitmentConfidence)
+              }
               className={selectClassName}
             >
               <option value="VERIFIED">Verified</option>
@@ -442,20 +486,20 @@ export function FitmentForm({ accessoryId, fitment, backHref }: FitmentFormProps
         <button
           type="button"
           onClick={() => router.push(backHref)}
-          className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+          className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-lg bg-tb-primary px-6 py-2 text-sm font-medium text-white hover:bg-tb-primary-light disabled:opacity-50"
+          className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-6 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {submitting
-            ? "Saving..."
+            ? 'Saving...'
             : isEdit
-              ? "Update Fitment"
-              : "Create Fitment"}
+              ? 'Update Fitment'
+              : 'Create Fitment'}
         </button>
       </div>
     </form>

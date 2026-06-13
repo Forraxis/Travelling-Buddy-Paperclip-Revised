@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { getModelBySlugAction } from "@/modules/catalogue/actions/vehicle.actions";
-import { VehicleVariantsList } from "./VehicleVariantsList";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getModelBySlugAction } from '@/modules/catalogue/actions/vehicle.actions';
+import { VehicleVariantsList } from './VehicleVariantsList';
 
 export default async function ModelVariantsPage({
   params,
@@ -16,7 +16,7 @@ export default async function ModelVariantsPage({
     <div>
       <AdminPageHeader
         title={`${model.make.name} ${model.name}`}
-        description={`Variants — ${model.variants.length} variant${model.variants.length !== 1 ? "s" : ""}`}
+        description={`Variants — ${model.variants.length} variant${model.variants.length !== 1 ? 's' : ''}`}
       />
       <VehicleVariantsList model={model} makeSlug={makeSlug} />
     </div>

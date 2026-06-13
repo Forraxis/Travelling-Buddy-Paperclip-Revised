@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useTransition } from 'react';
 
 interface FilterOption {
   label: string;
@@ -29,7 +29,7 @@ export function FilterChips({ paramName, options, label }: FilterChipsProps) {
     } else {
       params.set(paramName, value);
     }
-    params.delete("cursor");
+    params.delete('cursor');
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`);
     });
@@ -46,8 +46,8 @@ export function FilterChips({ paramName, options, label }: FilterChipsProps) {
             onClick={() => toggle(opt.value)}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               active
-                ? "bg-tb-primary text-white"
-                : "border border-tb-neutral-200 bg-white text-gray-600 hover:border-tb-primary-light hover:text-tb-primary"
+                ? 'bg-tb-primary text-white'
+                : 'border-tb-neutral-200 hover:border-tb-primary-light hover:text-tb-primary border bg-white text-gray-600'
             }`}
           >
             {opt.label}

@@ -3,7 +3,7 @@ import type {
   PositionType,
   FitmentConfidence,
   FitmentSource,
-} from "@prisma/client";
+} from '@prisma/client';
 
 export interface AccessoryFitmentDto {
   id: string;

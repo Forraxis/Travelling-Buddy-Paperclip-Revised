@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 export interface CatalogueStatus {
   vehicleSnapshotOnly: boolean;
@@ -8,7 +8,9 @@ export interface CatalogueStatus {
   removedFitments: string[];
   vehicleSnapshot: Record<string, unknown> | null;
   caravanSnapshot: Record<string, unknown> | null;
-  accessorySnapshot: Array<Record<string, unknown> & { fitmentId: string; target: string }> | null;
+  accessorySnapshot: Array<
+    Record<string, unknown> & { fitmentId: string; target: string }
+  > | null;
   savedAt: string | null;
 }
 
@@ -22,7 +24,9 @@ const EMPTY: CatalogueStatus = {
   savedAt: null,
 };
 
-export function useSetupCatalogueStatus(setupId: string | null): CatalogueStatus {
+export function useSetupCatalogueStatus(
+  setupId: string | null,
+): CatalogueStatus {
   const [status, setStatus] = useState<CatalogueStatus>(EMPTY);
 
   useEffect(() => {
@@ -50,7 +54,9 @@ export function useSetupCatalogueStatus(setupId: string | null): CatalogueStatus
         if (active) setStatus(EMPTY);
       });
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [setupId]);
 
   return status;

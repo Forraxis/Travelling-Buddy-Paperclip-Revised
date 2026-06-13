@@ -1,11 +1,11 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { AdminPageHeader } from "@/modules/admin/components";
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   getAccessoryByIdAction,
   listFitmentsForAccessoryAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import { FitmentsList } from "./FitmentsList";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import { FitmentsList } from './FitmentsList';
 
 export default async function FitmentsPage({
   params,
@@ -28,13 +28,13 @@ export default async function FitmentsPage({
           <div className="flex gap-2">
             <Link
               href={`/admin/catalogue/accessories/${accessoryId}`}
-              className="rounded-lg border border-tb-neutral-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+              className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-gray-700"
             >
               ← Back to Accessory
             </Link>
             <Link
               href={`/admin/catalogue/accessories/${accessoryId}/fitments/new`}
-              className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+              className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
             >
               + Add Fitment
             </Link>

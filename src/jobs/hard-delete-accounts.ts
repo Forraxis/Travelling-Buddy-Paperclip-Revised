@@ -6,7 +6,7 @@
  * Usage:   npx tsx src/jobs/hard-delete-accounts.ts
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -39,7 +39,7 @@ async function hardDeleteAccounts() {
   }
 
   console.log(
-    `[hard-delete-accounts] Found ${candidates.length} account(s) past grace period:`
+    `[hard-delete-accounts] Found ${candidates.length} account(s) past grace period:`,
   );
 
   for (const user of candidates) {
@@ -49,19 +49,19 @@ async function hardDeleteAccounts() {
         `scheduledHardDelete=${user.scheduledHardDeleteAt?.toISOString()}, ` +
         `setups=${user._count.setups}, ` +
         `sessions=${user._count.sessions}, ` +
-        `accounts=${user._count.accounts}`
+        `accounts=${user._count.accounts}`,
     );
   }
 
   console.log(
     `[hard-delete-accounts] DRY RUN — no data was actually deleted. ` +
-      `Implement actual purge logic in Phase 16.`
+      `Implement actual purge logic in Phase 16.`,
   );
 }
 
 hardDeleteAccounts()
   .catch((err) => {
-    console.error("[hard-delete-accounts] Fatal error:", err);
+    console.error('[hard-delete-accounts] Fatal error:', err);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

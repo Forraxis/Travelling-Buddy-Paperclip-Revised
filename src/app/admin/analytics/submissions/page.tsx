@@ -1,17 +1,17 @@
-import { redirect } from "next/navigation";
-import dynamic from "next/dynamic";
-import { getAdminUser } from "@/modules/admin/lib/auth";
-import { AnalyticsTabs } from "../_components/AnalyticsTabs";
+import { redirect } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { getAdminUser } from '@/modules/admin/lib/auth';
+import { AnalyticsTabs } from '../_components/AnalyticsTabs';
 
 // recharts 3.x imports victory-vendor via wildcard exports (./d3-*) which
 // Turbopack cannot resolve at compile time, hanging the dev server. Load
 // client-side only to keep recharts out of the server compilation graph.
 const SubmissionStatsView = dynamic(
   () =>
-    import("./_components/SubmissionStatsView").then(
-      (m) => m.SubmissionStatsView
+    import('./_components/SubmissionStatsView').then(
+      (m) => m.SubmissionStatsView,
     ),
-  { ssr: false }
+  { ssr: false },
 );
 import {
   getSubmissionsOverTime,
@@ -21,9 +21,9 @@ import {
   getVlmAccuracy,
   getTrustTierDistribution,
   getTopContributors,
-} from "@/modules/admin/actions/analytics.actions";
+} from '@/modules/admin/actions/analytics.actions';
 
-export const metadata = { title: "Submission Stats — Admin" };
+export const metadata = { title: 'Submission Stats — Admin' };
 
 function parseDate(value: string | undefined, fallback: Date): Date {
   if (!value) return fallback;
@@ -37,7 +37,7 @@ export default async function SubmissionStatsPage({
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
   const user = await getAdminUser();
-  if (!user || user.role !== "ADMIN") redirect("/admin");
+  if (!user || user.role !== 'ADMIN') redirect('/admin');
 
   const params = await searchParams;
 
@@ -54,16 +54,23 @@ export default async function SubmissionStatsPage({
 
   const range = { from, to };
 
-  const [overTime, approvalRates, rejectionReasons, moderationTiming, vlmAccuracy, trustTiers, topContributors] =
-    await Promise.all([
-      getSubmissionsOverTime(range),
-      getApprovalRates(range),
-      getRejectionReasons(range),
-      getModerationTiming(range),
-      getVlmAccuracy(range),
-      getTrustTierDistribution(),
-      getTopContributors(range),
-    ]);
+  const [
+    overTime,
+    approvalRates,
+    rejectionReasons,
+    moderationTiming,
+    vlmAccuracy,
+    trustTiers,
+    topContributors,
+  ] = await Promise.all([
+    getSubmissionsOverTime(range),
+    getApprovalRates(range),
+    getRejectionReasons(range),
+    getModerationTiming(range),
+    getVlmAccuracy(range),
+    getTrustTierDistribution(),
+    getTopContributors(range),
+  ]);
 
   const fromStr = from.toISOString().slice(0, 10);
   const toStr = to.toISOString().slice(0, 10);

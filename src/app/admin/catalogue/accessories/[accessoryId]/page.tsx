@@ -1,12 +1,12 @@
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { AdminPageHeader } from "@/modules/admin/components";
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   getAccessoryByIdAction,
   listBrandsAction,
   listCategoriesAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import { AccessoryForm } from "../AccessoryForm";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import { AccessoryForm } from '../AccessoryForm';
 
 export default async function AccessoryDetailPage({
   params,
@@ -29,7 +29,7 @@ export default async function AccessoryDetailPage({
         actions={
           <Link
             href={`/admin/catalogue/accessories/${accessoryId}/fitments`}
-            className="rounded-lg border border-tb-neutral-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-gray-700"
           >
             Manage Fitments
           </Link>

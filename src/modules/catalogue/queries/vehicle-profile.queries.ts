@@ -1,6 +1,10 @@
-import { prisma } from "@/lib/db";
-import type { VehicleBodyType } from "@prisma/client";
-import type { VehicleVariantDto, VehicleMakeDto, VehicleModelDto } from "../types/vehicle.types";
+import { prisma } from '@/lib/db';
+import type { VehicleBodyType } from '@prisma/client';
+import type {
+  VehicleVariantDto,
+  VehicleMakeDto,
+  VehicleModelDto,
+} from '../types/vehicle.types';
 
 export interface AdjacentRangeLink {
   slug: string;
@@ -34,9 +38,11 @@ export interface VariantProfileData {
 export async function getVariantProfileData(
   makeSlug: string,
   modelSlug: string,
-  variantSlug: string
+  variantSlug: string,
 ): Promise<VariantProfileData | null> {
-  const make = await prisma.vehicleMake.findUnique({ where: { slug: makeSlug } });
+  const make = await prisma.vehicleMake.findUnique({
+    where: { slug: makeSlug },
+  });
   if (!make) return null;
 
   const model = await prisma.vehicleModel.findUnique({
@@ -53,15 +59,35 @@ export async function getVariantProfileData(
   const [olderRaw, newerRaw, siblingsRaw] = await Promise.all([
     // Older: same name, yearTo < this.yearFrom, take max yearTo
     prisma.vehicleVariant.findFirst({
-      where: { modelId: model.id, name: variant.name, yearTo: { lt: variant.yearFrom } },
-      orderBy: { yearTo: "desc" },
-      select: { slug: true, name: true, yearFrom: true, yearTo: true, isCurrentProduction: true },
+      where: {
+        modelId: model.id,
+        name: variant.name,
+        yearTo: { lt: variant.yearFrom },
+      },
+      orderBy: { yearTo: 'desc' },
+      select: {
+        slug: true,
+        name: true,
+        yearFrom: true,
+        yearTo: true,
+        isCurrentProduction: true,
+      },
     }),
     // Newer: same name, yearFrom > this.yearTo, take min yearFrom
     prisma.vehicleVariant.findFirst({
-      where: { modelId: model.id, name: variant.name, yearFrom: { gt: variant.yearTo } },
-      orderBy: { yearFrom: "asc" },
-      select: { slug: true, name: true, yearFrom: true, yearTo: true, isCurrentProduction: true },
+      where: {
+        modelId: model.id,
+        name: variant.name,
+        yearFrom: { gt: variant.yearTo },
+      },
+      orderBy: { yearFrom: 'asc' },
+      select: {
+        slug: true,
+        name: true,
+        yearFrom: true,
+        yearTo: true,
+        isCurrentProduction: true,
+      },
     }),
     // Siblings: different name, year range overlaps >= 1 year
     prisma.vehicleVariant.findMany({
@@ -74,14 +100,26 @@ export async function getVariantProfileData(
           { isCurrentProduction: true },
         ],
       },
-      orderBy: { yearFrom: "desc" },
+      orderBy: { yearFrom: 'desc' },
       take: 8,
-      select: { slug: true, name: true, yearFrom: true, yearTo: true, isCurrentProduction: true },
+      select: {
+        slug: true,
+        name: true,
+        yearFrom: true,
+        yearTo: true,
+        isCurrentProduction: true,
+      },
     }),
   ]);
 
   const toLink = (
-    v: { slug: string; name: string; yearFrom: number; yearTo: number; isCurrentProduction: boolean } | null
+    v: {
+      slug: string;
+      name: string;
+      yearFrom: number;
+      yearTo: number;
+      isCurrentProduction: boolean;
+    } | null,
   ): AdjacentRangeLink | null => {
     if (!v) return null;
     return { ...v, makeSlug: make.slug, modelSlug: model.slug };
@@ -91,7 +129,11 @@ export async function getVariantProfileData(
     variant,
     olderRange: toLink(olderRaw),
     newerRange: toLink(newerRaw),
-    siblings: siblingsRaw.map((s) => ({ ...s, makeSlug: make.slug, modelSlug: model.slug })),
+    siblings: siblingsRaw.map((s) => ({
+      ...s,
+      makeSlug: make.slug,
+      modelSlug: model.slug,
+    })),
   };
 }
 
@@ -99,12 +141,12 @@ export async function getAllVehicleVariantSlugsForSSG(): Promise<
   Array<{ make: string; model: string; variant: string }>
 > {
   const variants = await prisma.vehicleVariant.findMany({
-    where: { status: "CATALOGUE" },
+    where: { status: 'CATALOGUE' },
     select: {
       slug: true,
       model: { select: { slug: true, make: { select: { slug: true } } } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
   return variants.map((v) => ({
     make: v.model.make.slug,
@@ -135,9 +177,11 @@ export interface VehicleModelPageData {
 
 export async function getVehicleModelPageData(
   makeSlug: string,
-  modelSlug: string
+  modelSlug: string,
 ): Promise<VehicleModelPageData | null> {
-  const make = await prisma.vehicleMake.findUnique({ where: { slug: makeSlug } });
+  const make = await prisma.vehicleMake.findUnique({
+    where: { slug: makeSlug },
+  });
   if (!make) return null;
 
   const model = await prisma.vehicleModel.findUnique({
@@ -146,8 +190,8 @@ export async function getVehicleModelPageData(
   if (!model) return null;
 
   const variants = await prisma.vehicleVariant.findMany({
-    where: { modelId: model.id, status: "CATALOGUE" },
-    orderBy: { yearFrom: "desc" },
+    where: { modelId: model.id, status: 'CATALOGUE' },
+    orderBy: { yearFrom: 'desc' },
     select: {
       id: true,
       name: true,
@@ -163,7 +207,12 @@ export async function getVehicleModelPageData(
 
   return {
     make: { id: make.id, name: make.name, slug: make.slug },
-    model: { id: model.id, name: model.name, slug: model.slug, bodyType: model.bodyType },
+    model: {
+      id: model.id,
+      name: model.name,
+      slug: model.slug,
+      bodyType: model.bodyType,
+    },
     variants,
   };
 }
@@ -172,12 +221,12 @@ export async function getAllVehicleModelSlugsForSSG(): Promise<
   Array<{ make: string; model: string }>
 > {
   const models = await prisma.vehicleModel.findMany({
-    where: { variants: { some: { status: "CATALOGUE" } } },
+    where: { variants: { some: { status: 'CATALOGUE' } } },
     select: {
       slug: true,
       make: { select: { slug: true } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
   return models.map((m) => ({ make: m.make.slug, model: m.slug }));
 }

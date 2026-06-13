@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { withRateLimit, serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { withRateLimit, serverError } from '@/lib/api-helpers';
 
 export async function GET(request: Request) {
   const limited = withRateLimit(request);
@@ -8,8 +8,8 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const vehicleVariantId = searchParams.get("vehicleVariantId") ?? undefined;
-    const caravanVariantId = searchParams.get("caravanVariantId") ?? undefined;
+    const vehicleVariantId = searchParams.get('vehicleVariantId') ?? undefined;
+    const caravanVariantId = searchParams.get('caravanVariantId') ?? undefined;
 
     // For caravans, show all accessories that fit any caravan (variant-specific
     // weight/location is resolved at the items step, not during browse).
@@ -20,14 +20,16 @@ export async function GET(request: Request) {
         : undefined;
 
     const accessoryWhere = {
-      status: "ACTIVE" as const,
+      status: 'ACTIVE' as const,
       ...(fitmentFilter ? { fitments: { some: fitmentFilter } } : {}),
     };
 
     const categories = await prisma.accessoryCategory.findMany({
       where: { accessories: { some: accessoryWhere } },
-      orderBy: { name: "asc" },
-      include: { _count: { select: { accessories: { where: accessoryWhere } } } },
+      orderBy: { name: 'asc' },
+      include: {
+        _count: { select: { accessories: { where: accessoryWhere } } },
+      },
     });
 
     const items = categories.map((c) => ({

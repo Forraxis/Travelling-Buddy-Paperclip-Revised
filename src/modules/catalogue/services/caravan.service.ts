@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from '@prisma/client';
 import type {
   CreateCaravanMakeInput,
   UpdateCaravanMakeInput,
@@ -17,7 +17,7 @@ import type {
   PaginationOptions,
   PaginatedResult,
   CaravanSearchResult,
-} from "../types/caravan.types";
+} from '../types/caravan.types';
 
 const DEFAULT_PAGE_SIZE = 25;
 
@@ -25,14 +25,14 @@ export function createCaravanService(prisma: PrismaClient) {
   // ── Makes ──────────────────────────────────────────
 
   async function createMake(
-    input: CreateCaravanMakeInput
+    input: CreateCaravanMakeInput,
   ): Promise<CaravanMakeDto> {
     return prisma.caravanMake.create({ data: input });
   }
 
   async function updateMake(
     id: string,
-    input: UpdateCaravanMakeInput
+    input: UpdateCaravanMakeInput,
   ): Promise<CaravanMakeDto> {
     return prisma.caravanMake.update({ where: { id }, data: input });
   }
@@ -42,7 +42,7 @@ export function createCaravanService(prisma: PrismaClient) {
   }
 
   async function getMakeById(
-    id: string
+    id: string,
   ): Promise<CaravanMakeWithModels | null> {
     return prisma.caravanMake.findUnique({
       where: { id },
@@ -51,7 +51,7 @@ export function createCaravanService(prisma: PrismaClient) {
   }
 
   async function getMakeBySlug(
-    slug: string
+    slug: string,
   ): Promise<CaravanMakeWithModels | null> {
     return prisma.caravanMake.findUnique({
       where: { slug },
@@ -60,15 +60,13 @@ export function createCaravanService(prisma: PrismaClient) {
   }
 
   async function listMakes(
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<CaravanMakeDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const items = await prisma.caravanMake.findMany({
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: { name: "asc" },
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: { name: 'asc' },
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -82,14 +80,14 @@ export function createCaravanService(prisma: PrismaClient) {
   // ── Models ─────────────────────────────────────────
 
   async function createModel(
-    input: CreateCaravanModelInput
+    input: CreateCaravanModelInput,
   ): Promise<CaravanModelDto> {
     return prisma.caravanModel.create({ data: input });
   }
 
   async function updateModel(
     id: string,
-    input: UpdateCaravanModelInput
+    input: UpdateCaravanModelInput,
   ): Promise<CaravanModelDto> {
     return prisma.caravanModel.update({ where: { id }, data: input });
   }
@@ -99,7 +97,7 @@ export function createCaravanService(prisma: PrismaClient) {
   }
 
   async function getModelById(
-    id: string
+    id: string,
   ): Promise<CaravanModelWithVariants | null> {
     return prisma.caravanModel.findUnique({
       where: { id },
@@ -109,7 +107,7 @@ export function createCaravanService(prisma: PrismaClient) {
 
   async function getModelBySlug(
     makeSlug: string,
-    modelSlug: string
+    modelSlug: string,
   ): Promise<(CaravanModelWithVariants & { make: CaravanMakeDto }) | null> {
     const make = await prisma.caravanMake.findUnique({
       where: { slug: makeSlug },
@@ -123,16 +121,14 @@ export function createCaravanService(prisma: PrismaClient) {
 
   async function listModelsByMake(
     makeId: string,
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<CaravanModelDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const items = await prisma.caravanModel.findMany({
       where: { makeId },
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: { name: "asc" },
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: { name: 'asc' },
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -146,14 +142,14 @@ export function createCaravanService(prisma: PrismaClient) {
   // ── Variants ───────────────────────────────────────
 
   async function createVariant(
-    input: CreateCaravanVariantInput
+    input: CreateCaravanVariantInput,
   ): Promise<CaravanVariantDto> {
     return prisma.caravanVariant.create({ data: input });
   }
 
   async function updateVariant(
     id: string,
-    input: UpdateCaravanVariantInput
+    input: UpdateCaravanVariantInput,
   ): Promise<CaravanVariantDto> {
     return prisma.caravanVariant.update({ where: { id }, data: input });
   }
@@ -163,7 +159,7 @@ export function createCaravanService(prisma: PrismaClient) {
   }
 
   async function getVariantById(
-    id: string
+    id: string,
   ): Promise<CaravanVariantWithModel | null> {
     return prisma.caravanVariant.findUnique({
       where: { id },
@@ -173,16 +169,14 @@ export function createCaravanService(prisma: PrismaClient) {
 
   async function listVariantsByModel(
     modelId: string,
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<CaravanVariantDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const items = await prisma.caravanVariant.findMany({
       where: { modelId },
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: [{ yearFrom: "desc" }, { name: "asc" }],
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: [{ yearFrom: 'desc' }, { name: 'asc' }],
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -197,7 +191,7 @@ export function createCaravanService(prisma: PrismaClient) {
 
   async function findVariantByYear(
     modelId: string,
-    year: number
+    year: number,
   ): Promise<CaravanVariantDto[]> {
     return prisma.caravanVariant.findMany({
       where: {
@@ -205,14 +199,14 @@ export function createCaravanService(prisma: PrismaClient) {
         yearFrom: { lte: year },
         OR: [{ yearTo: { gte: year } }, { isCurrentProduction: true }],
       },
-      orderBy: { yearFrom: "desc" },
+      orderBy: { yearFrom: 'desc' },
     });
   }
 
   async function findVariantsInRange(
     modelId: string,
     yearFrom: number,
-    yearTo: number
+    yearTo: number,
   ): Promise<CaravanVariantDto[]> {
     return prisma.caravanVariant.findMany({
       where: {
@@ -220,7 +214,7 @@ export function createCaravanService(prisma: PrismaClient) {
         yearFrom: { lte: yearTo },
         OR: [{ yearTo: { gte: yearFrom } }, { isCurrentProduction: true }],
       },
-      orderBy: { yearFrom: "asc" },
+      orderBy: { yearFrom: 'asc' },
     });
   }
 
@@ -229,7 +223,7 @@ export function createCaravanService(prisma: PrismaClient) {
   async function findBySlug(
     makeSlug: string,
     modelSlug: string,
-    variantSlug: string
+    variantSlug: string,
   ): Promise<CaravanVariantWithModel | null> {
     const make = await prisma.caravanMake.findUnique({
       where: { slug: makeSlug },
@@ -251,36 +245,36 @@ export function createCaravanService(prisma: PrismaClient) {
 
   async function search(
     query: string,
-    limit = 10
+    limit = 10,
   ): Promise<CaravanSearchResult> {
     const [makes, models, variants] = await Promise.all([
       prisma.caravanMake.findMany({
-        where: { name: { contains: query, mode: "insensitive" } },
+        where: { name: { contains: query, mode: 'insensitive' } },
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: { name: 'asc' },
       }),
       prisma.caravanModel.findMany({
         where: {
           OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { make: { name: { contains: query, mode: "insensitive" } } },
+            { name: { contains: query, mode: 'insensitive' } },
+            { make: { name: { contains: query, mode: 'insensitive' } } },
           ],
         },
         include: { make: true },
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: { name: 'asc' },
       }),
       prisma.caravanVariant.findMany({
         where: {
           OR: [
-            { name: { contains: query, mode: "insensitive" } },
+            { name: { contains: query, mode: 'insensitive' } },
             {
               model: {
                 OR: [
-                  { name: { contains: query, mode: "insensitive" } },
+                  { name: { contains: query, mode: 'insensitive' } },
                   {
                     make: {
-                      name: { contains: query, mode: "insensitive" },
+                      name: { contains: query, mode: 'insensitive' },
                     },
                   },
                 ],
@@ -290,7 +284,7 @@ export function createCaravanService(prisma: PrismaClient) {
         },
         include: { model: { include: { make: true } } },
         take: limit,
-        orderBy: { name: "asc" },
+        orderBy: { name: 'asc' },
       }),
     ]);
 
@@ -301,7 +295,7 @@ export function createCaravanService(prisma: PrismaClient) {
 
   async function listVariantsFiltered(
     filter: CaravanVariantFilter,
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<CaravanVariantWithModel>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
 
@@ -322,10 +316,8 @@ export function createCaravanService(prisma: PrismaClient) {
       where,
       include: { model: { include: { make: true } } },
       take: limit + 1,
-      ...(opts.cursor
-        ? { skip: 1, cursor: { id: opts.cursor } }
-        : {}),
-      orderBy: [{ model: { make: { name: "asc" } } }, { name: "asc" }],
+      ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
+      orderBy: [{ model: { make: { name: 'asc' } } }, { name: 'asc' }],
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();

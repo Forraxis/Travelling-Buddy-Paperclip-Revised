@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { calculate } from "../engine";
-import type { PhysicsInput } from "../types";
+import { describe, it, expect } from 'vitest';
+import { calculate } from '../engine';
+import type { PhysicsInput } from '../types';
 
 // --- Shared vehicle fixtures ---
 
-const hiluxSR5: import("../types").VehicleInput = {
+const hiluxSR5: import('../types').VehicleInput = {
   gvmKg: 3200,
   gcmKg: 6000,
   kerbWeightKg: 2160,
@@ -16,10 +16,10 @@ const hiluxSR5: import("../types").VehicleInput = {
   frontOverhangMm: 900,
   rearOverhangMm: 450,
   fuelTankCapacityL: 80,
-  fuelType: "DIESEL",
+  fuelType: 'DIESEL',
 };
 
-const landcruiser79: import("../types").VehicleInput = {
+const landcruiser79: import('../types').VehicleInput = {
   gvmKg: 3300,
   gcmKg: 6500,
   kerbWeightKg: 2470,
@@ -31,27 +31,27 @@ const landcruiser79: import("../types").VehicleInput = {
   frontOverhangMm: 900,
   rearOverhangMm: 450,
   fuelTankCapacityL: 130,
-  fuelType: "DIESEL",
+  fuelType: 'DIESEL',
 };
 
-const midSizeVan: import("../types").CaravanInput = {
+const midSizeVan: import('../types').CaravanInput = {
   atmKg: 3500,
   gtmKg: 3150,
   tareKg: 2400,
   tbmKg: 350,
-  axleConfiguration: "SINGLE_AXLE",
+  axleConfiguration: 'SINGLE_AXLE',
   couplingToAxleMm: 2600,
   axleSpacingMm: null,
   freshWaterCapacityL: 120,
   greyWaterCapacityL: 90,
 };
 
-const dualAxleVan: import("../types").CaravanInput = {
+const dualAxleVan: import('../types').CaravanInput = {
   atmKg: 3500,
   gtmKg: 3200,
   tareKg: 2500,
   tbmKg: 300,
-  axleConfiguration: "DUAL_AXLE_CLOSE_COUPLED",
+  axleConfiguration: 'DUAL_AXLE_CLOSE_COUPLED',
   couplingToAxleMm: 2800,
   axleSpacingMm: 1000,
   freshWaterCapacityL: 80,
@@ -66,72 +66,126 @@ const baseInput = (overrides: Partial<PhysicsInput> = {}): PhysicsInput => ({
   fuelPercent: 100,
   freshWaterPercent: 100,
   greyWaterPercent: 0,
-  regulationSetCode: "AU_ADR",
+  regulationSetCode: 'AU_ADR',
   ...overrides,
 });
 
 // --- Scenario 1: Solo vehicle, no caravan, all within limits ---
-describe("Scenario 1: solo vehicle, typical touring load, all within limits", () => {
+describe('Scenario 1: solo vehicle, typical touring load, all within limits', () => {
   const result = calculate(
     baseInput({
       vehicleAccessories: [
-        { installedWeightKg: 15, mountingLocation: "ROOF_RACK", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 35, mountingLocation: "CANOPY_EXTERIOR", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 40, mountingLocation: "TRAY_FLOOR", fillPercent: 100, quantity: 1 },
+        {
+          installedWeightKg: 15,
+          mountingLocation: 'ROOF_RACK',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 35,
+          mountingLocation: 'CANOPY_EXTERIOR',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 40,
+          mountingLocation: 'TRAY_FLOOR',
+          fillPercent: 100,
+          quantity: 1,
+        },
       ],
       passengers: 2,
       cargoKg: 50,
-    })
+    }),
   );
 
-  it("has no caravan result", () => expect(result.caravan).toBeUndefined());
-  it("passes GVM", () => expect(result.vehicle.gvmStatus).toBe("ok"));
-  it("passes front axle", () => expect(result.vehicle.frontAxleStatus).toBe("ok"));
-  it("passes rear axle", () => expect(result.vehicle.rearAxleStatus).toBe("ok"));
-  it("overall status is pass", () => expect(result.overallStatus).toBe("pass"));
-  it("vehicle weight is under GVM", () =>
+  it('has no caravan result', () => expect(result.caravan).toBeUndefined());
+  it('passes GVM', () => expect(result.vehicle.gvmStatus).toBe('ok'));
+  it('passes front axle', () =>
+    expect(result.vehicle.frontAxleStatus).toBe('ok'));
+  it('passes rear axle', () =>
+    expect(result.vehicle.rearAxleStatus).toBe('ok'));
+  it('overall status is pass', () => expect(result.overallStatus).toBe('pass'));
+  it('vehicle weight is under GVM', () =>
     expect(result.vehicle.totalWeightKg).toBeLessThan(hiluxSR5.gvmKg));
-  it("has no GCM metrics", () => {
+  it('has no GCM metrics', () => {
     expect(result.vehicle.gcmKg).toBeUndefined();
     expect(result.vehicle.gcmStatus).toBeUndefined();
   });
 });
 
 // --- Scenario 2: Solo vehicle, GVM breach ---
-describe("Scenario 2: solo vehicle, GVM breach from heavy roof + drawers", () => {
+describe('Scenario 2: solo vehicle, GVM breach from heavy roof + drawers', () => {
   const result = calculate(
     baseInput({
       vehicleAccessories: [
-        { installedWeightKg: 90, mountingLocation: "ROOF_RACK", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 95, mountingLocation: "CANOPY_ROOF", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 120, mountingLocation: "TRAY_FLOOR", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 85, mountingLocation: "CANOPY_INTERIOR", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 60, mountingLocation: "TRAY_SIDE_LEFT", fillPercent: 100, quantity: 1 },
+        {
+          installedWeightKg: 90,
+          mountingLocation: 'ROOF_RACK',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 95,
+          mountingLocation: 'CANOPY_ROOF',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 120,
+          mountingLocation: 'TRAY_FLOOR',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 85,
+          mountingLocation: 'CANOPY_INTERIOR',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 60,
+          mountingLocation: 'TRAY_SIDE_LEFT',
+          fillPercent: 100,
+          quantity: 1,
+        },
       ],
       passengers: 4,
       cargoKg: 250,
-    })
+    }),
   );
 
-  it("GVM fails", () => expect(result.vehicle.gvmStatus).toBe("fail"));
-  it("overall status is fail", () => expect(result.overallStatus).toBe("fail"));
-  it("weight exceeds GVM limit", () =>
+  it('GVM fails', () => expect(result.vehicle.gvmStatus).toBe('fail'));
+  it('overall status is fail', () => expect(result.overallStatus).toBe('fail'));
+  it('weight exceeds GVM limit', () =>
     expect(result.vehicle.totalWeightKg).toBeGreaterThan(hiluxSR5.gvmKg));
-  it("has GVM recommendation", () =>
-    expect(result.recommendations.some((r) => r.id === "gvm-exceeded")).toBe(true));
-  it("has roof advisory for >80kg on roof mounts", () =>
-    expect(result.advisories.some((a) => a.includes("roof"))).toBe(true));
+  it('has GVM recommendation', () =>
+    expect(result.recommendations.some((r) => r.id === 'gvm-exceeded')).toBe(
+      true,
+    ));
+  it('has roof advisory for >80kg on roof mounts', () =>
+    expect(result.advisories.some((a) => a.includes('roof'))).toBe(true));
 });
 
 // --- Scenario 3: Vehicle + caravan, all pass ---
-describe("Scenario 3: LandCruiser 79 + mid-size van, conservative load", () => {
+describe('Scenario 3: LandCruiser 79 + mid-size van, conservative load', () => {
   const result = calculate(
     baseInput({
       vehicle: landcruiser79,
       caravan: midSizeVan,
       vehicleAccessories: [
-        { installedWeightKg: 25, mountingLocation: "BULL_BAR", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 40, mountingLocation: "TRAY_FLOOR", fillPercent: 100, quantity: 1 },
+        {
+          installedWeightKg: 25,
+          mountingLocation: 'BULL_BAR',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 40,
+          mountingLocation: 'TRAY_FLOOR',
+          fillPercent: 100,
+          quantity: 1,
+        },
       ],
       caravanAccessories: [],
       passengers: 1,
@@ -139,23 +193,23 @@ describe("Scenario 3: LandCruiser 79 + mid-size van, conservative load", () => {
       fuelPercent: 70,
       freshWaterPercent: 10,
       greyWaterPercent: 0,
-    })
+    }),
   );
 
-  it("has caravan result", () => expect(result.caravan).toBeDefined());
-  it("GVM does not fail (may warn from tow ball load)", () =>
-    expect(result.vehicle.gvmStatus).not.toBe("fail"));
-  it("passes ATM", () => expect(result.caravan!.atmStatus).toBe("ok"));
-  it("TBM% is in safe range", () =>
+  it('has caravan result', () => expect(result.caravan).toBeDefined());
+  it('GVM does not fail (may warn from tow ball load)', () =>
+    expect(result.vehicle.gvmStatus).not.toBe('fail'));
+  it('passes ATM', () => expect(result.caravan!.atmStatus).toBe('ok'));
+  it('TBM% is in safe range', () =>
     expect(result.vehicle.towBallPctOfAtm).toBeGreaterThan(7));
-  it("TBM% is under 12%", () =>
+  it('TBM% is under 12%', () =>
     expect(result.vehicle.towBallPctOfAtm).toBeLessThan(12));
-  it("overall status is pass or warn", () =>
-    expect(["pass", "warn"]).toContain(result.overallStatus));
+  it('overall status is pass or warn', () =>
+    expect(['pass', 'warn']).toContain(result.overallStatus));
 });
 
 // --- Scenario 4: TBM too low (tail-heavy van) ---
-describe("Scenario 4: heavy rear toolbar + bike rack drives TBM below 7%", () => {
+describe('Scenario 4: heavy rear toolbar + bike rack drives TBM below 7%', () => {
   const result = calculate(
     baseInput({
       vehicle: landcruiser79,
@@ -166,59 +220,93 @@ describe("Scenario 4: heavy rear toolbar + bike rack drives TBM below 7%", () =>
         greyWaterCapacityL: 60,
       },
       caravanAccessories: [
-        { installedWeightKg: 200, mountingLocation: "CARAVAN_TOOLBAR_EXTERNAL", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 80, mountingLocation: "CARAVAN_BUMPER_BAR", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 60, mountingLocation: "CARAVAN_CHASSIS_REAR", fillPercent: 100, quantity: 1 },
+        {
+          installedWeightKg: 200,
+          mountingLocation: 'CARAVAN_TOOLBAR_EXTERNAL',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 80,
+          mountingLocation: 'CARAVAN_BUMPER_BAR',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 60,
+          mountingLocation: 'CARAVAN_CHASSIS_REAR',
+          fillPercent: 100,
+          quantity: 1,
+        },
       ],
       freshWaterPercent: 0,
       greyWaterPercent: 100,
-    })
+    }),
   );
 
-  it("TBM% is below 9%", () =>
+  it('TBM% is below 9%', () =>
     expect(result.vehicle.towBallPctOfAtm).toBeLessThan(9));
-  it("TBM status is warn or fail", () =>
-    expect(result.vehicle.towBallPctStatus).not.toBe("ok"));
-  it("has TBM-too-low recommendation", () =>
-    expect(result.recommendations.some((r) => r.id === "tbm-too-low")).toBe(true));
-  it("TBM-too-low recommendation is warn or critical", () => {
-    const rec = result.recommendations.find((r) => r.id === "tbm-too-low");
+  it('TBM status is warn or fail', () =>
+    expect(result.vehicle.towBallPctStatus).not.toBe('ok'));
+  it('has TBM-too-low recommendation', () =>
+    expect(result.recommendations.some((r) => r.id === 'tbm-too-low')).toBe(
+      true,
+    ));
+  it('TBM-too-low recommendation is warn or critical', () => {
+    const rec = result.recommendations.find((r) => r.id === 'tbm-too-low');
     expect(rec?.severity).toMatch(/warn|critical/);
   });
 });
 
 // --- Scenario 5: TBM too high (nose-heavy van) ---
-describe("Scenario 5: all weight loaded forward of axle, TBM above 12%", () => {
+describe('Scenario 5: all weight loaded forward of axle, TBM above 12%', () => {
   const result = calculate(
     baseInput({
       vehicle: landcruiser79,
       caravan: midSizeVan,
       caravanAccessories: [
-        { installedWeightKg: 120, mountingLocation: "CARAVAN_DRAWBAR", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 80, mountingLocation: "CARAVAN_A_FRAME", fillPercent: 100, quantity: 1 },
-        { installedWeightKg: 60, mountingLocation: "CARAVAN_CHASSIS_FRONT", fillPercent: 100, quantity: 1 },
+        {
+          installedWeightKg: 120,
+          mountingLocation: 'CARAVAN_DRAWBAR',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 80,
+          mountingLocation: 'CARAVAN_A_FRAME',
+          fillPercent: 100,
+          quantity: 1,
+        },
+        {
+          installedWeightKg: 60,
+          mountingLocation: 'CARAVAN_CHASSIS_FRONT',
+          fillPercent: 100,
+          quantity: 1,
+        },
       ],
       freshWaterPercent: 100,
       greyWaterPercent: 0,
-    })
+    }),
   );
 
-  it("TBM% is above 11%", () =>
+  it('TBM% is above 11%', () =>
     expect(result.vehicle.towBallPctOfAtm).toBeGreaterThan(11));
-  it("TBM status is warn or fail", () =>
-    expect(result.vehicle.towBallPctStatus).not.toBe("ok"));
-  it("has TBM-too-high recommendation", () =>
-    expect(result.recommendations.some((r) => r.id === "tbm-too-high")).toBe(true));
+  it('TBM status is warn or fail', () =>
+    expect(result.vehicle.towBallPctStatus).not.toBe('ok'));
+  it('has TBM-too-high recommendation', () =>
+    expect(result.recommendations.some((r) => r.id === 'tbm-too-high')).toBe(
+      true,
+    ));
 });
 
 // --- Scenario 6: GCM breach ---
-describe("Scenario 6: both vehicle and caravan near individual limits, GCM exceeded", () => {
-  const heavyVehicle: import("../types").VehicleInput = {
+describe('Scenario 6: both vehicle and caravan near individual limits, GCM exceeded', () => {
+  const heavyVehicle: import('../types').VehicleInput = {
     ...hiluxSR5,
     kerbWeightKg: 2900, // very heavy setup
     gcmKg: 5800,
   };
-  const heavyVan: import("../types").CaravanInput = {
+  const heavyVan: import('../types').CaravanInput = {
     ...midSizeVan,
     atmKg: 3200,
     gtmKg: 2900,
@@ -234,19 +322,21 @@ describe("Scenario 6: both vehicle and caravan near individual limits, GCM excee
       passengers: 2,
       cargoKg: 50,
       fuelPercent: 100,
-    })
+    }),
   );
 
-  it("GCM status is warn or fail", () =>
-    expect(result.vehicle.gcmStatus).not.toBe("ok"));
-  it("combined weight exceeds GCM", () =>
+  it('GCM status is warn or fail', () =>
+    expect(result.vehicle.gcmStatus).not.toBe('ok'));
+  it('combined weight exceeds GCM', () =>
     expect(result.vehicle.gcmKg).toBeGreaterThan(heavyVehicle.gcmKg * 0.9));
-  it("has GCM recommendation", () =>
-    expect(result.recommendations.some((r) => r.id === "gcm-exceeded")).toBe(true));
+  it('has GCM recommendation', () =>
+    expect(result.recommendations.some((r) => r.id === 'gcm-exceeded')).toBe(
+      true,
+    ));
 });
 
 // --- Scenario 7: Dual-axle caravan, GTM splits 50/50 ---
-describe("Scenario 7: dual-axle caravan GTM split", () => {
+describe('Scenario 7: dual-axle caravan GTM split', () => {
   const result = calculate(
     baseInput({
       vehicle: landcruiser79,
@@ -254,63 +344,63 @@ describe("Scenario 7: dual-axle caravan GTM split", () => {
       caravanAccessories: [],
       freshWaterPercent: 50,
       greyWaterPercent: 25,
-    })
+    }),
   );
 
-  it("has axle1 and axle2 results", () => {
+  it('has axle1 and axle2 results', () => {
     expect(result.caravan!.axle1Kg).toBeDefined();
     expect(result.caravan!.axle2Kg).toBeDefined();
   });
-  it("axle1 + axle2 ≈ GTM", () => {
+  it('axle1 + axle2 ≈ GTM', () => {
     const cr = result.caravan!;
     expect(cr.axle1Kg! + cr.axle2Kg!).toBeCloseTo(cr.gtmKg, 0);
   });
-  it("axle1 ≈ axle2 (50/50 split)", () => {
+  it('axle1 ≈ axle2 (50/50 split)', () => {
     const cr = result.caravan!;
     expect(cr.axle1Kg).toBeCloseTo(cr.axle2Kg!, 0);
   });
-  it("each axle is within limit", () => {
+  it('each axle is within limit', () => {
     const cr = result.caravan!;
-    expect(cr.axle1Status).not.toBe("fail");
-    expect(cr.axle2Status).not.toBe("fail");
+    expect(cr.axle1Status).not.toBe('fail');
+    expect(cr.axle2Status).not.toBe('fail');
   });
 });
 
 // --- Scenario 8: Weighbridge calibration offset ---
-describe("Scenario 8: weighbridge calibration adds 60kg to vehicle kerb weight", () => {
+describe('Scenario 8: weighbridge calibration adds 60kg to vehicle kerb weight', () => {
   const baseline = calculate(baseInput({ passengers: 2, cargoKg: 0 }));
   const calibrated = calculate(
     baseInput({
       passengers: 2,
       cargoKg: 0,
       calibrationOverrides: { vehicleKerbKg: 60 },
-    })
+    }),
   );
 
-  it("calibrated vehicle weighs 60kg more", () =>
+  it('calibrated vehicle weighs 60kg more', () =>
     expect(calibrated.vehicle.totalWeightKg).toBeCloseTo(
       baseline.vehicle.totalWeightKg + 60,
-      0
+      0,
     ));
-  it("calibrated effectiveKerb is 60kg more", () =>
+  it('calibrated effectiveKerb is 60kg more', () =>
     expect(calibrated.vehicle.effectiveKerbKg).toBe(
-      baseline.vehicle.effectiveKerbKg + 60
+      baseline.vehicle.effectiveKerbKg + 60,
     ));
-  it("axle loads shift with calibration", () =>
+  it('axle loads shift with calibration', () =>
     expect(calibrated.vehicle.rearAxleKg).toBeGreaterThan(
-      baseline.vehicle.rearAxleKg
+      baseline.vehicle.rearAxleKg,
     ));
 });
 
 // --- Scenario 9: Tank fill effects on TBM ---
-describe("Scenario 9: water fill affects TBM", () => {
+describe('Scenario 9: water fill affects TBM', () => {
   const fullFresh = calculate(
     baseInput({
       vehicle: landcruiser79,
       caravan: midSizeVan,
       freshWaterPercent: 100,
       greyWaterPercent: 0,
-    })
+    }),
   );
   const emptyFreshFullGrey = calculate(
     baseInput({
@@ -318,21 +408,22 @@ describe("Scenario 9: water fill affects TBM", () => {
       caravan: midSizeVan,
       freshWaterPercent: 0,
       greyWaterPercent: 100,
-    })
+    }),
   );
 
-  it("fresh 100%/grey 0% has higher TBM than fresh 0%/grey 100%", () =>
+  it('fresh 100%/grey 0% has higher TBM than fresh 0%/grey 100%', () =>
     expect(fullFresh.caravan!.towBallMassKg).toBeGreaterThan(
-      emptyFreshFullGrey.caravan!.towBallMassKg
+      emptyFreshFullGrey.caravan!.towBallMassKg,
     ));
-  it("TBM difference is measurable (>10 kg) for typical tanks", () =>
+  it('TBM difference is measurable (>10 kg) for typical tanks', () =>
     expect(
-      fullFresh.caravan!.towBallMassKg - emptyFreshFullGrey.caravan!.towBallMassKg
+      fullFresh.caravan!.towBallMassKg -
+        emptyFreshFullGrey.caravan!.towBallMassKg,
     ).toBeGreaterThan(10));
 });
 
 // --- Scenario 10: Bare van baseline — TBM matches manufacturer within 5% ---
-describe("Scenario 10: bare caravan, computed TBM within 5% of manufacturer TBM", () => {
+describe('Scenario 10: bare caravan, computed TBM within 5% of manufacturer TBM', () => {
   const result = calculate(
     baseInput({
       vehicle: landcruiser79,
@@ -341,10 +432,10 @@ describe("Scenario 10: bare caravan, computed TBM within 5% of manufacturer TBM"
       freshWaterPercent: 0,
       greyWaterPercent: 0,
       cargoKg: 0,
-    })
+    }),
   );
 
-  it("computed TBM is within 5% of manufacturer tbmKg", () => {
+  it('computed TBM is within 5% of manufacturer tbmKg', () => {
     const computed = result.caravan!.towBallMassKg;
     const mfr = midSizeVan.tbmKg;
     const tolerance = mfr * 0.05;
@@ -353,12 +444,12 @@ describe("Scenario 10: bare caravan, computed TBM within 5% of manufacturer TBM"
 });
 
 // --- Scenario 11: Water depletion TBM shift ---
-describe("Scenario 11: water depletion drives safe setup into TBM warning zone", () => {
+describe('Scenario 11: water depletion drives safe setup into TBM warning zone', () => {
   // Use a van with large tanks well separated from axle
-  const waterSensitiveVan: import("../types").CaravanInput = {
+  const waterSensitiveVan: import('../types').CaravanInput = {
     ...midSizeVan,
-    freshWaterCapacityL: 200,  // large forward tank
-    greyWaterCapacityL: 150,   // large rearward tank
+    freshWaterCapacityL: 200, // large forward tank
+    greyWaterCapacityL: 150, // large rearward tank
     atmKg: 3500,
     tbmKg: 340,
   };
@@ -370,7 +461,7 @@ describe("Scenario 11: water depletion drives safe setup into TBM warning zone",
       caravanAccessories: [],
       freshWaterPercent: 100,
       greyWaterPercent: 0,
-    })
+    }),
   );
 
   const tripEnd = calculate(
@@ -380,43 +471,43 @@ describe("Scenario 11: water depletion drives safe setup into TBM warning zone",
       caravanAccessories: [],
       freshWaterPercent: 0,
       greyWaterPercent: 100,
-    })
+    }),
   );
 
-  it("TBM is higher at trip start than trip end", () =>
+  it('TBM is higher at trip start than trip end', () =>
     expect(tripStart.caravan!.towBallMassKg).toBeGreaterThan(
-      tripEnd.caravan!.towBallMassKg
+      tripEnd.caravan!.towBallMassKg,
     ));
-  it("TBM drop across trip is significant (>30 kg)", () =>
+  it('TBM drop across trip is significant (>30 kg)', () =>
     expect(
-      tripStart.caravan!.towBallMassKg - tripEnd.caravan!.towBallMassKg
+      tripStart.caravan!.towBallMassKg - tripEnd.caravan!.towBallMassKg,
     ).toBeGreaterThan(30));
-  it("trip start TBM% is acceptable", () =>
-    expect(tripStart.vehicle.towBallPctStatus).not.toBe("fail"));
+  it('trip start TBM% is acceptable', () =>
+    expect(tripStart.vehicle.towBallPctStatus).not.toBe('fail'));
 });
 
 // --- Performance: <1ms for 20 accessories ---
-describe("Performance: calculate() under 1ms for 20-accessory setup", () => {
-  const manyAccessories: import("../types").AccessoryLoad[] = Array.from(
+describe('Performance: calculate() under 1ms for 20-accessory setup', () => {
+  const manyAccessories: import('../types').AccessoryLoad[] = Array.from(
     { length: 10 },
     (_, i) => ({
       installedWeightKg: 20 + i * 2,
-      mountingLocation: "TRAY_FLOOR" as const,
+      mountingLocation: 'TRAY_FLOOR' as const,
       fillPercent: 100,
       quantity: 1,
-    })
+    }),
   );
-  const manyCaravanAccessories: import("../types").AccessoryLoad[] = Array.from(
+  const manyCaravanAccessories: import('../types').AccessoryLoad[] = Array.from(
     { length: 10 },
     (_, i) => ({
       installedWeightKg: 15 + i,
-      mountingLocation: "CARAVAN_CHASSIS_MID" as const,
+      mountingLocation: 'CARAVAN_CHASSIS_MID' as const,
       fillPercent: 100,
       quantity: 1,
-    })
+    }),
   );
 
-  it("runs in under 1ms", () => {
+  it('runs in under 1ms', () => {
     const start = performance.now();
     calculate(
       baseInput({
@@ -424,7 +515,7 @@ describe("Performance: calculate() under 1ms for 20-accessory setup", () => {
         caravan: midSizeVan,
         vehicleAccessories: manyAccessories,
         caravanAccessories: manyCaravanAccessories,
-      })
+      }),
     );
     const elapsed = performance.now() - start;
     expect(elapsed).toBeLessThan(1);

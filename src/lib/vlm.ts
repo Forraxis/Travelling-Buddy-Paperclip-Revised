@@ -6,7 +6,7 @@
 export interface VlmExtractionField {
   value: string | number | null;
   confidence: number; // 0–1
-  source: "plate" | "form" | "inferred";
+  source: 'plate' | 'form' | 'inferred';
 }
 
 export interface VlmExtractionResult {
@@ -15,24 +15,24 @@ export interface VlmExtractionResult {
     field: string;
     extractedValue: string | number | null;
     submittedValue: string | number | null;
-    severity: "minor" | "major";
+    severity: 'minor' | 'major';
   }>;
 }
 
 export type VlmRecommendedAction =
-  | "auto_approve"
-  | "queue_for_review"
-  | "auto_reject";
+  | 'auto_approve'
+  | 'queue_for_review'
+  | 'auto_reject';
 
 export interface VlmGatekeeperResult {
   recommendedAction: VlmRecommendedAction;
   confidence: number; // 0–1
   plateAuthenticity: {
-    assessment: "genuine" | "suspicious" | "unclear";
+    assessment: 'genuine' | 'suspicious' | 'unclear';
     reasoning: string;
   };
   valuePlausibility: {
-    assessment: "plausible" | "implausible" | "unclear";
+    assessment: 'plausible' | 'implausible' | 'unclear';
     reasoning: string;
   };
   anomalyFlags: string[];
@@ -47,11 +47,11 @@ export interface VlmSubmissionAnalysis {
 
 function getClient(): { baseUrl: string; apiKey: string; model: string } {
   const baseUrl = process.env.VLM_ENDPOINT_URL ?? process.env.VLM_API_URL;
-  const apiKey = process.env.VLM_API_KEY ?? "none";
-  const model = process.env.VLM_MODEL ?? "Qwen/Qwen3-35B-A3B";
+  const apiKey = process.env.VLM_API_KEY ?? 'none';
+  const model = process.env.VLM_MODEL ?? 'Qwen/Qwen3-35B-A3B';
 
   if (!baseUrl) {
-    throw new Error("VLM_API_URL is not configured");
+    throw new Error('VLM_API_URL is not configured');
   }
 
   return { baseUrl, apiKey, model };
@@ -60,7 +60,7 @@ function getClient(): { baseUrl: string; apiKey: string; model: string } {
 const VEHICLE_SYSTEM_PROMPT = `You are an automotive compliance plate analyser. You receive a compliance plate photo and form data submitted by a user claiming to describe a vehicle variant. Return ONLY valid JSON — no prose, no markdown fences.`;
 
 const VEHICLE_USER_PROMPT_TEMPLATE = (
-  submittedData: Record<string, unknown>
+  submittedData: Record<string, unknown>,
 ) => `Analyse the compliance plate photo. The user submitted these values:
 
 ${JSON.stringify(submittedData, null, 2)}
@@ -75,8 +75,8 @@ const ACCESSORY_SYSTEM_PROMPT = `You are an accessory photo analyser. Compare th
 
 const ACCESSORY_USER_PROMPT_TEMPLATE = (
   submittedData: Record<string, unknown>,
-  hasPhoto: boolean
-) => `Analyse the ${hasPhoto ? "accessory photo" : "submitted data (no photo provided)"}. The user submitted:
+  hasPhoto: boolean,
+) => `Analyse the ${hasPhoto ? 'accessory photo' : 'submitted data (no photo provided)'}. The user submitted:
 
 ${JSON.stringify(submittedData, null, 2)}
 
@@ -85,24 +85,24 @@ Return a JSON object with key "similarityResult": { "hasPotentialDuplicate": boo
 export async function analyseVehicleSubmission(
   photoBase64: string | null,
   photoMimeType: string,
-  submittedData: Record<string, unknown>
+  submittedData: Record<string, unknown>,
 ): Promise<VlmSubmissionAnalysis> {
   const { baseUrl, apiKey, model } = getClient();
 
   const messages: Array<{ role: string; content: unknown }> = [
-    { role: "system", content: VEHICLE_SYSTEM_PROMPT },
+    { role: 'system', content: VEHICLE_SYSTEM_PROMPT },
     {
-      role: "user",
+      role: 'user',
       content: photoBase64
         ? [
             {
-              type: "image_url",
+              type: 'image_url',
               image_url: {
                 url: `data:${photoMimeType};base64,${photoBase64}`,
               },
             },
             {
-              type: "text",
+              type: 'text',
               text: VEHICLE_USER_PROMPT_TEMPLATE(submittedData),
             },
           ]
@@ -111,9 +111,9 @@ export async function analyseVehicleSubmission(
   ];
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
@@ -122,7 +122,7 @@ export async function analyseVehicleSubmission(
       temperature: 0.1,
       max_tokens: 2048,
       // Enable thinking mode for better structured reasoning
-      thinking: { type: "enabled", budget_tokens: 1024 },
+      thinking: { type: 'enabled', budget_tokens: 1024 },
     }),
     signal: AbortSignal.timeout(120_000), // 2-minute timeout
   });
@@ -132,37 +132,39 @@ export async function analyseVehicleSubmission(
     throw new Error(`VLM API error ${response.status}: ${text}`);
   }
 
-  const completion = await response.json() as {
+  const completion = (await response.json()) as {
     choices: Array<{ message: { content: string } }>;
   };
-  const content = completion.choices[0]?.message?.content ?? "{}";
+  const content = completion.choices[0]?.message?.content ?? '{}';
 
   // Strip any markdown fences the model may have added despite instruction
-  const cleaned = content.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "");
+  const cleaned = content
+    .replace(/^```(?:json)?\n?/m, '')
+    .replace(/\n?```$/m, '');
   return JSON.parse(cleaned) as VlmSubmissionAnalysis;
 }
 
 export async function analyseCaravanSubmission(
   photoBase64: string | null,
   photoMimeType: string,
-  submittedData: Record<string, unknown>
+  submittedData: Record<string, unknown>,
 ): Promise<VlmSubmissionAnalysis> {
   const { baseUrl, apiKey, model } = getClient();
 
   const messages: Array<{ role: string; content: unknown }> = [
-    { role: "system", content: CARAVAN_SYSTEM_PROMPT },
+    { role: 'system', content: CARAVAN_SYSTEM_PROMPT },
     {
-      role: "user",
+      role: 'user',
       content: photoBase64
         ? [
             {
-              type: "image_url",
+              type: 'image_url',
               image_url: {
                 url: `data:${photoMimeType};base64,${photoBase64}`,
               },
             },
             {
-              type: "text",
+              type: 'text',
               text: VEHICLE_USER_PROMPT_TEMPLATE(submittedData),
             },
           ]
@@ -171,9 +173,9 @@ export async function analyseCaravanSubmission(
   ];
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
@@ -181,7 +183,7 @@ export async function analyseCaravanSubmission(
       messages,
       temperature: 0.1,
       max_tokens: 2048,
-      thinking: { type: "enabled", budget_tokens: 1024 },
+      thinking: { type: 'enabled', budget_tokens: 1024 },
     }),
     signal: AbortSignal.timeout(120_000),
   });
@@ -191,35 +193,43 @@ export async function analyseCaravanSubmission(
     throw new Error(`VLM API error ${response.status}: ${text}`);
   }
 
-  const completion = await response.json() as {
+  const completion = (await response.json()) as {
     choices: Array<{ message: { content: string } }>;
   };
-  const content = completion.choices[0]?.message?.content ?? "{}";
-  const cleaned = content.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "");
+  const content = completion.choices[0]?.message?.content ?? '{}';
+  const cleaned = content
+    .replace(/^```(?:json)?\n?/m, '')
+    .replace(/\n?```$/m, '');
   return JSON.parse(cleaned) as VlmSubmissionAnalysis;
 }
 
 export async function analyseAccessorySubmission(
   photoBase64: string | null,
   photoMimeType: string,
-  submittedData: Record<string, unknown>
-): Promise<{ similarityResult: { hasPotentialDuplicate: boolean; similarity: number; reasoning: string } }> {
+  submittedData: Record<string, unknown>,
+): Promise<{
+  similarityResult: {
+    hasPotentialDuplicate: boolean;
+    similarity: number;
+    reasoning: string;
+  };
+}> {
   const { baseUrl, apiKey, model } = getClient();
 
   const messages: Array<{ role: string; content: unknown }> = [
-    { role: "system", content: ACCESSORY_SYSTEM_PROMPT },
+    { role: 'system', content: ACCESSORY_SYSTEM_PROMPT },
     {
-      role: "user",
+      role: 'user',
       content: photoBase64
         ? [
             {
-              type: "image_url",
+              type: 'image_url',
               image_url: {
                 url: `data:${photoMimeType};base64,${photoBase64}`,
               },
             },
             {
-              type: "text",
+              type: 'text',
               text: ACCESSORY_USER_PROMPT_TEMPLATE(submittedData, true),
             },
           ]
@@ -228,9 +238,9 @@ export async function analyseAccessorySubmission(
   ];
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
@@ -247,10 +257,12 @@ export async function analyseAccessorySubmission(
     throw new Error(`VLM API error ${response.status}: ${text}`);
   }
 
-  const completion = await response.json() as {
+  const completion = (await response.json()) as {
     choices: Array<{ message: { content: string } }>;
   };
-  const content = completion.choices[0]?.message?.content ?? "{}";
-  const cleaned = content.replace(/^```(?:json)?\n?/m, "").replace(/\n?```$/m, "");
+  const content = completion.choices[0]?.message?.content ?? '{}';
+  const cleaned = content
+    .replace(/^```(?:json)?\n?/m, '')
+    .replace(/\n?```$/m, '');
   return JSON.parse(cleaned);
 }

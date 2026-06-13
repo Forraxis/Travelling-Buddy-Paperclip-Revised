@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { z } from "zod/v4";
-import { MountingLocation } from "@prisma/client";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
-import { serverError, notFound } from "@/lib/api-helpers";
-import { buildSnapshots } from "@/lib/setup-snapshots";
-import type { Prisma } from "@prisma/client";
+import { NextResponse } from 'next/server';
+import { z } from 'zod/v4';
+import { MountingLocation } from '@prisma/client';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { serverError, notFound } from '@/lib/api-helpers';
+import { buildSnapshots } from '@/lib/setup-snapshots';
+import type { Prisma } from '@prisma/client';
 
 const fullSetupInclude = {
   vehicleVariant: { include: { model: { include: { make: true } } } },
@@ -37,12 +37,12 @@ const fullSetupInclude = {
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -51,9 +51,9 @@ export async function GET(
       include: fullSetupInclude,
     });
 
-    if (!setup) return notFound("Setup");
+    if (!setup) return notFound('Setup');
     if (setup.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const vehicleSnapshotOnly = !!(
@@ -69,7 +69,10 @@ export async function GET(
     );
 
     const accessorySnapshotArr = Array.isArray(setup.accessorySnapshot)
-      ? (setup.accessorySnapshot as Array<{ fitmentId: string; target: string }>)
+      ? (setup.accessorySnapshot as Array<{
+          fitmentId: string;
+          target: string;
+        }>)
       : [];
     const removedFitments: string[] = [];
 
@@ -119,7 +122,9 @@ const updateSchema = z.object({
   freshWaterPercent: z.number().int().min(0).max(100).optional(),
   greyWaterPercent: z.number().int().min(0).max(100).optional(),
   calibrationOverrides: z.record(z.string(), z.unknown()).optional(),
-  regulationSetCode: z.enum(["AU_ADR", "NZ_VIRM", "US_FMVSS", "EU_UNECE", "GB_IVA"]).optional(),
+  regulationSetCode: z
+    .enum(['AU_ADR', 'NZ_VIRM', 'US_FMVSS', 'EU_UNECE', 'GB_IVA'])
+    .optional(),
   tags: z.array(z.string().max(50)).max(20).optional(),
   accessories: z.array(accessoryEntrySchema).optional(),
   caravanAccessories: z.array(accessoryEntrySchema).optional(),
@@ -132,19 +137,19 @@ const updateSchema = z.object({
         cogXMm: z.number().int().optional(),
         cogYMm: z.number().int().optional(),
         notes: z.string().max(500).optional(),
-      })
+      }),
     )
     .optional(),
 });
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -152,9 +157,9 @@ export async function PATCH(
       where: { id, deletedAt: null },
     });
 
-    if (!existing) return notFound("Setup");
+    if (!existing) return notFound('Setup');
     if (existing.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -162,38 +167,67 @@ export async function PATCH(
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Invalid request body",
+          error: 'Invalid request body',
           details: parsed.error.issues.map((i) => ({
-            field: i.path.join("."),
+            field: i.path.join('.'),
             message: i.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const { accessories, caravanAccessories, customLoads, calibrationOverrides, ...scalarFields } = parsed.data;
+    const {
+      accessories,
+      caravanAccessories,
+      customLoads,
+      calibrationOverrides,
+      ...scalarFields
+    } = parsed.data;
 
-    const effectiveVehicleVariantId = scalarFields.vehicleVariantId !== undefined
-      ? scalarFields.vehicleVariantId
-      : existing.vehicleVariantId;
-    const effectiveCaravanVariantId = scalarFields.caravanVariantId !== undefined
-      ? scalarFields.caravanVariantId
-      : existing.caravanVariantId;
+    const effectiveVehicleVariantId =
+      scalarFields.vehicleVariantId !== undefined
+        ? scalarFields.vehicleVariantId
+        : existing.vehicleVariantId;
+    const effectiveCaravanVariantId =
+      scalarFields.caravanVariantId !== undefined
+        ? scalarFields.caravanVariantId
+        : existing.caravanVariantId;
 
-    const needAccessorySnap = accessories !== undefined || caravanAccessories !== undefined;
+    const needAccessorySnap =
+      accessories !== undefined || caravanAccessories !== undefined;
     let accFitmentIds: string[] = [];
     let caravanAccFitmentIds: string[] = [];
     if (needAccessorySnap) {
       accFitmentIds = accessories
         ? accessories.map((a) => a.fitmentId)
-        : (await prisma.setupAccessory.findMany({ where: { setupId: id }, select: { fitmentId: true } })).map((r) => r.fitmentId);
+        : (
+            await prisma.setupAccessory.findMany({
+              where: { setupId: id },
+              select: { fitmentId: true },
+            })
+          ).map((r) => r.fitmentId);
       caravanAccFitmentIds = caravanAccessories
         ? caravanAccessories.map((a) => a.fitmentId)
-        : (await prisma.setupCaravanAccessory.findMany({ where: { setupId: id }, select: { fitmentId: true } })).map((r) => r.fitmentId);
+        : (
+            await prisma.setupCaravanAccessory.findMany({
+              where: { setupId: id },
+              select: { fitmentId: true },
+            })
+          ).map((r) => r.fitmentId);
     } else {
-      accFitmentIds = (await prisma.setupAccessory.findMany({ where: { setupId: id }, select: { fitmentId: true } })).map((r) => r.fitmentId);
-      caravanAccFitmentIds = (await prisma.setupCaravanAccessory.findMany({ where: { setupId: id }, select: { fitmentId: true } })).map((r) => r.fitmentId);
+      accFitmentIds = (
+        await prisma.setupAccessory.findMany({
+          where: { setupId: id },
+          select: { fitmentId: true },
+        })
+      ).map((r) => r.fitmentId);
+      caravanAccFitmentIds = (
+        await prisma.setupCaravanAccessory.findMany({
+          where: { setupId: id },
+          select: { fitmentId: true },
+        })
+      ).map((r) => r.fitmentId);
     }
 
     const snapshots = await buildSnapshots({
@@ -210,7 +244,8 @@ export async function PATCH(
       accessorySnapshot: snapshots.accessorySnapshot,
     };
     if (calibrationOverrides !== undefined) {
-      updateData.calibrationOverrides = calibrationOverrides as Prisma.InputJsonValue;
+      updateData.calibrationOverrides =
+        calibrationOverrides as Prisma.InputJsonValue;
     }
 
     const setup = await prisma.$transaction(async (tx) => {
@@ -278,12 +313,12 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -291,9 +326,9 @@ export async function DELETE(
       where: { id, deletedAt: null },
     });
 
-    if (!existing) return notFound("Setup");
+    if (!existing) return notFound('Setup');
     if (existing.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await prisma.setup.update({

@@ -1,46 +1,46 @@
-"use client";
+'use client';
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useTransition, useState, useCallback } from "react";
-import Link from "next/link";
-import { DataTableShell, type DataTableColumn } from "@/modules/admin/components";
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useTransition, useState, useCallback } from 'react';
+import Link from 'next/link';
 import {
-  selectClassName,
-  inputClassName,
-} from "@/modules/admin/components";
+  DataTableShell,
+  type DataTableColumn,
+} from '@/modules/admin/components';
+import { selectClassName, inputClassName } from '@/modules/admin/components';
 import {
   listAuditLogsAction,
   type AuditLogEntry,
   type AuditActorOption,
-} from "@/modules/admin/actions/audit.actions";
+} from '@/modules/admin/actions/audit.actions';
 
-const ACTION_OPTIONS = ["CREATE", "UPDATE", "DELETE"] as const;
+const ACTION_OPTIONS = ['CREATE', 'UPDATE', 'DELETE'] as const;
 
 const ENTITY_TYPE_OPTIONS = [
-  "vehicle",
-  "caravan",
-  "accessory",
-  "submission",
-  "regulation",
-  "sponsor",
-  "placement",
+  'vehicle',
+  'caravan',
+  'accessory',
+  'submission',
+  'regulation',
+  'sponsor',
+  'placement',
 ];
 
 function entityLink(entityType: string, entityId: string): string | null {
   switch (entityType) {
-    case "vehicle":
+    case 'vehicle':
       return `/admin/catalogue/vehicles`;
-    case "caravan":
+    case 'caravan':
       return `/admin/catalogue/caravans`;
-    case "accessory":
+    case 'accessory':
       return `/admin/catalogue/accessories`;
-    case "submission":
+    case 'submission':
       return `/admin/submissions`;
-    case "regulation":
+    case 'regulation':
       return `/admin/operations/regulations`;
-    case "sponsor":
+    case 'sponsor':
       return `/admin/sponsorship/sponsors`;
-    case "placement":
+    case 'placement':
       return `/admin/sponsorship/placements`;
     default:
       return null;
@@ -48,21 +48,21 @@ function entityLink(entityType: string, entityId: string): string | null {
 }
 
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("en-AU", {
-    dateStyle: "short",
-    timeStyle: "short",
+  return new Intl.DateTimeFormat('en-AU', {
+    dateStyle: 'short',
+    timeStyle: 'short',
   }).format(new Date(date));
 }
 
 function ActionBadge({ action }: { action: string }) {
   const colours: Record<string, string> = {
-    CREATE: "bg-green-100 text-green-800",
-    UPDATE: "bg-blue-100 text-blue-800",
-    DELETE: "bg-red-100 text-red-800",
+    CREATE: 'bg-green-100 text-green-800',
+    UPDATE: 'bg-blue-100 text-blue-800',
+    DELETE: 'bg-red-100 text-red-800',
   };
   return (
     <span
-      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${colours[action] ?? "bg-gray-100 text-gray-700"}`}
+      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${colours[action] ?? 'bg-gray-100 text-gray-700'}`}
     >
       {action}
     </span>
@@ -71,12 +71,12 @@ function ActionBadge({ action }: { action: string }) {
 
 function RoleBadge({ role }: { role: string }) {
   const colours: Record<string, string> = {
-    ADMIN: "bg-purple-100 text-purple-800",
-    MODERATOR: "bg-yellow-100 text-yellow-800",
+    ADMIN: 'bg-purple-100 text-purple-800',
+    MODERATOR: 'bg-yellow-100 text-yellow-800',
   };
   return (
     <span
-      className={`ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${colours[role] ?? "bg-gray-100 text-gray-700"}`}
+      className={`ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${colours[role] ?? 'bg-gray-100 text-gray-700'}`}
     >
       {role}
     </span>
@@ -102,16 +102,18 @@ export function AuditLogView({
   const [isPending, startTransition] = useTransition();
 
   const [entries, setEntries] = useState<AuditLogEntry[]>(initialEntries);
-  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
+  const [nextCursor, setNextCursor] = useState<string | null>(
+    initialNextCursor,
+  );
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const currentFilters = {
-    actorId: searchParams.get("actorId") ?? "",
-    action: searchParams.get("action") ?? "",
-    entityType: searchParams.get("entityType") ?? "",
-    entityId: searchParams.get("entityId") ?? "",
-    dateFrom: searchParams.get("dateFrom") ?? "",
-    dateTo: searchParams.get("dateTo") ?? "",
+    actorId: searchParams.get('actorId') ?? '',
+    action: searchParams.get('action') ?? '',
+    entityType: searchParams.get('entityType') ?? '',
+    entityId: searchParams.get('entityId') ?? '',
+    dateFrom: searchParams.get('dateFrom') ?? '',
+    dateTo: searchParams.get('dateTo') ?? '',
   };
 
   const pushFilter = useCallback(
@@ -122,12 +124,12 @@ export function AuditLogView({
       } else {
         params.delete(key);
       }
-      params.delete("cursor");
+      params.delete('cursor');
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);
       });
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams],
   );
 
   const loadMore = useCallback(async () => {
@@ -149,39 +151,41 @@ export function AuditLogView({
 
   const columns: DataTableColumn<AuditLogEntry>[] = [
     {
-      key: "createdAt",
-      header: "Timestamp",
+      key: 'createdAt',
+      header: 'Timestamp',
       render: (row) => (
-        <span className="whitespace-nowrap text-xs text-gray-500">
+        <span className="text-xs whitespace-nowrap text-gray-500">
           {formatDate(row.createdAt)}
         </span>
       ),
     },
     {
-      key: "actor",
-      header: "Actor",
+      key: 'actor',
+      header: 'Actor',
       render: (row) => (
-        <span className="whitespace-nowrap text-sm">
+        <span className="text-sm whitespace-nowrap">
           {row.user.name ?? row.user.email ?? row.changedBy}
           <RoleBadge role={row.user.role} />
         </span>
       ),
     },
     {
-      key: "action",
-      header: "Action",
+      key: 'action',
+      header: 'Action',
       render: (row) => <ActionBadge action={row.action} />,
     },
     {
-      key: "entityType",
-      header: "Entity Type",
+      key: 'entityType',
+      header: 'Entity Type',
       render: (row) => (
-        <span className="text-sm capitalize text-gray-700">{row.entityType}</span>
+        <span className="text-sm text-gray-700 capitalize">
+          {row.entityType}
+        </span>
       ),
     },
     {
-      key: "entityId",
-      header: "Entity",
+      key: 'entityId',
+      header: 'Entity',
       render: (row) => {
         const href = entityLink(row.entityType, row.entityId);
         return href ? (
@@ -192,16 +196,18 @@ export function AuditLogView({
             {row.entityId}
           </Link>
         ) : (
-          <span className="font-mono text-xs text-gray-500">{row.entityId}</span>
+          <span className="font-mono text-xs text-gray-500">
+            {row.entityId}
+          </span>
         );
       },
     },
     {
-      key: "reason",
-      header: "Summary",
+      key: 'reason',
+      header: 'Summary',
       render: (row) => (
         <span className="max-w-xs truncate text-sm text-gray-600">
-          {row.reason ?? "—"}
+          {row.reason ?? '—'}
         </span>
       ),
     },
@@ -214,7 +220,7 @@ export function AuditLogView({
           <select
             className={selectClassName}
             value={currentFilters.actorId}
-            onChange={(e) => pushFilter("actorId", e.target.value)}
+            onChange={(e) => pushFilter('actorId', e.target.value)}
           >
             <option value="">All actors</option>
             {actors.map((a) => (
@@ -228,7 +234,7 @@ export function AuditLogView({
         <select
           className={selectClassName}
           value={currentFilters.action}
-          onChange={(e) => pushFilter("action", e.target.value)}
+          onChange={(e) => pushFilter('action', e.target.value)}
         >
           <option value="">All actions</option>
           {ACTION_OPTIONS.map((a) => (
@@ -241,7 +247,7 @@ export function AuditLogView({
         <select
           className={selectClassName}
           value={currentFilters.entityType}
-          onChange={(e) => pushFilter("entityType", e.target.value)}
+          onChange={(e) => pushFilter('entityType', e.target.value)}
         >
           <option value="">All entity types</option>
           {ENTITY_TYPE_OPTIONS.map((t) => (
@@ -255,14 +261,14 @@ export function AuditLogView({
           className={inputClassName}
           placeholder="Search entity ID…"
           value={currentFilters.entityId}
-          onChange={(e) => pushFilter("entityId", e.target.value)}
+          onChange={(e) => pushFilter('entityId', e.target.value)}
         />
 
         <input
           type="date"
           className={inputClassName}
           value={currentFilters.dateFrom}
-          onChange={(e) => pushFilter("dateFrom", e.target.value)}
+          onChange={(e) => pushFilter('dateFrom', e.target.value)}
           title="From date"
         />
 
@@ -270,12 +276,12 @@ export function AuditLogView({
           type="date"
           className={inputClassName}
           value={currentFilters.dateTo}
-          onChange={(e) => pushFilter("dateTo", e.target.value)}
+          onChange={(e) => pushFilter('dateTo', e.target.value)}
           title="To date"
         />
       </div>
 
-      <div className={isPending ? "opacity-60 transition-opacity" : ""}>
+      <div className={isPending ? 'opacity-60 transition-opacity' : ''}>
         <DataTableShell
           columns={columns}
           data={entries}
@@ -288,9 +294,9 @@ export function AuditLogView({
           <button
             onClick={loadMore}
             disabled={isLoadingMore}
-            className="rounded-lg border border-tb-neutral-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50 disabled:opacity-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border bg-white px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
           >
-            {isLoadingMore ? "Loading…" : "Load more"}
+            {isLoadingMore ? 'Loading…' : 'Load more'}
           </button>
         </div>
       )}

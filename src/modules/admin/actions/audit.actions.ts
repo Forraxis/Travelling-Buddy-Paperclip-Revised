@@ -1,8 +1,8 @@
-"use server";
+'use server';
 
-import { prisma } from "@/lib/db";
-import { getAdminUser } from "@/modules/admin/lib/auth";
-import type { AuditAction } from "@prisma/client";
+import { prisma } from '@/lib/db';
+import { getAdminUser } from '@/modules/admin/lib/auth';
+import type { AuditAction } from '@prisma/client';
 
 export interface AuditLogEntry {
   id: string;
@@ -40,14 +40,14 @@ export interface AuditActorOption {
 const PAGE_SIZE = 50;
 
 export async function listAuditLogsAction(
-  filters: AuditLogFilters = {}
+  filters: AuditLogFilters = {},
 ): Promise<{ entries: AuditLogEntry[]; nextCursor: string | null }> {
   const adminUser = await getAdminUser();
   if (!adminUser) return { entries: [], nextCursor: null };
 
   const where: Record<string, unknown> = {};
 
-  if (adminUser.role === "MODERATOR") {
+  if (adminUser.role === 'MODERATOR') {
     where.changedBy = adminUser.id;
   } else if (filters.actorId) {
     where.changedBy = filters.actorId;
@@ -73,7 +73,7 @@ export async function listAuditLogsAction(
     include: {
       user: { select: { id: true, name: true, email: true, role: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: 'desc' },
     take: PAGE_SIZE + 1,
     ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
   });
@@ -100,16 +100,16 @@ export async function listAuditActorsAction(): Promise<AuditActorOption[]> {
   const adminUser = await getAdminUser();
   if (!adminUser) return [];
 
-  if (adminUser.role === "MODERATOR") {
+  if (adminUser.role === 'MODERATOR') {
     return [{ id: adminUser.id, name: adminUser.name, email: adminUser.email }];
   }
 
   return prisma.user.findMany({
     where: {
       auditLogs: { some: {} },
-      role: { in: ["ADMIN", "MODERATOR"] },
+      role: { in: ['ADMIN', 'MODERATOR'] },
     },
     select: { id: true, name: true, email: true },
-    orderBy: { name: "asc" },
+    orderBy: { name: 'asc' },
   });
 }

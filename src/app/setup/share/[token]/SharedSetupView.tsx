@@ -1,14 +1,17 @@
-"use client";
+'use client';
 
-import { Suspense, useCallback, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { CalculatorProvider } from "@/modules/calculator/context";
-import { CalculatorConfig } from "@/app/calculator/_components/CalculatorConfig";
-import { RightColumnWrapper } from "@/app/calculator/_components/RightColumnWrapper";
-import { MobileResultsBarWrapper } from "@/app/calculator/_components/MobileResultsBarWrapper";
-import { stateToParams } from "@/modules/calculator/url-params";
-import type { CalculatorState, AccessorySelection } from "@/modules/calculator/types";
+import { Suspense, useCallback, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { CalculatorProvider } from '@/modules/calculator/context';
+import { CalculatorConfig } from '@/app/calculator/_components/CalculatorConfig';
+import { RightColumnWrapper } from '@/app/calculator/_components/RightColumnWrapper';
+import { MobileResultsBarWrapper } from '@/app/calculator/_components/MobileResultsBarWrapper';
+import { stateToParams } from '@/modules/calculator/url-params';
+import type {
+  CalculatorState,
+  AccessorySelection,
+} from '@/modules/calculator/types';
 
 interface SharedSetup {
   id: string;
@@ -42,14 +45,16 @@ function setupToInitialParams(setup: SharedSetup): URLSearchParams {
   const accessories: AccessorySelection[] = setup.accessories.map((a) => ({
     accessoryId: a.fitment.accessory.id,
     massKg: Number(a.fitment.weightKg ?? 0),
-    mountingLocation: "",
+    mountingLocation: '',
   }));
 
-  const caravanAccessories: AccessorySelection[] = setup.caravanAccessories.map((a) => ({
-    accessoryId: a.fitment.accessory.id,
-    massKg: Number(a.fitment.weightKg ?? 0),
-    mountingLocation: "",
-  }));
+  const caravanAccessories: AccessorySelection[] = setup.caravanAccessories.map(
+    (a) => ({
+      accessoryId: a.fitment.accessory.id,
+      massKg: Number(a.fitment.weightKg ?? 0),
+      mountingLocation: '',
+    }),
+  );
 
   const state: CalculatorState = {
     vehicleVariantId: setup.vehicleVariantId,
@@ -96,9 +101,9 @@ export function SharedSetupView({ setup, token }: Props) {
 
     setForking(true);
     try {
-      const res = await fetch("/api/setups", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/setups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: `${setup.name} (shared)`,
           vehicleVariantId: setup.vehicleVariantId,
@@ -119,12 +124,12 @@ export function SharedSetupView({ setup, token }: Props) {
         }),
       });
 
-      if (!res.ok) throw new Error("Fork failed");
+      if (!res.ok) throw new Error('Fork failed');
 
-      setToast("Setup saved to your account!");
-      setTimeout(() => router.push("/account/setups"), 1500);
+      setToast('Setup saved to your account!');
+      setTimeout(() => router.push('/account/setups'), 1500);
     } catch {
-      setToast("Failed to save setup");
+      setToast('Failed to save setup');
       setTimeout(() => setToast(null), 3000);
     } finally {
       setForking(false);
@@ -132,24 +137,24 @@ export function SharedSetupView({ setup, token }: Props) {
   }, [session, setup, token, router]);
 
   return (
-    <div className="flex h-full min-h-screen flex-col bg-tb-neutral-50">
+    <div className="bg-tb-neutral-50 flex h-full min-h-screen flex-col">
       <Suspense>
         <CalculatorProvider initialParams={initialParams}>
-          <header className="border-b border-tb-neutral-200 bg-white">
+          <header className="border-tb-neutral-200 border-b bg-white">
             <div className="flex h-14 items-center justify-between px-4">
-              <h1 className="text-base font-semibold text-tb-primary">
+              <h1 className="text-tb-primary text-base font-semibold">
                 {setup.name}
               </h1>
               <button
                 onClick={handleFork}
                 disabled={forking}
-                className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-tb-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-tb-primary hover:bg-tb-primary/90 rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {forking ? "Saving…" : "Save your version"}
+                {forking ? 'Saving…' : 'Save your version'}
               </button>
             </div>
-            <div className="border-t border-tb-neutral-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
-              This is a shared setup (read-only).{" "}
+            <div className="border-tb-neutral-100 border-t bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+              This is a shared setup (read-only).{' '}
               {!session?.user && (
                 <button
                   onClick={handleFork}
@@ -169,7 +174,7 @@ export function SharedSetupView({ setup, token }: Props) {
       </Suspense>
 
       {toast && (
-        <div className="fixed bottom-4 right-4 z-50 rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
+        <div className="fixed right-4 bottom-4 z-50 rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
           {toast}
         </div>
       )}

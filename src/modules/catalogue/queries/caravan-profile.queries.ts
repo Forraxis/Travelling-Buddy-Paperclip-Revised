@@ -1,10 +1,10 @@
-import { prisma } from "@/lib/db";
-import type { CaravanBodyType, AxleConfiguration } from "@prisma/client";
+import { prisma } from '@/lib/db';
+import type { CaravanBodyType, AxleConfiguration } from '@prisma/client';
 import type {
   CaravanVariantDto,
   CaravanMakeDto,
   CaravanModelDto,
-} from "../types/caravan.types";
+} from '../types/caravan.types';
 
 export interface CaravanAdjacentRangeLink {
   slug: string;
@@ -38,9 +38,11 @@ export interface CaravanVariantProfileData {
 export async function getCaravanVariantProfileData(
   makeSlug: string,
   modelSlug: string,
-  variantSlug: string
+  variantSlug: string,
 ): Promise<CaravanVariantProfileData | null> {
-  const make = await prisma.caravanMake.findUnique({ where: { slug: makeSlug } });
+  const make = await prisma.caravanMake.findUnique({
+    where: { slug: makeSlug },
+  });
   if (!make) return null;
 
   const model = await prisma.caravanModel.findUnique({
@@ -57,15 +59,35 @@ export async function getCaravanVariantProfileData(
   const [olderRaw, newerRaw, siblingsRaw] = await Promise.all([
     // Older: same name, yearTo < this.yearFrom, take max yearTo
     prisma.caravanVariant.findFirst({
-      where: { modelId: model.id, name: variant.name, yearTo: { lt: variant.yearFrom } },
-      orderBy: { yearTo: "desc" },
-      select: { slug: true, name: true, yearFrom: true, yearTo: true, isCurrentProduction: true },
+      where: {
+        modelId: model.id,
+        name: variant.name,
+        yearTo: { lt: variant.yearFrom },
+      },
+      orderBy: { yearTo: 'desc' },
+      select: {
+        slug: true,
+        name: true,
+        yearFrom: true,
+        yearTo: true,
+        isCurrentProduction: true,
+      },
     }),
     // Newer: same name, yearFrom > this.yearTo, take min yearFrom
     prisma.caravanVariant.findFirst({
-      where: { modelId: model.id, name: variant.name, yearFrom: { gt: variant.yearTo } },
-      orderBy: { yearFrom: "asc" },
-      select: { slug: true, name: true, yearFrom: true, yearTo: true, isCurrentProduction: true },
+      where: {
+        modelId: model.id,
+        name: variant.name,
+        yearFrom: { gt: variant.yearTo },
+      },
+      orderBy: { yearFrom: 'asc' },
+      select: {
+        slug: true,
+        name: true,
+        yearFrom: true,
+        yearTo: true,
+        isCurrentProduction: true,
+      },
     }),
     // Siblings: different name, year range overlaps >= 1 year
     prisma.caravanVariant.findMany({
@@ -78,14 +100,26 @@ export async function getCaravanVariantProfileData(
           { isCurrentProduction: true },
         ],
       },
-      orderBy: { yearFrom: "desc" },
+      orderBy: { yearFrom: 'desc' },
       take: 8,
-      select: { slug: true, name: true, yearFrom: true, yearTo: true, isCurrentProduction: true },
+      select: {
+        slug: true,
+        name: true,
+        yearFrom: true,
+        yearTo: true,
+        isCurrentProduction: true,
+      },
     }),
   ]);
 
   const toLink = (
-    v: { slug: string; name: string; yearFrom: number; yearTo: number; isCurrentProduction: boolean } | null
+    v: {
+      slug: string;
+      name: string;
+      yearFrom: number;
+      yearTo: number;
+      isCurrentProduction: boolean;
+    } | null,
   ): CaravanAdjacentRangeLink | null => {
     if (!v) return null;
     return { ...v, makeSlug: make.slug, modelSlug: model.slug };
@@ -95,7 +129,11 @@ export async function getCaravanVariantProfileData(
     variant,
     olderRange: toLink(olderRaw),
     newerRange: toLink(newerRaw),
-    siblings: siblingsRaw.map((s) => ({ ...s, makeSlug: make.slug, modelSlug: model.slug })),
+    siblings: siblingsRaw.map((s) => ({
+      ...s,
+      makeSlug: make.slug,
+      modelSlug: model.slug,
+    })),
   };
 }
 
@@ -103,12 +141,12 @@ export async function getAllCaravanVariantSlugsForSSG(): Promise<
   Array<{ make: string; model: string; variant: string }>
 > {
   const variants = await prisma.caravanVariant.findMany({
-    where: { status: "CATALOGUE" },
+    where: { status: 'CATALOGUE' },
     select: {
       slug: true,
       model: { select: { slug: true, make: { select: { slug: true } } } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
   return variants.map((v) => ({
     make: v.model.make.slug,
@@ -140,9 +178,11 @@ export interface CaravanModelPageData {
 
 export async function getCaravanModelPageData(
   makeSlug: string,
-  modelSlug: string
+  modelSlug: string,
 ): Promise<CaravanModelPageData | null> {
-  const make = await prisma.caravanMake.findUnique({ where: { slug: makeSlug } });
+  const make = await prisma.caravanMake.findUnique({
+    where: { slug: makeSlug },
+  });
   if (!make) return null;
 
   const model = await prisma.caravanModel.findUnique({
@@ -151,8 +191,8 @@ export async function getCaravanModelPageData(
   if (!model) return null;
 
   const variants = await prisma.caravanVariant.findMany({
-    where: { modelId: model.id, status: "CATALOGUE" },
-    orderBy: { yearFrom: "desc" },
+    where: { modelId: model.id, status: 'CATALOGUE' },
+    orderBy: { yearFrom: 'desc' },
     select: {
       id: true,
       name: true,
@@ -169,7 +209,12 @@ export async function getCaravanModelPageData(
 
   return {
     make: { id: make.id, name: make.name, slug: make.slug },
-    model: { id: model.id, name: model.name, slug: model.slug, bodyType: model.bodyType },
+    model: {
+      id: model.id,
+      name: model.name,
+      slug: model.slug,
+      bodyType: model.bodyType,
+    },
     variants,
   };
 }
@@ -178,12 +223,12 @@ export async function getAllCaravanModelSlugsForSSG(): Promise<
   Array<{ make: string; model: string }>
 > {
   const models = await prisma.caravanModel.findMany({
-    where: { variants: { some: { status: "CATALOGUE" } } },
+    where: { variants: { some: { status: 'CATALOGUE' } } },
     select: {
       slug: true,
       make: { select: { slug: true } },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: 'asc' },
   });
   return models.map((m) => ({ make: m.make.slug, model: m.slug }));
 }

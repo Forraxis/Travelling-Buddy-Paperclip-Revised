@@ -1,20 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
-import { ConfirmDialog } from "@/modules/admin/components/ConfirmDialog";
-import {
-  inputClassName,
-} from "@/modules/admin/components/FormField";
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
+import { ConfirmDialog } from '@/modules/admin/components/ConfirmDialog';
+import { inputClassName } from '@/modules/admin/components/FormField';
 import {
   createMakeAction,
   updateMakeAction,
   deleteMakeAction,
   listMakesAction,
-} from "@/modules/catalogue/actions/vehicle.actions";
-import type { VehicleMakeDto, PaginatedResult } from "@/modules/catalogue/types/vehicle.types";
+} from '@/modules/catalogue/actions/vehicle.actions';
+import type {
+  VehicleMakeDto,
+  PaginatedResult,
+} from '@/modules/catalogue/types/vehicle.types';
 
 export function VehicleMakesList({
   initialData,
@@ -30,10 +31,10 @@ export function VehicleMakesList({
   const [data, setData] = useState(initialData);
   const [search, setSearch] = useState(initialSearch);
   const [showCreate, setShowCreate] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createCountry, setCreateCountry] = useState("");
+  const [createName, setCreateName] = useState('');
+  const [createCountry, setCreateCountry] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
+  const [editName, setEditName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<VehicleMakeDto | null>(null);
 
   function handleSearch(q: string) {
@@ -63,13 +64,13 @@ export function VehicleMakesList({
       countryOfOrigin: createCountry.trim() || null,
     });
     if (result.success) {
-      toast("Make created successfully");
+      toast('Make created successfully');
       setShowCreate(false);
-      setCreateName("");
-      setCreateCountry("");
+      setCreateName('');
+      setCreateCountry('');
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
@@ -80,11 +81,11 @@ export function VehicleMakesList({
     }
     const result = await updateMakeAction(id, { name: editName.trim() });
     if (result.success) {
-      toast("Make updated");
+      toast('Make updated');
       setEditingId(null);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
@@ -92,11 +93,11 @@ export function VehicleMakesList({
     if (!deleteTarget) return;
     const result = await deleteMakeAction(deleteTarget.id);
     if (result.success) {
-      toast("Make deleted");
+      toast('Make deleted');
       setDeleteTarget(null);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
@@ -112,14 +113,14 @@ export function VehicleMakesList({
         />
         <button
           onClick={() => setShowCreate(true)}
-          className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+          className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
         >
           + Add Make
         </button>
       </div>
 
       {showCreate && (
-        <div className="mb-4 rounded-lg border border-tb-neutral-200 bg-white p-4">
+        <div className="border-tb-neutral-200 mb-4 rounded-lg border bg-white p-4">
           <h3 className="mb-3 text-sm font-semibold text-gray-900">New Make</h3>
           <div className="flex flex-wrap gap-3">
             <input
@@ -129,7 +130,7 @@ export function VehicleMakesList({
               onChange={(e) => setCreateName(e.target.value)}
               className={`${inputClassName} max-w-xs`}
               autoFocus
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
             <input
               type="text"
@@ -137,21 +138,21 @@ export function VehicleMakesList({
               value={createCountry}
               onChange={(e) => setCreateCountry(e.target.value)}
               className={`${inputClassName} max-w-xs`}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
             <button
               onClick={handleCreate}
-              className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+              className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
             >
               Create
             </button>
             <button
               onClick={() => {
                 setShowCreate(false);
-                setCreateName("");
-                setCreateCountry("");
+                setCreateName('');
+                setCreateCountry('');
               }}
-              className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+              className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
             >
               Cancel
             </button>
@@ -159,14 +160,14 @@ export function VehicleMakesList({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-tb-neutral-200">
+      <div className="border-tb-neutral-200 overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-tb-neutral-200 bg-tb-neutral-50">
+            <tr className="border-tb-neutral-200 bg-tb-neutral-50 border-b">
               <th className="px-4 py-3 font-medium text-gray-700">Name</th>
               <th className="px-4 py-3 font-medium text-gray-700">Slug</th>
               <th className="px-4 py-3 font-medium text-gray-700">Country</th>
-              <th className="px-4 py-3 font-medium text-gray-700 text-right">
+              <th className="px-4 py-3 text-right font-medium text-gray-700">
                 Actions
               </th>
             </tr>
@@ -174,12 +175,9 @@ export function VehicleMakesList({
           <tbody>
             {data.items.length === 0 ? (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-8 text-center text-gray-500"
-                >
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
                   {search
-                    ? "No makes match your search."
+                    ? 'No makes match your search.'
                     : "No vehicle makes yet. Click '+ Add Make' to get started."}
                 </td>
               </tr>
@@ -187,7 +185,7 @@ export function VehicleMakesList({
               data.items.map((make) => (
                 <tr
                   key={make.id}
-                  className="border-b border-tb-neutral-200 last:border-0 hover:bg-tb-neutral-50"
+                  className="border-tb-neutral-200 hover:bg-tb-neutral-50 border-b last:border-0"
                 >
                   <td className="px-4 py-3">
                     {editingId === make.id ? (
@@ -197,8 +195,8 @@ export function VehicleMakesList({
                         onChange={(e) => setEditName(e.target.value)}
                         onBlur={() => handleInlineEdit(make.id)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") handleInlineEdit(make.id);
-                          if (e.key === "Escape") setEditingId(null);
+                          if (e.key === 'Enter') handleInlineEdit(make.id);
+                          if (e.key === 'Escape') setEditingId(null);
                         }}
                         className={`${inputClassName} max-w-[12rem]`}
                         autoFocus
@@ -206,7 +204,7 @@ export function VehicleMakesList({
                     ) : (
                       <Link
                         href={`/admin/catalogue/vehicles/${make.slug}`}
-                        className="font-medium text-tb-primary hover:underline"
+                        className="text-tb-primary font-medium hover:underline"
                       >
                         {make.name}
                       </Link>
@@ -214,7 +212,7 @@ export function VehicleMakesList({
                   </td>
                   <td className="px-4 py-3 text-gray-500">{make.slug}</td>
                   <td className="px-4 py-3 text-gray-500">
-                    {make.countryOfOrigin ?? "—"}
+                    {make.countryOfOrigin ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -223,7 +221,7 @@ export function VehicleMakesList({
                           setEditingId(make.id);
                           setEditName(make.name);
                         }}
-                        className="text-sm text-gray-500 hover:text-tb-primary"
+                        className="hover:text-tb-primary text-sm text-gray-500"
                       >
                         Edit
                       </button>
@@ -247,9 +245,9 @@ export function VehicleMakesList({
           <button
             onClick={handleLoadMore}
             disabled={isPending}
-            className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50 disabled:opacity-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
           >
-            {isPending ? "Loading..." : "Load more"}
+            {isPending ? 'Loading...' : 'Load more'}
           </button>
         </div>
       )}

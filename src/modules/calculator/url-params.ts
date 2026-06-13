@@ -1,20 +1,28 @@
-import type { CalculatorState, JourneyAssumptions, CaravanAssumptions } from "./types";
-import { DEFAULT_JOURNEY, DEFAULT_CARAVAN_ASSUMPTIONS, INITIAL_STATE } from "./types";
+import type {
+  CalculatorState,
+  JourneyAssumptions,
+  CaravanAssumptions,
+} from './types';
+import {
+  DEFAULT_JOURNEY,
+  DEFAULT_CARAVAN_ASSUMPTIONS,
+  INITIAL_STATE,
+} from './types';
 
 const PARAM = {
-  vehicleVariantId: "vehicleVariantId",
-  caravanVariantId: "caravanVariantId",
-  passengers: "passengers",
-  cargoKg: "cargoKg",
-  fuelPercent: "fuelPercent",
-  freshWaterPercent: "freshWaterPercent",
-  greyWaterPercent: "greyWaterPercent",
-  gearKg: "gearKg",
-  cvFreshWaterL: "cvFreshWaterL",
-  cvGreyWaterL: "cvGreyWaterL",
-  cvGearKg: "cvGearKg",
-  accessories: "accessories",
-  caravanAccessories: "caravanAccessories",
+  vehicleVariantId: 'vehicleVariantId',
+  caravanVariantId: 'caravanVariantId',
+  passengers: 'passengers',
+  cargoKg: 'cargoKg',
+  fuelPercent: 'fuelPercent',
+  freshWaterPercent: 'freshWaterPercent',
+  greyWaterPercent: 'greyWaterPercent',
+  gearKg: 'gearKg',
+  cvFreshWaterL: 'cvFreshWaterL',
+  cvGreyWaterL: 'cvGreyWaterL',
+  cvGearKg: 'cvGearKg',
+  accessories: 'accessories',
+  caravanAccessories: 'caravanAccessories',
 } as const;
 
 function clamp(value: number, min: number, max: number): number {
@@ -77,11 +85,17 @@ export function stateToParams(state: CalculatorState): URLSearchParams {
   }
 
   if (state.accessories.length > 0) {
-    params.set(PARAM.accessories, state.accessories.map((a) => a.accessoryId).join(","));
+    params.set(
+      PARAM.accessories,
+      state.accessories.map((a) => a.accessoryId).join(','),
+    );
   }
 
   if (state.caravanAccessories.length > 0) {
-    params.set(PARAM.caravanAccessories, state.caravanAccessories.map((a) => a.accessoryId).join(","));
+    params.set(
+      PARAM.caravanAccessories,
+      state.caravanAccessories.map((a) => a.accessoryId).join(','),
+    );
   }
 
   return params;
@@ -92,36 +106,57 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
   const caravanVariantId = params.get(PARAM.caravanVariantId) ?? null;
 
   const journey: JourneyAssumptions = {
-    passengers: clamp(parseIntParam(params, PARAM.passengers) ?? DEFAULT_JOURNEY.passengers, 1, 9),
+    passengers: clamp(
+      parseIntParam(params, PARAM.passengers) ?? DEFAULT_JOURNEY.passengers,
+      1,
+      9,
+    ),
     passengerWeightKg: DEFAULT_JOURNEY.passengerWeightKg,
-    cargoKg: clamp(parseFloatParam(params, PARAM.cargoKg) ?? DEFAULT_JOURNEY.cargoKg, 0, 5000),
-    fuelPercent: clamp(parseIntParam(params, PARAM.fuelPercent) ?? DEFAULT_JOURNEY.fuelPercent, 0, 100),
+    cargoKg: clamp(
+      parseFloatParam(params, PARAM.cargoKg) ?? DEFAULT_JOURNEY.cargoKg,
+      0,
+      5000,
+    ),
+    fuelPercent: clamp(
+      parseIntParam(params, PARAM.fuelPercent) ?? DEFAULT_JOURNEY.fuelPercent,
+      0,
+      100,
+    ),
     freshWaterPercent: clamp(
-      parseIntParam(params, PARAM.freshWaterPercent) ?? DEFAULT_JOURNEY.freshWaterPercent,
+      parseIntParam(params, PARAM.freshWaterPercent) ??
+        DEFAULT_JOURNEY.freshWaterPercent,
       0,
       100,
     ),
     greyWaterPercent: clamp(
-      parseIntParam(params, PARAM.greyWaterPercent) ?? DEFAULT_JOURNEY.greyWaterPercent,
+      parseIntParam(params, PARAM.greyWaterPercent) ??
+        DEFAULT_JOURNEY.greyWaterPercent,
       0,
       100,
     ),
-    gearKg: clamp(parseFloatParam(params, PARAM.gearKg) ?? DEFAULT_JOURNEY.gearKg, 0, 5000),
+    gearKg: clamp(
+      parseFloatParam(params, PARAM.gearKg) ?? DEFAULT_JOURNEY.gearKg,
+      0,
+      5000,
+    ),
   };
 
   const caravanAssumptions: CaravanAssumptions = {
     freshWaterL: clamp(
-      parseFloatParam(params, PARAM.cvFreshWaterL) ?? DEFAULT_CARAVAN_ASSUMPTIONS.freshWaterL,
+      parseFloatParam(params, PARAM.cvFreshWaterL) ??
+        DEFAULT_CARAVAN_ASSUMPTIONS.freshWaterL,
       0,
       600,
     ),
     greyWaterL: clamp(
-      parseFloatParam(params, PARAM.cvGreyWaterL) ?? DEFAULT_CARAVAN_ASSUMPTIONS.greyWaterL,
+      parseFloatParam(params, PARAM.cvGreyWaterL) ??
+        DEFAULT_CARAVAN_ASSUMPTIONS.greyWaterL,
       0,
       600,
     ),
     gearKg: clamp(
-      parseFloatParam(params, PARAM.cvGearKg) ?? DEFAULT_CARAVAN_ASSUMPTIONS.gearKg,
+      parseFloatParam(params, PARAM.cvGearKg) ??
+        DEFAULT_CARAVAN_ASSUMPTIONS.gearKg,
       0,
       2000,
     ),
@@ -130,19 +165,27 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
   const accessoriesRaw = params.get(PARAM.accessories);
   const accessories = accessoriesRaw
     ? accessoriesRaw
-        .split(",")
+        .split(',')
         .map((id) => id.trim())
         .filter(Boolean)
-        .map((accessoryId) => ({ accessoryId, massKg: 0, mountingLocation: "" }))
+        .map((accessoryId) => ({
+          accessoryId,
+          massKg: 0,
+          mountingLocation: '',
+        }))
     : [];
 
   const caravanAccessoriesRaw = params.get(PARAM.caravanAccessories);
   const caravanAccessories = caravanAccessoriesRaw
     ? caravanAccessoriesRaw
-        .split(",")
+        .split(',')
         .map((id) => id.trim())
         .filter(Boolean)
-        .map((accessoryId) => ({ accessoryId, massKg: 0, mountingLocation: "" }))
+        .map((accessoryId) => ({
+          accessoryId,
+          massKg: 0,
+          mountingLocation: '',
+        }))
     : [];
 
   return {

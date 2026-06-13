@@ -1,4 +1,4 @@
-import type { BrandStatus } from "@prisma/client";
+import type { BrandStatus } from '@prisma/client';
 
 export interface AccessoryBrandDto {
   id: string;

@@ -17,11 +17,17 @@ interface EntityPickerProps {
   initialVariant?: PickerVariant | null;
 }
 
-export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerProps) {
+export function EntityPicker({
+  config,
+  onSelect,
+  initialVariant,
+}: EntityPickerProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
-  const [selected, setSelected] = useState<PickerVariant | null>(initialVariant ?? null);
+  const [selected, setSelected] = useState<PickerVariant | null>(
+    initialVariant ?? null,
+  );
   const { recent, addRecent } = useRecent(config.entityType);
 
   // Sync when the parent resolves the variant asynchronously
@@ -45,9 +51,8 @@ export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerP
   );
 
   const handleSubmitClick = useCallback(() => {
-    const url = config.entityType === 'vehicle'
-      ? '/submit/vehicle'
-      : '/submit/caravan';
+    const url =
+      config.entityType === 'vehicle' ? '/submit/vehicle' : '/submit/caravan';
     router.push(url);
   }, [config.entityType, router]);
 
@@ -63,8 +68,8 @@ export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerP
           className={[
             'flex h-20 w-full items-center justify-center rounded-lg border-2 border-dashed transition-colors',
             isCaravan
-              ? 'border-tb-neutral-200 text-gray-400 hover:border-tb-primary-light hover:text-tb-primary-light'
-              : 'border-tb-neutral-200 text-gray-400 hover:border-tb-primary-light hover:text-tb-primary-light',
+              ? 'border-tb-neutral-200 hover:border-tb-primary-light hover:text-tb-primary-light text-gray-400'
+              : 'border-tb-neutral-200 hover:border-tb-primary-light hover:text-tb-primary-light text-gray-400',
           ].join(' ')}
           aria-label={`Select ${config.label}`}
         >
@@ -83,7 +88,11 @@ export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerP
             onSubmitClick={handleSubmitClick}
           >
             {activeTab === 'search' ? (
-              <SearchTab config={config} recent={recent} onSelect={handleSelect} />
+              <SearchTab
+                config={config}
+                recent={recent}
+                onSelect={handleSelect}
+              />
             ) : (
               <BrowseTab config={config} onSelect={handleSelect} />
             )}
@@ -109,7 +118,11 @@ export function EntityPicker({ config, onSelect, initialVariant }: EntityPickerP
           onSubmitClick={handleSubmitClick}
         >
           {activeTab === 'search' ? (
-            <SearchTab config={config} recent={recent} onSelect={handleSelect} />
+            <SearchTab
+              config={config}
+              recent={recent}
+              onSelect={handleSelect}
+            />
           ) : (
             <BrowseTab config={config} onSelect={handleSelect} />
           )}

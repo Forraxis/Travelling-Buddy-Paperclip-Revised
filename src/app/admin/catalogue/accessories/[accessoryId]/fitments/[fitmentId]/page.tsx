@@ -1,10 +1,10 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   getFitmentByIdAction,
   getAccessoryByIdAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import { FitmentForm } from "../FitmentForm";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import { FitmentForm } from '../FitmentForm';
 
 export default async function FitmentDetailPage({
   params,

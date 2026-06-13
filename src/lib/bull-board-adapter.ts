@@ -5,10 +5,10 @@ import type {
   AppControllerRoute,
   AppViewRoute,
   ControllerHandlerReturnType,
-} from "@bull-board/api/typings/app";
-import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+} from '@bull-board/api/typings/app';
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 type ErrorHandler = (error: Error) => ControllerHandlerReturnType;
 
@@ -16,17 +16,20 @@ interface RouteEntry {
   methods: string[];
   pattern: RegExp;
   paramNames: string[];
-  handler: AppControllerRoute["handler"];
+  handler: AppControllerRoute['handler'];
 }
 
-function routeToRegex(route: string): { pattern: RegExp; paramNames: string[] } {
+function routeToRegex(route: string): {
+  pattern: RegExp;
+  paramNames: string[];
+} {
   const paramNames: string[] = [];
   const regexStr = route
     .replace(/:([^/]+)/g, (_match, name) => {
       paramNames.push(name);
-      return "([^/]+)";
+      return '([^/]+)';
     })
-    .replace(/\//g, "\\/");
+    .replace(/\//g, '\\/');
   return { pattern: new RegExp(`^${regexStr}$`), paramNames };
 }
 
@@ -38,7 +41,7 @@ export class NextJsServerAdapter implements IServerAdapter {
   private entryRoute?: AppViewRoute;
   private errorHandler?: ErrorHandler;
   private apiRoutes: RouteEntry[] = [];
-  private basePath = "";
+  private basePath = '';
 
   setBasePath(p: string): this {
     this.basePath = p;
@@ -75,10 +78,17 @@ export class NextJsServerAdapter implements IServerAdapter {
       const methods = Array.isArray(route.method)
         ? route.method.map((m) => m.toUpperCase())
         : [route.method.toUpperCase()];
-      const routePaths = Array.isArray(route.route) ? route.route : [route.route];
+      const routePaths = Array.isArray(route.route)
+        ? route.route
+        : [route.route];
       for (const routePath of routePaths) {
         const { pattern, paramNames } = routeToRegex(routePath);
-        this.apiRoutes.push({ methods, pattern, paramNames, handler: route.handler });
+        this.apiRoutes.push({
+          methods,
+          pattern,
+          paramNames,
+          handler: route.handler,
+        });
       }
     }
     return this;
@@ -90,7 +100,7 @@ export class NextJsServerAdapter implements IServerAdapter {
   }
 
   async handleRequest(req: NextRequest, slug: string[]): Promise<NextResponse> {
-    const subPath = "/" + (slug ?? []).join("/");
+    const subPath = '/' + (slug ?? []).join('/');
 
     // Serve static files
     if (this.staticPath && subPath.startsWith(this.staticPath.route)) {
@@ -100,20 +110,20 @@ export class NextJsServerAdapter implements IServerAdapter {
         const data = fs.readFileSync(filePath);
         const ext = path.extname(filePath).slice(1);
         const mimeTypes: Record<string, string> = {
-          js: "application/javascript",
-          css: "text/css",
-          svg: "image/svg+xml",
-          png: "image/png",
-          ico: "image/x-icon",
+          js: 'application/javascript',
+          css: 'text/css',
+          svg: 'image/svg+xml',
+          png: 'image/png',
+          ico: 'image/x-icon',
         };
         return new NextResponse(data, {
           headers: {
-            "Content-Type": mimeTypes[ext] ?? "application/octet-stream",
-            "Cache-Control": "public, max-age=31536000, immutable",
+            'Content-Type': mimeTypes[ext] ?? 'application/octet-stream',
+            'Cache-Control': 'public, max-age=31536000, immutable',
           },
         });
       } catch {
-        return new NextResponse("Not found", { status: 404 });
+        return new NextResponse('Not found', { status: 404 });
       }
     }
 
@@ -136,7 +146,7 @@ export class NextJsServerAdapter implements IServerAdapter {
       });
 
       let body: Record<string, unknown> = {};
-      if (method !== "GET" && method !== "HEAD") {
+      if (method !== 'GET' && method !== 'HEAD') {
         try {
           body = await req.json();
         } catch {
@@ -162,7 +172,9 @@ export class NextJsServerAdapter implements IServerAdapter {
       } catch (err) {
         if (this.errorHandler) {
           const errResult = this.errorHandler(err as Error);
-          return NextResponse.json(errResult.body, { status: errResult.status ?? 500 });
+          return NextResponse.json(errResult.body, {
+            status: errResult.status ?? 500,
+          });
         }
         return NextResponse.json({ error: String(err) }, { status: 500 });
       }
@@ -171,37 +183,43 @@ export class NextJsServerAdapter implements IServerAdapter {
     // Entry point (HTML)
     if (
       this.entryRoute &&
-      (method === "GET" || method === "HEAD") &&
+      (method === 'GET' || method === 'HEAD') &&
       this.viewsPath
     ) {
       const entryPaths = Array.isArray(this.entryRoute.route)
         ? this.entryRoute.route
         : [this.entryRoute.route];
       const entryPatterns = entryPaths.map((r) => routeToRegex(r));
-      const isEntryPath = entryPatterns.some(({ pattern }) => subPath.match(pattern));
+      const isEntryPath = entryPatterns.some(({ pattern }) =>
+        subPath.match(pattern),
+      );
 
-      if (isEntryPath || subPath === "/") {
+      if (isEntryPath || subPath === '/') {
         const result = this.entryRoute.handler({
-          basePath: this.basePath.endsWith("/") ? this.basePath : `${this.basePath}/`,
+          basePath: this.basePath.endsWith('/')
+            ? this.basePath
+            : `${this.basePath}/`,
           uiConfig: this.uiConfig,
         });
         const ejsPath = path.join(this.viewsPath, `${result.name}`);
         try {
-          let html = fs.readFileSync(ejsPath, "utf8");
+          let html = fs.readFileSync(ejsPath, 'utf8');
           // Simple EJS variable substitution (bull-board template is minimal)
           for (const [key, val] of Object.entries(result.params)) {
-            html = html.replace(new RegExp(`<%= ${key} %>`, "g"), val ?? "");
-            html = html.replace(new RegExp(`<%- ${key} %>`, "g"), val ?? "");
+            html = html.replace(new RegExp(`<%= ${key} %>`, 'g'), val ?? '');
+            html = html.replace(new RegExp(`<%- ${key} %>`, 'g'), val ?? '');
           }
           return new NextResponse(html, {
-            headers: { "Content-Type": "text/html; charset=utf-8" },
+            headers: { 'Content-Type': 'text/html; charset=utf-8' },
           });
         } catch {
-          return new NextResponse("Bull Board UI not available", { status: 500 });
+          return new NextResponse('Bull Board UI not available', {
+            status: 500,
+          });
         }
       }
     }
 
-    return new NextResponse("Not found", { status: 404 });
+    return new NextResponse('Not found', { status: 404 });
   }
 }

@@ -6,8 +6,8 @@ export function parseCsvToRecords(text: string): {
   headers: string[];
   records: Record<string, string>[];
 } {
-  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-  const nonEmpty = lines.filter((l, i) => i === 0 || l.trim() !== "");
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const nonEmpty = lines.filter((l, i) => i === 0 || l.trim() !== '');
 
   if (nonEmpty.length === 0) return { headers: [], records: [] };
 
@@ -20,7 +20,7 @@ export function parseCsvToRecords(text: string): {
     const values = parseCsvRow(line);
     const record: Record<string, string> = {};
     headers.forEach((h, idx) => {
-      record[h] = (values[idx] ?? "").trim();
+      record[h] = (values[idx] ?? '').trim();
     });
     records.push(record);
   }
@@ -40,7 +40,7 @@ function parseCsvRow(line: string): string[] {
 
     if (line[i] === '"') {
       i++;
-      let field = "";
+      let field = '';
       while (i < line.length) {
         if (line[i] === '"' && line[i + 1] === '"') {
           field += '"';
@@ -53,9 +53,9 @@ function parseCsvRow(line: string): string[] {
         }
       }
       result.push(field);
-      if (line[i] === ",") i++;
+      if (line[i] === ',') i++;
     } else {
-      const commaIdx = line.indexOf(",", i);
+      const commaIdx = line.indexOf(',', i);
       if (commaIdx === -1) {
         result.push(line.slice(i));
         i = line.length;
@@ -66,18 +66,18 @@ function parseCsvRow(line: string): string[] {
     }
   }
 
-  if (line.endsWith(",")) result.push("");
+  if (line.endsWith(',')) result.push('');
 
   return result;
 }
 
 export function generateCsvTemplate(
   headers: string[],
-  exampleRow: string[]
+  exampleRow: string[],
 ): string {
-  const headerLine = headers.join(",");
+  const headerLine = headers.join(',');
   const exampleLine = exampleRow
-    .map((v) => (v.includes(",") ? `"${v}"` : v))
-    .join(",");
+    .map((v) => (v.includes(',') ? `"${v}"` : v))
+    .join(',');
   return `${headerLine}\n${exampleLine}\n`;
 }

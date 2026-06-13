@@ -1,11 +1,11 @@
-import { AdminPageHeader } from "@/modules/admin/components";
+import { AdminPageHeader } from '@/modules/admin/components';
 import {
   listAccessoriesAction,
   listBrandsAction,
   listCategoriesAction,
-} from "@/modules/catalogue/actions/accessory-admin.actions";
-import { AccessoriesList } from "./AccessoriesList";
-import Link from "next/link";
+} from '@/modules/catalogue/actions/accessory-admin.actions';
+import { AccessoriesList } from './AccessoriesList';
+import Link from 'next/link';
 
 export default async function AccessoriesPage({
   searchParams,
@@ -18,7 +18,7 @@ export default async function AccessoriesPage({
   }>;
 }) {
   const params = await searchParams;
-  const search = params.q ?? "";
+  const search = params.q ?? '';
   const cursor = params.cursor;
   const brandId = params.brandId;
   const categoryId = params.categoryId;
@@ -37,7 +37,7 @@ export default async function AccessoriesPage({
         actions={
           <Link
             href="/admin/catalogue/accessories/new"
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
           >
             + Add Accessory
           </Link>
@@ -46,8 +46,8 @@ export default async function AccessoriesPage({
       <AccessoriesList
         initialData={result}
         initialSearch={search}
-        initialBrandId={brandId ?? ""}
-        initialCategoryId={categoryId ?? ""}
+        initialBrandId={brandId ?? ''}
+        initialCategoryId={categoryId ?? ''}
         brands={brandsResult.items}
         categories={categoriesResult.items}
       />

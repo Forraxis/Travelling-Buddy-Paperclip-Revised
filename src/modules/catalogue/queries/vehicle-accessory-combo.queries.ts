@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import { parseComboSlug } from "./combo.queries";
+import { prisma } from '@/lib/db';
+import { parseComboSlug } from './combo.queries';
 
 export interface VehicleAccessoryComboAccessoryRow {
   id: string;
@@ -38,7 +38,12 @@ export interface VehicleAccessoryComboPageData {
       make: { name: string; slug: string };
     };
   };
-  category: { id: string; name: string; slug: string; description: string | null };
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+  };
   accessories: VehicleAccessoryComboAccessoryRow[];
   gvmHeadroomBeforeKg: number | null;
   combinedWeightKg: number;
@@ -53,7 +58,9 @@ export async function getVehicleAccessoryComboPageData(
   const parsed = parseComboSlug(vehicleCompound);
   if (!parsed) return null;
 
-  const make = await prisma.vehicleMake.findUnique({ where: { slug: parsed.makeSlug } });
+  const make = await prisma.vehicleMake.findUnique({
+    where: { slug: parsed.makeSlug },
+  });
   if (!make) return null;
 
   const model = await prisma.vehicleModel.findUnique({
@@ -75,7 +82,7 @@ export async function getVehicleAccessoryComboPageData(
       kerbWeightKg: true,
     },
   });
-  if (!variant || variant.status !== "CATALOGUE") return null;
+  if (!variant || variant.status !== 'CATALOGUE') return null;
 
   const category = await prisma.accessoryCategory.findUnique({
     where: { slug: categorySlug },
@@ -86,9 +93,9 @@ export async function getVehicleAccessoryComboPageData(
   const fitmentsRaw = await prisma.accessoryFitment.findMany({
     where: {
       vehicleVariantId: variant.id,
-      accessory: { status: "ACTIVE", categoryId: category.id },
+      accessory: { status: 'ACTIVE', categoryId: category.id },
     },
-    orderBy: { installedWeightKg: "asc" },
+    orderBy: { installedWeightKg: 'asc' },
     select: {
       installedWeightKg: true,
       accessory: {
@@ -113,41 +120,57 @@ export async function getVehicleAccessoryComboPageData(
   const gvmHeadroomBeforeKg =
     gvmKg != null && kerbWeightKg != null ? gvmKg - kerbWeightKg : null;
 
-  const accessories: VehicleAccessoryComboAccessoryRow[] = fitmentsRaw.map((f) => {
-    const weightKg = (f.installedWeightKg as unknown as { toNumber(): number }).toNumber();
-    return {
-      id: f.accessory.id,
-      name: f.accessory.name,
-      slug: f.accessory.slug,
-      brandSlug: f.accessory.brand.slug,
-      brandName: f.accessory.brand.name,
-      installedWeightKg: weightKg,
-      affiliateUrl: f.accessory.affiliateUrl,
-      gvmHeadroomAfterKg:
-        gvmHeadroomBeforeKg != null ? gvmHeadroomBeforeKg - weightKg : null,
-      priceMin: f.accessory.priceMin
-        ? (f.accessory.priceMin as unknown as { toNumber(): number }).toNumber()
-        : null,
-      priceMax: f.accessory.priceMax
-        ? (f.accessory.priceMax as unknown as { toNumber(): number }).toNumber()
-        : null,
-      currencyCode: f.accessory.currencyCode,
-    };
-  });
+  const accessories: VehicleAccessoryComboAccessoryRow[] = fitmentsRaw.map(
+    (f) => {
+      const weightKg = (
+        f.installedWeightKg as unknown as { toNumber(): number }
+      ).toNumber();
+      return {
+        id: f.accessory.id,
+        name: f.accessory.name,
+        slug: f.accessory.slug,
+        brandSlug: f.accessory.brand.slug,
+        brandName: f.accessory.brand.name,
+        installedWeightKg: weightKg,
+        affiliateUrl: f.accessory.affiliateUrl,
+        gvmHeadroomAfterKg:
+          gvmHeadroomBeforeKg != null ? gvmHeadroomBeforeKg - weightKg : null,
+        priceMin: f.accessory.priceMin
+          ? (
+              f.accessory.priceMin as unknown as { toNumber(): number }
+            ).toNumber()
+          : null,
+        priceMax: f.accessory.priceMax
+          ? (
+              f.accessory.priceMax as unknown as { toNumber(): number }
+            ).toNumber()
+          : null,
+        currencyCode: f.accessory.currencyCode,
+      };
+    },
+  );
 
-  const combinedWeightKg = accessories.reduce((s, a) => s + a.installedWeightKg, 0);
+  const combinedWeightKg = accessories.reduce(
+    (s, a) => s + a.installedWeightKg,
+    0,
+  );
   const combinedGvmHeadroomAfterKg =
     gvmHeadroomBeforeKg != null ? gvmHeadroomBeforeKg - combinedWeightKg : null;
 
   // Related categories: other categories with >= 3 accessories fitted to this vehicle
   const allFitmentsForVehicle = await prisma.accessoryFitment.findMany({
-    where: { vehicleVariantId: variant.id, accessory: { status: "ACTIVE" } },
+    where: { vehicleVariantId: variant.id, accessory: { status: 'ACTIVE' } },
     select: {
-      accessory: { select: { category: { select: { id: true, name: true, slug: true } } } },
+      accessory: {
+        select: { category: { select: { id: true, name: true, slug: true } } },
+      },
     },
   });
 
-  const catCounts = new Map<string, { name: string; slug: string; count: number }>();
+  const catCounts = new Map<
+    string,
+    { name: string; slug: string; count: number }
+  >();
   for (const f of allFitmentsForVehicle) {
     const cat = f.accessory.category;
     if (cat.slug === categorySlug) continue;
@@ -196,14 +219,17 @@ export async function getAllVehicleAccessoryComboPairsForSSG(): Promise<
 > {
   const [allFitments, catalogueVariants] = await Promise.all([
     prisma.accessoryFitment.findMany({
-      where: { vehicleVariantId: { not: null }, accessory: { status: "ACTIVE" } },
+      where: {
+        vehicleVariantId: { not: null },
+        accessory: { status: 'ACTIVE' },
+      },
       select: {
         vehicleVariantId: true,
         accessory: { select: { category: { select: { slug: true } } } },
       },
     }),
     prisma.vehicleVariant.findMany({
-      where: { status: "CATALOGUE" },
+      where: { status: 'CATALOGUE' },
       select: {
         id: true,
         slug: true,
@@ -225,7 +251,7 @@ export async function getAllVehicleAccessoryComboPairsForSSG(): Promise<
   const result: Array<{ vehicle: string; category: string }> = [];
   for (const [key, count] of pairCounts.entries()) {
     if (count < 3) continue;
-    const [variantId, catSlug] = key.split("|");
+    const [variantId, catSlug] = key.split('|');
     const variant = variantById.get(variantId);
     if (!variant) continue;
     result.push({

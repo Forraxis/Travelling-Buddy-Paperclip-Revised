@@ -1,14 +1,17 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   getComboPageData,
   getAllComboSlugsForSSG,
   buildComboSlug,
-} from "@/modules/catalogue/queries/combo.queries";
-import type { ComboPageData, ComboVariantMini } from "@/modules/catalogue/queries/combo.queries";
-import type { VehicleVariantDto } from "@/modules/catalogue/types/vehicle.types";
-import type { CaravanVariantDto } from "@/modules/catalogue/types/caravan.types";
+} from '@/modules/catalogue/queries/combo.queries';
+import type {
+  ComboPageData,
+  ComboVariantMini,
+} from '@/modules/catalogue/queries/combo.queries';
+import type { VehicleVariantDto } from '@/modules/catalogue/types/vehicle.types';
+import type { CaravanVariantDto } from '@/modules/catalogue/types/caravan.types';
 
 export const revalidate = 86400;
 
@@ -49,24 +52,24 @@ function coverageYears(v: { yearFrom: number; yearTo: number }): number[] {
 }
 
 function enumerateYearsProse(years: number[]): string {
-  if (years.length === 0) return "";
+  if (years.length === 0) return '';
   if (years.length === 1) return `${years[0]}`;
-  const init = years.slice(0, -1).join(", ");
+  const init = years.slice(0, -1).join(', ');
   return `${init}, or ${years[years.length - 1]}`;
 }
 
 function formatKg(n: number | null | undefined): string {
-  return n != null ? `${n.toLocaleString()} kg` : "—";
+  return n != null ? `${n.toLocaleString()} kg` : '—';
 }
 
 function formatPct(n: number | null | undefined): string {
-  return n != null ? `${Math.round(n)}%` : "—";
+  return n != null ? `${Math.round(n)}%` : '—';
 }
 
 // ── Combo metrics computation ────────────────────────────────────────────────
 
-type MetricStatus = "ok" | "warn" | "fail" | "info";
-type Verdict = "pass" | "warn" | "fail";
+type MetricStatus = 'ok' | 'warn' | 'fail' | 'info';
+type Verdict = 'pass' | 'warn' | 'fail';
 
 interface ComboMetric {
   label: string;
@@ -91,9 +94,9 @@ const FUEL_DENSITY: Record<string, number> = {
 };
 
 function metricStatus(value: number, limit: number): MetricStatus {
-  if (value > limit) return "fail";
-  if (value > limit * 0.9) return "warn";
-  return "ok";
+  if (value > limit) return 'fail';
+  if (value > limit * 0.9) return 'warn';
+  return 'ok';
 }
 
 function computeComboMetrics(
@@ -130,18 +133,13 @@ function computeComboMetrics(
         : null;
 
   // GCM: vehicle at standard load + caravan at ATM
-  const gcmActual =
-    gvmActual != null && atm != null ? gvmActual + atm : null;
+  const gcmActual = gvmActual != null && atm != null ? gvmActual + atm : null;
 
   // Axle loads — simplified proportion when wheelbase is available
   // Front CoG ≈ 0.45 × wheelbase from rear; rear picks up TBM at rearOverhang
   let frontAxleKg: number | null = null;
   let rearAxleKg: number | null = null;
-  if (
-    gvmActual != null &&
-    v.wheelbaseMm != null &&
-    v.wheelbaseMm > 0
-  ) {
+  if (gvmActual != null && v.wheelbaseMm != null && v.wheelbaseMm > 0) {
     const rearOverhang = v.rearOverhangMm ?? 400;
     // Vehicle CoG fraction at ~0.55 from front axle  = 0.45 from rear
     const vehicleMoment = (vehicleStdBaseKg ?? 0) * (v.wheelbaseMm * 0.45);
@@ -161,18 +159,16 @@ function computeComboMetrics(
   const metrics: ComboMetric[] = [
     // 1. Tow capacity
     {
-      label: "Tow capacity vs caravan ATM",
+      label: 'Tow capacity vs caravan ATM',
       valueKg: atm,
       limitKg: maxTow,
       pct: towUtilPct,
       status:
-        atm != null && maxTow != null
-          ? metricStatus(atm, maxTow)
-          : "info",
+        atm != null && maxTow != null ? metricStatus(atm, maxTow) : 'info',
     },
     // 2. Tow ball download
     {
-      label: "Tow ball download vs limit",
+      label: 'Tow ball download vs limit',
       valueKg: tbm,
       limitKg: maxTbd,
       pct:
@@ -180,13 +176,11 @@ function computeComboMetrics(
           ? (tbm / maxTbd) * 100
           : null,
       status:
-        tbm != null && maxTbd != null
-          ? metricStatus(tbm, maxTbd)
-          : "info",
+        tbm != null && maxTbd != null ? metricStatus(tbm, maxTbd) : 'info',
     },
     // 3. GCM
     {
-      label: "Gross combination mass (GCM)",
+      label: 'Gross combination mass (GCM)',
       valueKg: gcmActual,
       limitKg: gcmLimit,
       pct:
@@ -196,12 +190,12 @@ function computeComboMetrics(
       status:
         gcmActual != null && gcmLimit != null
           ? metricStatus(gcmActual, gcmLimit)
-          : "info",
-      note: "Vehicle at standard load + caravan at ATM",
+          : 'info',
+      note: 'Vehicle at standard load + caravan at ATM',
     },
     // 4. GVM at standard load
     {
-      label: "Gross vehicle mass (GVM)",
+      label: 'Gross vehicle mass (GVM)',
       valueKg: gvmActual,
       limitKg: gvmLimit,
       pct:
@@ -211,12 +205,12 @@ function computeComboMetrics(
       status:
         gvmActual != null && gvmLimit != null
           ? metricStatus(gvmActual, gvmLimit)
-          : "info",
-      note: "Vehicle at kerb + 2 passengers + full fuel + TBM",
+          : 'info',
+      note: 'Vehicle at kerb + 2 passengers + full fuel + TBM',
     },
     // 5. Front axle
     {
-      label: "Front axle load",
+      label: 'Front axle load',
       valueKg: frontAxleKg,
       limitKg: frontLimit,
       pct:
@@ -226,12 +220,13 @@ function computeComboMetrics(
       status:
         frontAxleKg != null && frontLimit != null
           ? metricStatus(frontAxleKg, frontLimit)
-          : "info",
-      note: frontAxleKg == null ? "Requires calculator for exact value" : undefined,
+          : 'info',
+      note:
+        frontAxleKg == null ? 'Requires calculator for exact value' : undefined,
     },
     // 6. Rear axle
     {
-      label: "Rear axle load",
+      label: 'Rear axle load',
       valueKg: rearAxleKg,
       limitKg: rearLimit,
       pct:
@@ -241,53 +236,49 @@ function computeComboMetrics(
       status:
         rearAxleKg != null && rearLimit != null
           ? metricStatus(rearAxleKg, rearLimit)
-          : "info",
-      note: rearAxleKg == null ? "Requires calculator for exact value" : undefined,
+          : 'info',
+      note:
+        rearAxleKg == null ? 'Requires calculator for exact value' : undefined,
     },
     // 7. Caravan ATM rating
     {
-      label: "Caravan ATM (rated)",
+      label: 'Caravan ATM (rated)',
       valueKg: atm,
       limitKg: null,
       pct: null,
-      status: "info",
+      status: 'info',
     },
     // 8. Caravan GTM rating
     {
-      label: "Caravan GTM (rated)",
+      label: 'Caravan GTM (rated)',
       valueKg: gtm,
       limitKg: null,
       pct: null,
-      status: "info",
+      status: 'info',
     },
     // 9. TBM % of ATM (ADR: ≤ 10%)
     {
-      label: "Tow ball mass as % of ATM",
+      label: 'Tow ball mass as % of ATM',
       valueKg: tbm,
       limitKg: atm != null ? atm * 0.1 : null,
       pct: tbmPctOfAtm,
-      status:
-        tbmPctOfAtm != null
-          ? tbmPctOfAtm > 10
-            ? "warn"
-            : "ok"
-          : "info",
-      note: "ADR guideline: TBM ≤ 10% of ATM",
+      status: tbmPctOfAtm != null ? (tbmPctOfAtm > 10 ? 'warn' : 'ok') : 'info',
+      note: 'ADR guideline: TBM ≤ 10% of ATM',
     },
     // 10. Towing utilization %
     {
-      label: "Towing capacity utilization",
+      label: 'Towing capacity utilization',
       valueKg: atm,
       limitKg: maxTow,
       pct: towUtilPct,
       status:
         towUtilPct != null
           ? towUtilPct > 100
-            ? "fail"
+            ? 'fail'
             : towUtilPct > 90
-              ? "warn"
-              : "ok"
-          : "info",
+              ? 'warn'
+              : 'ok'
+          : 'info',
     },
   ];
 
@@ -295,13 +286,14 @@ function computeComboMetrics(
   const complianceStatuses = metrics
     .slice(0, 4)
     .map((m) => m.status)
-    .filter((s): s is "ok" | "warn" | "fail" => s !== "info");
+    .filter((s): s is 'ok' | 'warn' | 'fail' => s !== 'info');
 
-  let verdict: Verdict = "pass";
-  let verdictReason = "This combination is legal under standard load conditions.";
+  let verdict: Verdict = 'pass';
+  let verdictReason =
+    'This combination is legal under standard load conditions.';
 
-  if (complianceStatuses.includes("fail")) {
-    verdict = "fail";
+  if (complianceStatuses.includes('fail')) {
+    verdict = 'fail';
     if (atm != null && maxTow != null && atm > maxTow) {
       verdictReason = `The caravan ATM (${formatKg(atm)}) exceeds the vehicle's maximum towing capacity (${formatKg(maxTow)}).`;
     } else if (tbm != null && maxTbd != null && tbm > maxTbd) {
@@ -309,12 +301,13 @@ function computeComboMetrics(
     } else if (gcmActual != null && gcmLimit != null && gcmActual > gcmLimit) {
       verdictReason = `The combination mass (${formatKg(gcmActual)}) exceeds the vehicle's GCM limit (${formatKg(gcmLimit)}).`;
     } else {
-      verdictReason = "One or more limits are exceeded under standard load conditions.";
+      verdictReason =
+        'One or more limits are exceeded under standard load conditions.';
     }
-  } else if (complianceStatuses.includes("warn")) {
-    verdict = "warn";
+  } else if (complianceStatuses.includes('warn')) {
+    verdict = 'warn';
     verdictReason =
-      "This combination is within legal limits but close to the boundary — use the calculator to verify with your exact load.";
+      'This combination is within legal limits but close to the boundary — use the calculator to verify with your exact load.';
   }
 
   return { verdict, verdictReason, metrics };
@@ -327,12 +320,7 @@ interface FaqEntry {
   answer: string;
 }
 
-type VerdictAspect =
-  | "headline"
-  | "tow-capacity"
-  | "atm"
-  | "gcm"
-  | "tbm";
+type VerdictAspect = 'headline' | 'tow-capacity' | 'atm' | 'gcm' | 'tbm';
 
 function buildComboFaqs(
   vMakeName: string,
@@ -351,7 +339,7 @@ function buildComboFaqs(
   const cYears = coverageYears(c);
 
   const verdictWord =
-    comboMetrics.verdict === "fail" ? "not recommended" : "legal";
+    comboMetrics.verdict === 'fail' ? 'not recommended' : 'legal';
 
   const makeEntry = (
     yearV: number,
@@ -359,47 +347,47 @@ function buildComboFaqs(
     aspect: VerdictAspect,
   ): FaqEntry | null => {
     switch (aspect) {
-      case "headline":
+      case 'headline':
         return {
           question: `Can a ${yearV} ${vFull} tow a ${yearC} ${cFull}?`,
           answer:
-            comboMetrics.verdict === "fail"
+            comboMetrics.verdict === 'fail'
               ? `The ${yearV} ${vFull} is generally not recommended to tow a ${yearC} ${cFull}. ${comboMetrics.verdictReason}`
               : `Yes, the ${yearV} ${vFull} can tow a ${yearC} ${cFull}. ${comboMetrics.verdictReason} Always verify with the TravellingBuddy calculator using your exact load.`,
         };
-      case "tow-capacity":
+      case 'tow-capacity':
         if (v.maxTowingCapacityKg == null) return null;
         return {
           question: `What is the maximum towing capacity of the ${yearV} ${vFull}?`,
           answer: `The ${yearV} ${vFull} has a rated maximum towing capacity of ${formatKg(v.maxTowingCapacityKg)}. The ${yearC} ${cFull} has an ATM of ${formatKg(c.atmKg)}, which is ${verdictWord} for this vehicle.`,
         };
-      case "atm":
+      case 'atm':
         if (c.atmKg == null) return null;
         return {
           question: `What is the ATM of the ${yearC} ${cFull}?`,
           answer: `The ${yearC} ${cFull} has an aggregate trailer mass (ATM) of ${formatKg(c.atmKg)}. The ${yearV} ${vFull} has a maximum towing capacity of ${formatKg(v.maxTowingCapacityKg)}, making this combination ${verdictWord}.`,
         };
-      case "gcm":
+      case 'gcm':
         if (v.gcmKg == null || c.atmKg == null || v.gvmKg == null) return null;
         return {
           question: `Does the ${yearV} ${vFull} comply with GCM when towing a ${yearC} ${cFull}?`,
-          answer: `The ${yearV} ${vFull} has a GCM limit of ${formatKg(v.gcmKg)}. At the vehicle's GVM (${formatKg(v.gvmKg)}) plus the caravan at ATM (${formatKg(c.atmKg)}), the combination mass is ${formatKg((v.gvmKg ?? 0) + (c.atmKg ?? 0))}, which is ${(v.gvmKg ?? 0) + (c.atmKg ?? 0) <= v.gcmKg ? "within" : "over"} the GCM limit.`,
+          answer: `The ${yearV} ${vFull} has a GCM limit of ${formatKg(v.gcmKg)}. At the vehicle's GVM (${formatKg(v.gvmKg)}) plus the caravan at ATM (${formatKg(c.atmKg)}), the combination mass is ${formatKg((v.gvmKg ?? 0) + (c.atmKg ?? 0))}, which is ${(v.gvmKg ?? 0) + (c.atmKg ?? 0) <= v.gcmKg ? 'within' : 'over'} the GCM limit.`,
         };
-      case "tbm":
+      case 'tbm':
         if (c.tbmKg == null) return null;
         return {
           question: `What is the tow ball mass of the ${yearC} ${cFull}?`,
-          answer: `The ${yearC} ${cFull} has a rated tow ball mass (TBM) of ${formatKg(c.tbmKg)}. The ${yearV} ${vFull} has a maximum tow ball download limit of ${formatKg(v.maxTowBallDownloadKg)}, so this is ${c.tbmKg <= (v.maxTowBallDownloadKg ?? Infinity) ? "within spec" : "over the limit"}.`,
+          answer: `The ${yearC} ${cFull} has a rated tow ball mass (TBM) of ${formatKg(c.tbmKg)}. The ${yearV} ${vFull} has a maximum tow ball download limit of ${formatKg(v.maxTowBallDownloadKg)}, so this is ${c.tbmKg <= (v.maxTowBallDownloadKg ?? Infinity) ? 'within spec' : 'over the limit'}.`,
         };
     }
   };
 
   const ASPECTS: VerdictAspect[] = [
-    "headline",
-    "tow-capacity",
-    "atm",
-    "gcm",
-    "tbm",
+    'headline',
+    'tow-capacity',
+    'atm',
+    'gcm',
+    'tbm',
   ];
 
   const entries: FaqEntry[] = [];
@@ -416,14 +404,14 @@ function buildComboFaqs(
   // Priority 2: (mostRecentV × each earlier C year) × headline
   for (let i = cYears.length - 2; i >= 0; i--) {
     if (entries.length >= 15) break;
-    const e = makeEntry(vMostRecent, cYears[i], "headline");
+    const e = makeEntry(vMostRecent, cYears[i], 'headline');
     if (e) entries.push(e);
   }
 
   // Priority 3: (each earlier V year × mostRecentC) × headline
   for (let i = vYears.length - 2; i >= 0; i--) {
     if (entries.length >= 15) break;
-    const e = makeEntry(vYears[i], cMostRecent, "headline");
+    const e = makeEntry(vYears[i], cMostRecent, 'headline');
     if (e) entries.push(e);
   }
 
@@ -431,7 +419,7 @@ function buildComboFaqs(
   outer: for (let vi = vYears.length - 2; vi >= 0; vi--) {
     for (let ci = cYears.length - 2; ci >= 0; ci--) {
       if (entries.length >= 15) break outer;
-      const e = makeEntry(vYears[vi], cYears[ci], "headline");
+      const e = makeEntry(vYears[vi], cYears[ci], 'headline');
       if (e) entries.push(e);
     }
   }
@@ -450,28 +438,28 @@ function buildVehicleJsonLd(data: ComboPageData): object {
     : v.yearTo.toString();
 
   return {
-    "@context": "https://schema.org",
-    "@type": "Car",
+    '@context': 'https://schema.org',
+    '@type': 'Car',
     name: `${make.name} ${model.name} ${v.name}`,
-    manufacturer: { "@type": "Organization", name: make.name },
+    manufacturer: { '@type': 'Organization', name: make.name },
     model: model.name,
     vehicleModelDate: productionEnd,
     productionDate: `${v.yearFrom}/${productionEnd}`,
     ...(v.gvmKg != null
       ? {
           weightTotal: {
-            "@type": "QuantitativeValue",
+            '@type': 'QuantitativeValue',
             value: v.gvmKg,
-            unitCode: "KGM",
+            unitCode: 'KGM',
           },
         }
       : {}),
     ...(v.maxTowingCapacityKg != null
       ? {
           towingCapacity: {
-            "@type": "QuantitativeValue",
+            '@type': 'QuantitativeValue',
             value: v.maxTowingCapacityKg,
-            unitCode: "KGM",
+            unitCode: 'KGM',
           },
         }
       : {}),
@@ -480,12 +468,12 @@ function buildVehicleJsonLd(data: ComboPageData): object {
 
 function buildFaqJsonLd(faqs: FaqEntry[]): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
     mainEntity: faqs.map((f) => ({
-      "@type": "Question",
+      '@type': 'Question',
       name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
     })),
   };
 }
@@ -495,7 +483,7 @@ function buildFaqJsonLd(faqs: FaqEntry[]): object {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { vehicle, caravan } = await params;
   const data = await getComboPageData(vehicle, caravan);
-  if (!data) return { title: "Not Found" };
+  if (!data) return { title: 'Not Found' };
 
   const v = data.vehicle;
   const c = data.caravan;
@@ -517,7 +505,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: [{ url: "/og/combo-default.png", width: 1200, height: 630 }],
+      images: [{ url: '/og/combo-default.png', width: 1200, height: 630 }],
     },
   };
 }
@@ -525,7 +513,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function VerdictBadge({ verdict }: { verdict: Verdict }) {
-  if (verdict === "pass") {
+  if (verdict === 'pass') {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800">
         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -539,7 +527,7 @@ function VerdictBadge({ verdict }: { verdict: Verdict }) {
       </span>
     );
   }
-  if (verdict === "warn") {
+  if (verdict === 'warn') {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -569,16 +557,16 @@ function VerdictBadge({ verdict }: { verdict: Verdict }) {
 
 function MetricBar({ metric }: { metric: ComboMetric }) {
   const barColors: Record<MetricStatus, string> = {
-    ok: "bg-green-500",
-    warn: "bg-amber-400",
-    fail: "bg-red-500",
-    info: "bg-blue-400",
+    ok: 'bg-green-500',
+    warn: 'bg-amber-400',
+    fail: 'bg-red-500',
+    info: 'bg-blue-400',
   };
   const borderColors: Record<MetricStatus, string> = {
-    ok: "border-green-200",
-    warn: "border-amber-200",
-    fail: "border-red-200",
-    info: "border-gray-200",
+    ok: 'border-green-200',
+    warn: 'border-amber-200',
+    fail: 'border-red-200',
+    info: 'border-gray-200',
   };
 
   const pct = metric.pct != null ? Math.min(metric.pct, 100) : null;
@@ -601,11 +589,16 @@ function MetricBar({ metric }: { metric: ComboMetric }) {
             </span>
           )}
           {metric.limitKg != null && (
-            <span className="text-gray-400"> / {metric.limitKg.toLocaleString()} kg</span>
+            <span className="text-gray-400">
+              {' '}
+              / {metric.limitKg.toLocaleString()} kg
+            </span>
           )}
           {metric.valueKg == null && <span className="text-gray-400">—</span>}
           {metric.pct != null && (
-            <p className="mt-0.5 text-xs text-gray-500">{formatPct(metric.pct)}</p>
+            <p className="mt-0.5 text-xs text-gray-500">
+              {formatPct(metric.pct)}
+            </p>
           )}
         </div>
       </div>
@@ -625,10 +618,15 @@ function FaqSection({ faqs }: { faqs: FaqEntry[] }) {
   if (faqs.length === 0) return null;
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-900">Frequently Asked Questions</h2>
+      <h2 className="text-xl font-bold text-gray-900">
+        Frequently Asked Questions
+      </h2>
       <div className="space-y-3">
         {faqs.map((faq, i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
+          <div
+            key={i}
+            className="rounded-xl border border-gray-200 bg-white p-4"
+          >
             <p className="font-semibold text-gray-900">{faq.question}</p>
             <p className="mt-1 text-sm text-gray-600">{faq.answer}</p>
           </div>
@@ -696,8 +694,14 @@ export default async function ComboPage({ params }: Props) {
 
   const comboMetrics = computeComboMetrics(v, c);
   const faqs = buildComboFaqs(
-    vMake.name, vModel.name, v.name, v,
-    cMake.name, cModel.name, c.name, c,
+    vMake.name,
+    vModel.name,
+    v.name,
+    v,
+    cMake.name,
+    cModel.name,
+    c.name,
+    c,
     comboMetrics,
   );
 
@@ -728,18 +732,22 @@ export default async function ComboPage({ params }: Props) {
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="mb-6 flex flex-wrap items-center gap-1 text-sm text-gray-500">
-          <Link href="/vehicles" className="hover:text-blue-700">Vehicles</Link>
+          <Link href="/vehicles" className="hover:text-blue-700">
+            Vehicles
+          </Link>
           <span>/</span>
           <Link href={vehicleProfileHref} className="hover:text-blue-700">
             {vMake.name} {vModel.name} {v.name}
           </Link>
           <span>/</span>
-          <span className="text-gray-900">vs {cMake.name} {cModel.name} {c.name}</span>
+          <span className="text-gray-900">
+            vs {cMake.name} {cModel.name} {c.name}
+          </span>
         </nav>
 
         {/* H1 */}
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
-          Can a {vMake.name} {vModel.name} {v.name} ({vRange}) tow a{" "}
+          Can a {vMake.name} {vModel.name} {v.name} ({vRange}) tow a{' '}
           {cMake.name} {cModel.name} {c.name} ({cRange})?
         </h1>
 
@@ -747,7 +755,9 @@ export default async function ComboPage({ params }: Props) {
         <div className="mt-5 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-5 sm:flex-row sm:items-start sm:gap-6">
           <div className="flex-1">
             <VerdictBadge verdict={comboMetrics.verdict} />
-            <p className="mt-3 text-sm text-gray-700">{comboMetrics.verdictReason}</p>
+            <p className="mt-3 text-sm text-gray-700">
+              {comboMetrics.verdictReason}
+            </p>
           </div>
           <div className="flex flex-col gap-2 text-sm sm:text-right">
             <div>
@@ -758,26 +768,32 @@ export default async function ComboPage({ params }: Props) {
             </div>
             <div>
               <span className="text-gray-500">Caravan ATM: </span>
-              <span className="font-semibold text-gray-900">{formatKg(c.atmKg)}</span>
+              <span className="font-semibold text-gray-900">
+                {formatKg(c.atmKg)}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Caravan TBM: </span>
-              <span className="font-semibold text-gray-900">{formatKg(c.tbmKg)}</span>
+              <span className="font-semibold text-gray-900">
+                {formatKg(c.tbmKg)}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Vehicle GCM: </span>
-              <span className="font-semibold text-gray-900">{formatKg(v.gcmKg)}</span>
+              <span className="font-semibold text-gray-900">
+                {formatKg(v.gcmKg)}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Lead paragraph — year enumeration for both sides */}
         <p className="mt-6 text-base leading-relaxed text-gray-600">
-          This combination applies to a {enumerateYearsProse(vYears)} {vMake.name}{" "}
-          {vModel.name} {v.name} paired with a {enumerateYearsProse(cYears)}{" "}
-          {cMake.name} {cModel.name} {c.name}. All specifications on this page are
-          unchanged across the full {vRange} production range of the vehicle and
-          the {cRange} range of the caravan.
+          This combination applies to a {enumerateYearsProse(vYears)}{' '}
+          {vMake.name} {vModel.name} {v.name} paired with a{' '}
+          {enumerateYearsProse(cYears)} {cMake.name} {cModel.name} {c.name}. All
+          specifications on this page are unchanged across the full {vRange}{' '}
+          production range of the vehicle and the {cRange} range of the caravan.
         </p>
 
         {/* Calculator CTA */}
@@ -792,10 +808,12 @@ export default async function ComboPage({ params }: Props) {
 
         {/* 10 Metric bars */}
         <div className="mt-10 space-y-3">
-          <h2 className="text-xl font-bold text-gray-900">Compliance metrics</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Compliance metrics
+          </h2>
           <p className="text-sm text-gray-500">
-            Vehicle GVM and axle loads estimated at kerb weight + 2 passengers (80 kg each) +
-            full fuel + rated tow ball mass.
+            Vehicle GVM and axle loads estimated at kerb weight + 2 passengers
+            (80 kg each) + full fuel + rated tow ball mass.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {comboMetrics.metrics.map((m) => (
@@ -810,37 +828,39 @@ export default async function ComboPage({ params }: Props) {
             href={vehicleProfileHref}
             className="flex-1 rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm transition-colors hover:bg-gray-50"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
               Vehicle profile
             </p>
             <p className="mt-1 font-medium text-gray-900">
               {vMake.name} {vModel.name} {v.name} ({vRange})
             </p>
             <p className="text-xs text-gray-500">
-              GVM {formatKg(v.gvmKg)} · GCM {formatKg(v.gcmKg)} ·{" "}
-              Tows {formatKg(v.maxTowingCapacityKg)}
+              GVM {formatKg(v.gvmKg)} · GCM {formatKg(v.gcmKg)} · Tows{' '}
+              {formatKg(v.maxTowingCapacityKg)}
             </p>
           </Link>
           <Link
             href={caravanProfileHref}
             className="flex-1 rounded-xl border border-gray-200 bg-white px-5 py-4 text-sm transition-colors hover:bg-gray-50"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
               Caravan profile
             </p>
             <p className="mt-1 font-medium text-gray-900">
               {cMake.name} {cModel.name} {c.name} ({cRange})
             </p>
             <p className="text-xs text-gray-500">
-              ATM {formatKg(c.atmKg)} · GTM {formatKg(c.gtmKg)} ·{" "}
-              TBM {formatKg(c.tbmKg)}
+              ATM {formatKg(c.atmKg)} · GTM {formatKg(c.gtmKg)} · TBM{' '}
+              {formatKg(c.tbmKg)}
             </p>
           </Link>
         </div>
 
         {/* Comparison sidebar — related combos */}
         <div className="mt-10 space-y-6">
-          <h2 className="text-xl font-bold text-gray-900">Explore alternatives</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Explore alternatives
+          </h2>
           <div className="grid gap-6 sm:grid-cols-2">
             <AlternativesList
               title={`Other caravans the ${vMake.name} ${vModel.name} can tow`}
@@ -874,8 +894,9 @@ export default async function ComboPage({ params }: Props) {
             Get an exact compliance check for your specific load
           </p>
           <p className="mt-1 text-xs text-blue-700">
-            The metrics above use standard load assumptions. Enter your exact passengers,
-            cargo, water, and accessories in the TravellingBuddy calculator.
+            The metrics above use standard load assumptions. Enter your exact
+            passengers, cargo, water, and accessories in the TravellingBuddy
+            calculator.
           </p>
           <Link
             href={calculatorHref}

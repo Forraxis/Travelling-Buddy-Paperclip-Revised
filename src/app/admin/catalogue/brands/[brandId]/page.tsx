@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { getBrandByIdAction } from "@/modules/catalogue/actions/accessory-admin.actions";
-import { BrandForm } from "../BrandForm";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getBrandByIdAction } from '@/modules/catalogue/actions/accessory-admin.actions';
+import { BrandForm } from '../BrandForm';
 
 export default async function BrandDetailPage({
   params,

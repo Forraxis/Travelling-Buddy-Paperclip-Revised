@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { prisma } from "@/lib/db";
-import { createCaravanService } from "@/modules/catalogue/services/caravan.service";
-import { MakeCard } from "@/components/catalogue/MakeCard";
-import { SearchInput } from "@/components/catalogue/SearchInput";
-import { PaginationBar } from "@/components/catalogue/PaginationBar";
-import { Breadcrumbs } from "@/components/catalogue/Breadcrumbs";
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { prisma } from '@/lib/db';
+import { createCaravanService } from '@/modules/catalogue/services/caravan.service';
+import { MakeCard } from '@/components/catalogue/MakeCard';
+import { SearchInput } from '@/components/catalogue/SearchInput';
+import { PaginationBar } from '@/components/catalogue/PaginationBar';
+import { Breadcrumbs } from '@/components/catalogue/Breadcrumbs';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: "Caravans",
-  description: "Browse caravan makes in the TravellingBuddy catalogue.",
+  title: 'Caravans',
+  description: 'Browse caravan makes in the TravellingBuddy catalogue.',
 };
 
 const service = createCaravanService(prisma);
@@ -24,7 +24,7 @@ interface Props {
 
 export default async function CaravanMakesPage({ searchParams }: Props) {
   const params = await searchParams;
-  const q = params.q?.trim() ?? "";
+  const q = params.q?.trim() ?? '';
   const cursor = params.cursor;
 
   let makes;
@@ -45,14 +45,14 @@ export default async function CaravanMakesPage({ searchParams }: Props) {
     <div className="space-y-6">
       <Breadcrumbs
         crumbs={[
-          { label: "Catalogue", href: "/catalogue/caravans" },
-          { label: "Caravans" },
+          { label: 'Catalogue', href: '/catalogue/caravans' },
+          { label: 'Caravans' },
         ]}
       />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-tb-primary">Caravans</h1>
+          <h1 className="text-tb-primary text-2xl font-bold">Caravans</h1>
           <p className="mt-1 text-sm text-gray-500">
             Browse all caravan makes in the catalogue.
           </p>
@@ -65,8 +65,10 @@ export default async function CaravanMakesPage({ searchParams }: Props) {
       </div>
 
       {makes.length === 0 ? (
-        <div className="rounded-xl border border-tb-neutral-200 py-16 text-center text-gray-400">
-          {q ? `No makes match "${q}".` : "No caravan makes in the catalogue yet."}
+        <div className="border-tb-neutral-200 rounded-xl border py-16 text-center text-gray-400">
+          {q
+            ? `No makes match "${q}".`
+            : 'No caravan makes in the catalogue yet.'}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

@@ -9,24 +9,40 @@ function mountingLabel(location: string) {
 
 // ── Back breadcrumb ────────────────────────────────────────────────────────────
 
-function BackBreadcrumb({ parts, onBack }: { parts: string[]; onBack: () => void }) {
+function BackBreadcrumb({
+  parts,
+  onBack,
+}: {
+  parts: string[];
+  onBack: () => void;
+}) {
   return (
     <div className="flex items-center gap-1 px-4 py-2">
       <button
         type="button"
         onClick={onBack}
-        className="flex items-center gap-1 rounded p-1 text-tb-primary transition-colors hover:bg-tb-primary-lighter"
+        className="text-tb-primary hover:bg-tb-primary-lighter flex items-center gap-1 rounded p-1 transition-colors"
         aria-label="Go back"
       >
         <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+          <path
+            fillRule="evenodd"
+            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+            clipRule="evenodd"
+          />
         </svg>
       </button>
       <span className="text-xs text-gray-500">
         {parts.map((p, i) => (
           <span key={i}>
             {i > 0 && <span className="mx-1 text-gray-300">/</span>}
-            <span className={i === parts.length - 1 ? 'font-medium text-gray-700' : ''}>{p}</span>
+            <span
+              className={
+                i === parts.length - 1 ? 'font-medium text-gray-700' : ''
+              }
+            >
+              {p}
+            </span>
           </span>
         ))}
       </span>
@@ -56,7 +72,13 @@ function categoryIcon(cat: AccessoryCategory) {
   return CATEGORY_ICON_MAP[cat.slug] ?? '📦';
 }
 
-function CategoryGrid({ categories, onSelect }: { categories: AccessoryCategory[]; onSelect: (c: AccessoryCategory) => void }) {
+function CategoryGrid({
+  categories,
+  onSelect,
+}: {
+  categories: AccessoryCategory[];
+  onSelect: (c: AccessoryCategory) => void;
+}) {
   return (
     <div className="grid grid-cols-3 gap-2 px-4">
       {categories.map((cat) => (
@@ -64,10 +86,14 @@ function CategoryGrid({ categories, onSelect }: { categories: AccessoryCategory[
           key={cat.id}
           type="button"
           onClick={() => onSelect(cat)}
-          className="flex flex-col items-center gap-1.5 rounded-lg border border-tb-neutral-200 bg-white px-2 py-3 text-center transition-colors hover:border-tb-primary-light hover:bg-tb-primary-lighter"
+          className="border-tb-neutral-200 hover:border-tb-primary-light hover:bg-tb-primary-lighter flex flex-col items-center gap-1.5 rounded-lg border bg-white px-2 py-3 text-center transition-colors"
         >
-          <span className="text-xl" role="img" aria-hidden="true">{categoryIcon(cat)}</span>
-          <span className="text-xs font-medium leading-tight text-gray-700">{cat.name}</span>
+          <span className="text-xl" role="img" aria-hidden="true">
+            {categoryIcon(cat)}
+          </span>
+          <span className="text-xs leading-tight font-medium text-gray-700">
+            {cat.name}
+          </span>
         </button>
       ))}
     </div>
@@ -76,38 +102,64 @@ function CategoryGrid({ categories, onSelect }: { categories: AccessoryCategory[
 
 // ── Brand list ─────────────────────────────────────────────────────────────────
 
-function BrandList({ brands, onSelect }: { brands: AccessoryBrand[]; onSelect: (b: AccessoryBrand) => void }) {
+function BrandList({
+  brands,
+  onSelect,
+}: {
+  brands: AccessoryBrand[];
+  onSelect: (b: AccessoryBrand) => void;
+}) {
   return (
-    <div className="divide-y divide-tb-neutral-200 px-2">
+    <div className="divide-tb-neutral-200 divide-y px-2">
       {brands.map((brand) => (
         <button
           key={brand.id}
           type="button"
           onClick={() => onSelect(brand)}
-          className="flex w-full items-center gap-3 rounded px-3 py-3 text-left transition-colors hover:bg-tb-neutral-50"
+          className="hover:bg-tb-neutral-50 flex w-full items-center gap-3 rounded px-3 py-3 text-left transition-colors"
         >
-          <div className="flex h-8 w-8 flex-none items-center justify-center rounded bg-tb-neutral-50 text-xs font-bold text-tb-primary">
+          <div className="bg-tb-neutral-50 text-tb-primary flex h-8 w-8 flex-none items-center justify-center rounded text-xs font-bold">
             {brand.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={brand.logoUrl} alt={brand.name} className="h-6 w-6 object-contain" />
+              <img
+                src={brand.logoUrl}
+                alt={brand.name}
+                className="h-6 w-6 object-contain"
+              />
             ) : (
               brand.name.slice(0, 2)
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <span className="text-sm font-medium text-gray-900">{brand.name}</span>
+            <span className="text-sm font-medium text-gray-900">
+              {brand.name}
+            </span>
             {brand.isPartner && (
-              <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">Partner</span>
+              <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">
+                Partner
+              </span>
             )}
           </div>
-          <span className="flex-none text-xs text-gray-400">{brand.accessoryCount}</span>
-          <svg className="h-4 w-4 flex-none text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+          <span className="flex-none text-xs text-gray-400">
+            {brand.accessoryCount}
+          </span>
+          <svg
+            className="h-4 w-4 flex-none text-gray-400"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+              clipRule="evenodd"
+            />
           </svg>
         </button>
       ))}
       {brands.length === 0 && (
-        <p className="px-3 py-6 text-center text-sm text-gray-400">No brands in this category yet.</p>
+        <p className="px-3 py-6 text-center text-sm text-gray-400">
+          No brands in this category yet.
+        </p>
       )}
     </div>
   );
@@ -131,16 +183,18 @@ function ItemsList({
   return (
     <div>
       {allLocations.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3 pt-1 scrollbar-none">
+        <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pt-1 pb-3">
           {allLocations.map((loc) => (
             <button
               key={loc}
               type="button"
-              onClick={() => onLocationFilter(activeLocation === loc ? undefined : loc)}
+              onClick={() =>
+                onLocationFilter(activeLocation === loc ? undefined : loc)
+              }
               className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                 activeLocation === loc
                   ? 'border-tb-primary bg-tb-primary text-white'
-                  : 'border-tb-neutral-200 bg-white text-gray-600 hover:border-tb-primary-light'
+                  : 'border-tb-neutral-200 hover:border-tb-primary-light bg-white text-gray-600'
               }`}
             >
               {mountingLabel(loc)}
@@ -149,25 +203,29 @@ function ItemsList({
         </div>
       )}
 
-      <div className="divide-y divide-tb-neutral-200 px-2">
+      <div className="divide-tb-neutral-200 divide-y px-2">
         {items.map((item) => (
           <button
             key={item.fitmentId}
             type="button"
             onClick={() => onAdd(item)}
-            className="flex w-full items-center gap-2 rounded px-3 py-3 text-left transition-colors hover:bg-tb-neutral-50"
+            className="hover:bg-tb-neutral-50 flex w-full items-center gap-2 rounded px-3 py-3 text-left transition-colors"
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-900">{item.name}</p>
-              <p className="mt-0.5 text-xs text-gray-400">{mountingLabel(item.mountingLocation)}</p>
+              <p className="mt-0.5 text-xs text-gray-400">
+                {mountingLabel(item.mountingLocation)}
+              </p>
             </div>
-            <span className="flex-none rounded-full border border-tb-neutral-200 bg-tb-neutral-50 px-2 py-0.5 text-xs font-medium text-gray-600">
+            <span className="border-tb-neutral-200 bg-tb-neutral-50 flex-none rounded-full border px-2 py-0.5 text-xs font-medium text-gray-600">
               {item.installedWeightKg} kg
             </span>
           </button>
         ))}
         {items.length === 0 && (
-          <p className="px-3 py-6 text-center text-sm text-gray-400">No accessories match the selected filter.</p>
+          <p className="px-3 py-6 text-center text-sm text-gray-400">
+            No accessories match the selected filter.
+          </p>
         )}
       </div>
     </div>
@@ -181,7 +239,10 @@ interface AccessoryBrowseTabProps {
   context?: 'vehicle' | 'caravan';
 }
 
-export function AccessoryBrowseTab({ onAdd, context = 'vehicle' }: AccessoryBrowseTabProps) {
+export function AccessoryBrowseTab({
+  onAdd,
+  context = 'vehicle',
+}: AccessoryBrowseTabProps) {
   const {
     step,
     selectedCategory,
@@ -214,15 +275,30 @@ export function AccessoryBrowseTab({ onAdd, context = 'vehicle' }: AccessoryBrow
 
       {isLoading && (
         <div className="flex items-center justify-center py-8">
-          <svg className="h-5 w-5 animate-spin text-tb-primary" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+          <svg
+            className="text-tb-primary h-5 w-5 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v8H4z"
+            />
           </svg>
         </div>
       )}
 
       {error && !isLoading && (
-        <p className="px-4 py-4 text-sm text-tb-danger">{error}</p>
+        <p className="text-tb-danger px-4 py-4 text-sm">{error}</p>
       )}
 
       {!isLoading && !error && (

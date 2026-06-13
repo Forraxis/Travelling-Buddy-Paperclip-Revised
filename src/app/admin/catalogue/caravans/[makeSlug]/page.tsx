@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { getCaravanMakeBySlugAction } from "@/modules/catalogue/actions/caravan.actions";
-import { CaravanModelsList } from "./CaravanModelsList";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getCaravanMakeBySlugAction } from '@/modules/catalogue/actions/caravan.actions';
+import { CaravanModelsList } from './CaravanModelsList';
 
 export default async function CaravanMakeModelsPage({
   params,
@@ -16,7 +16,7 @@ export default async function CaravanMakeModelsPage({
     <div>
       <AdminPageHeader
         title={make.name}
-        description={`Models for ${make.name} — ${make.models.length} model${make.models.length !== 1 ? "s" : ""}`}
+        description={`Models for ${make.name} — ${make.models.length} model${make.models.length !== 1 ? 's' : ''}`}
       />
       <CaravanModelsList make={make} />
     </div>

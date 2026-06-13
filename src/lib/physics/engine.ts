@@ -8,13 +8,13 @@ import type {
   CaravanInput,
   OverallStatus,
   MetricStatus,
-} from "./types";
+} from './types';
 import {
   resolveVehiclePositionMm,
   resolveCaravanPositionMm,
-} from "./position-map";
-import { getRegulations, weightStatus, tbmPctStatus } from "./regulations";
-import { generateRecommendations } from "./recommendations";
+} from './position-map';
+import { getRegulations, weightStatus, tbmPctStatus } from './regulations';
+import { generateRecommendations } from './recommendations';
 
 const FUEL_DENSITY: Record<string, number> = {
   DIESEL: 0.84,
@@ -54,7 +54,7 @@ function computeCaravan(
   caravanAccessories: AccessoryLoad[],
   freshWaterPercent: number,
   greyWaterPercent: number,
-  caravanTareOffset: number
+  caravanTareOffset: number,
 ): {
   totalWeightKg: number;
   effectiveTareKg: number;
@@ -123,7 +123,7 @@ function computeVehicleAxles(
   passengerMassKg: number,
   cargoKg: number,
   towBallDownloadKg: number,
-  totalVehicleWeightKg: number
+  totalVehicleWeightKg: number,
 ): { frontAxleKg: number; rearAxleKg: number } {
   const wb = vehicle.wheelbaseMm;
   const rearOverhang = vehicle.rearOverhangMm ?? 400;
@@ -151,9 +151,9 @@ function computeVehicleAxles(
 }
 
 function worstStatus(...statuses: MetricStatus[]): OverallStatus {
-  if (statuses.includes("fail")) return "fail";
-  if (statuses.includes("warn")) return "warn";
-  return "pass";
+  if (statuses.includes('fail')) return 'fail';
+  if (statuses.includes('warn')) return 'warn';
+  return 'pass';
 }
 
 export function calculate(input: PhysicsInput): PhysicsResult {
@@ -175,18 +175,23 @@ export function calculate(input: PhysicsInput): PhysicsResult {
       caravanAccessories,
       freshWaterPercent,
       greyWaterPercent,
-      calibration.caravanTareKg ?? 0
+      calibration.caravanTareKg ?? 0,
     );
 
     towBallDownloadKg = Math.max(0, cv.towBallMassKg);
     const atmStatus = weightStatus(cv.totalWeightKg, caravan.atmKg);
     const gtmStatus = weightStatus(cv.gtmKg, caravan.gtmKg);
-    const payloadRemainingKg = caravan.atmKg - caravan.tareKg - cv.accessoryMassKg - cv.freshWaterMassKg - cv.greyWaterMassKg;
-    const payloadStatus: MetricStatus = payloadRemainingKg < 0 ? "fail" : "ok";
+    const payloadRemainingKg =
+      caravan.atmKg -
+      caravan.tareKg -
+      cv.accessoryMassKg -
+      cv.freshWaterMassKg -
+      cv.greyWaterMassKg;
+    const payloadStatus: MetricStatus = payloadRemainingKg < 0 ? 'fail' : 'ok';
 
     const isDual =
-      caravan.axleConfiguration === "DUAL_AXLE_CLOSE_COUPLED" ||
-      caravan.axleConfiguration === "DUAL_AXLE_SPREAD";
+      caravan.axleConfiguration === 'DUAL_AXLE_CLOSE_COUPLED' ||
+      caravan.axleConfiguration === 'DUAL_AXLE_SPREAD';
 
     let axle1Kg: number | undefined;
     let axle1LimitKg: number | undefined;
@@ -228,13 +233,15 @@ export function calculate(input: PhysicsInput): PhysicsResult {
   }
 
   // --- Vehicle ---
-  const effectiveKerbKg = vehicle.kerbWeightKg + (calibration.vehicleKerbKg ?? 0);
+  const effectiveKerbKg =
+    vehicle.kerbWeightKg + (calibration.vehicleKerbKg ?? 0);
   const fuelDensity = FUEL_DENSITY[vehicle.fuelType] ?? 0.73;
-  const fuelMassKg = (input.fuelPercent / 100) * vehicle.fuelTankCapacityL * fuelDensity;
+  const fuelMassKg =
+    (input.fuelPercent / 100) * vehicle.fuelTankCapacityL * fuelDensity;
   const passengerMassKg = passengers * PASSENGER_KG;
   const vehicleAccessoryMassKg = vehicleAccessories.reduce(
     (s, a) => s + resolvedAccessoryWeight(a),
-    0
+    0,
   );
   const totalVehicleWeightKg =
     effectiveKerbKg +
@@ -252,7 +259,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     passengerMassKg,
     cargoKg,
     towBallDownloadKg,
-    totalVehicleWeightKg
+    totalVehicleWeightKg,
   );
 
   const gvmStatus = weightStatus(totalVehicleWeightKg, vehicle.gvmKg);
@@ -273,7 +280,10 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     gcmStatus = weightStatus(gcmKg, gcmLimitKg);
 
     towBallDownloadLimitKg = regulations.towBallDownloadLimitKg!;
-    towBallDownloadStatus = weightStatus(towBallDownloadKg, towBallDownloadLimitKg);
+    towBallDownloadStatus = weightStatus(
+      towBallDownloadKg,
+      towBallDownloadLimitKg,
+    );
 
     towBallPctOfAtm = (caravanResult.towBallMassKg / caravan.atmKg) * 100;
     towBallPctStatus = tbmPctStatus(towBallPctOfAtm);
@@ -313,7 +323,11 @@ export function calculate(input: PhysicsInput): PhysicsResult {
   if (towBallDownloadStatus) allStatuses.push(towBallDownloadStatus);
   if (towBallPctStatus) allStatuses.push(towBallPctStatus);
   if (caravanResult) {
-    allStatuses.push(caravanResult.atmStatus, caravanResult.gtmStatus, caravanResult.payloadStatus);
+    allStatuses.push(
+      caravanResult.atmStatus,
+      caravanResult.gtmStatus,
+      caravanResult.payloadStatus,
+    );
     if (caravanResult.axle1Status) allStatuses.push(caravanResult.axle1Status);
     if (caravanResult.axle2Status) allStatuses.push(caravanResult.axle2Status);
   }
@@ -328,21 +342,25 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     advisories: [],
   };
 
-  result.recommendations = generateRecommendations(input, result, vehicleAccessories);
+  result.recommendations = generateRecommendations(
+    input,
+    result,
+    vehicleAccessories,
+  );
 
   // Roof-load advisory
   const roofLocations = new Set([
-    "ROOF_RACK",
-    "ROOF_RAILS",
-    "CANOPY_ROOF",
-    "CABIN_ROOF",
+    'ROOF_RACK',
+    'ROOF_RAILS',
+    'CANOPY_ROOF',
+    'CABIN_ROOF',
   ]);
   const roofWeightKg = vehicleAccessories
     .filter((a) => roofLocations.has(a.mountingLocation))
     .reduce((s, a) => s + resolvedAccessoryWeight(a), 0);
   if (roofWeightKg > 80) {
     result.advisories.push(
-      `${Math.round(roofWeightKg)} kg on roof-level mounts raises the vehicle's centre of gravity. Avoid sharp manoeuvres at speed.`
+      `${Math.round(roofWeightKg)} kg on roof-level mounts raises the vehicle's centre of gravity. Avoid sharp manoeuvres at speed.`,
     );
   }
 

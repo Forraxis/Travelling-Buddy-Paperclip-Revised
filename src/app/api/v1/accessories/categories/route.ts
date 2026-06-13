@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { createCategoryService } from "@/modules/catalogue/services/category.service";
-import { withRateLimit, serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { createCategoryService } from '@/modules/catalogue/services/category.service';
+import { withRateLimit, serverError } from '@/lib/api-helpers';
 
 const service = createCategoryService(prisma);
 

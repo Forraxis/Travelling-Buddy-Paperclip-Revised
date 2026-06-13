@@ -1,19 +1,19 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from '@prisma/client';
 import type {
   RegulationData,
   RegulationSetDto,
   RegulationVersionDto,
-} from "../types/regulation.types";
-import { defaultRegulationData } from "../types/regulation.types";
+} from '../types/regulation.types';
+import { defaultRegulationData } from '../types/regulation.types';
 
 export function createRegulationService(prisma: PrismaClient) {
   async function listSets(): Promise<RegulationSetDto[]> {
     const sets = await prisma.regulationSet.findMany({
-      orderBy: [{ market: "asc" }, { code: "asc" }],
+      orderBy: [{ market: 'asc' }, { code: 'asc' }],
       include: {
         versions: {
           where: { effectiveDate: { lte: new Date() } },
-          orderBy: { effectiveDate: "desc" },
+          orderBy: { effectiveDate: 'desc' },
           take: 1,
           select: {
             id: true,
@@ -39,14 +39,14 @@ export function createRegulationService(prisma: PrismaClient) {
   }
 
   async function getSetByCode(
-    code: string
+    code: string,
   ): Promise<{ set: RegulationSetDto; currentData: RegulationData } | null> {
     const s = await prisma.regulationSet.findUnique({
       where: { code },
       include: {
         versions: {
           where: { effectiveDate: { lte: new Date() } },
-          orderBy: { effectiveDate: "desc" },
+          orderBy: { effectiveDate: 'desc' },
           take: 1,
         },
         _count: { select: { versions: true } },
@@ -81,7 +81,7 @@ export function createRegulationService(prisma: PrismaClient) {
 
     const versions = await prisma.regulationSetVersion.findMany({
       where: { setId: set.id },
-      orderBy: { effectiveDate: "desc" },
+      orderBy: { effectiveDate: 'desc' },
       include: {
         createdBy: { select: { id: true, name: true } },
       },
@@ -105,7 +105,14 @@ export function createRegulationService(prisma: PrismaClient) {
       where: { id },
       include: {
         createdBy: { select: { id: true, name: true } },
-        set: { select: { versions: { select: { id: true }, orderBy: { effectiveDate: "asc" } } } },
+        set: {
+          select: {
+            versions: {
+              select: { id: true },
+              orderBy: { effectiveDate: 'asc' },
+            },
+          },
+        },
       },
     });
     if (!v) return null;
@@ -129,7 +136,7 @@ export function createRegulationService(prisma: PrismaClient) {
     data: RegulationData,
     effectiveDate: Date,
     changeSummary: string,
-    createdById: string
+    createdById: string,
   ): Promise<RegulationVersionDto> {
     const set = await prisma.regulationSet.findUnique({ where: { code } });
     if (!set) throw new Error(`Regulation set not found: ${code}`);

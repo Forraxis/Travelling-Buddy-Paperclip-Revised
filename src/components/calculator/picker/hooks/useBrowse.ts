@@ -73,7 +73,9 @@ function apiItemToPickerVariant(item: ApiPickerItem): PickerVariant {
   const yearFrom = parseInt(yearFromStr, 10) || 0;
   const yearToStr = item.yearSpan.split('–')[1];
   const isCurrentProduction = yearToStr === 'present';
-  const yearTo = isCurrentProduction ? new Date().getFullYear() : (parseInt(yearToStr, 10) || yearFrom);
+  const yearTo = isCurrentProduction
+    ? new Date().getFullYear()
+    : parseInt(yearToStr, 10) || yearFrom;
 
   return {
     id: item.id,
@@ -148,7 +150,7 @@ export function useBrowse(config: PickerConfig) {
             name: m.name,
             slug: m.slug,
             logoUrl: m.logoUrl,
-          }))
+          })),
         );
       })
       .catch(() => {
@@ -158,7 +160,9 @@ export function useBrowse(config: PickerConfig) {
         if (!cancelled) setIsLoading(false);
       });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [config.apiBase]);
 
   const selectMake = useCallback(
@@ -171,7 +175,10 @@ export function useBrowse(config: PickerConfig) {
       try {
         const res = await fetch(`${config.apiBase}/makes/${make.id}/models`);
         if (!res.ok) throw new Error();
-        const data = await res.json() as { items: ApiModel[]; facets: ApiFacets };
+        const data = (await res.json()) as {
+          items: ApiModel[];
+          facets: ApiFacets;
+        };
         setModels(
           data.items.map((m) => ({
             id: m.id,
@@ -179,7 +186,7 @@ export function useBrowse(config: PickerConfig) {
             name: m.name,
             slug: m.slug,
             bodyType: m.bodyType,
-          }))
+          })),
         );
         setFacets(data.facets ?? {});
       } catch {
@@ -202,10 +209,13 @@ export function useBrowse(config: PickerConfig) {
       try {
         const makeId = selectedMake?.id ?? model.makeId;
         const res = await fetch(
-          `${config.apiBase}/makes/${makeId}/models/${model.id}/variants`
+          `${config.apiBase}/makes/${makeId}/models/${model.id}/variants`,
         );
         if (!res.ok) throw new Error();
-        const data = await res.json() as { items: ApiPickerItem[]; facets: ApiFacets };
+        const data = (await res.json()) as {
+          items: ApiPickerItem[];
+          facets: ApiFacets;
+        };
         setVariants(data.items.map(apiItemToPickerVariant));
         setFacets(data.facets ?? {});
       } catch {
@@ -238,7 +248,11 @@ export function useBrowse(config: PickerConfig) {
   const filteredVariants = variants.filter((v) => {
     if (filters.bodyType && v.bodyType !== filters.bodyType) return false;
     if (filters.fuelType && v.fuelType !== filters.fuelType) return false;
-    if (filters.axleConfiguration && v.axleConfiguration !== filters.axleConfiguration) return false;
+    if (
+      filters.axleConfiguration &&
+      v.axleConfiguration !== filters.axleConfiguration
+    )
+      return false;
     return true;
   });
 

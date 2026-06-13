@@ -1,6 +1,14 @@
-import { prisma } from "@/lib/db";
-import type { VehicleVariantDto, VehicleMakeDto, VehicleModelDto } from "../types/vehicle.types";
-import type { CaravanVariantDto, CaravanMakeDto, CaravanModelDto } from "../types/caravan.types";
+import { prisma } from '@/lib/db';
+import type {
+  VehicleVariantDto,
+  VehicleMakeDto,
+  VehicleModelDto,
+} from '../types/vehicle.types';
+import type {
+  CaravanVariantDto,
+  CaravanMakeDto,
+  CaravanModelDto,
+} from '../types/caravan.types';
 
 // ── Compound slug helpers ────────────────────────────────────────────────────
 // URL form: {makeSlug}_{modelSlug}_{variantSlug}
@@ -17,9 +25,9 @@ export function buildComboSlug(
 export function parseComboSlug(
   compound: string,
 ): { makeSlug: string; modelSlug: string; variantSlug: string } | null {
-  const idx1 = compound.indexOf("_");
+  const idx1 = compound.indexOf('_');
   if (idx1 === -1) return null;
-  const idx2 = compound.indexOf("_", idx1 + 1);
+  const idx2 = compound.indexOf('_', idx1 + 1);
   if (idx2 === -1) return null;
   return {
     makeSlug: compound.slice(0, idx1),
@@ -86,11 +94,15 @@ export async function getComboPageData(
 
   const [vehicle, caravan] = await Promise.all([
     prisma.vehicleVariant.findUnique({
-      where: { modelId_slug: { modelId: vModel.id, slug: vParsed.variantSlug } },
+      where: {
+        modelId_slug: { modelId: vModel.id, slug: vParsed.variantSlug },
+      },
       include: { model: { include: { make: true } } },
     }),
     prisma.caravanVariant.findUnique({
-      where: { modelId_slug: { modelId: cModel.id, slug: cParsed.variantSlug } },
+      where: {
+        modelId_slug: { modelId: cModel.id, slug: cParsed.variantSlug },
+      },
       include: { model: { include: { make: true } } },
     }),
   ]);
@@ -102,11 +114,11 @@ export async function getComboPageData(
   const [altCaravansRaw, altVehiclesRaw] = await Promise.all([
     prisma.caravanVariant.findMany({
       where: {
-        status: "CATALOGUE",
+        status: 'CATALOGUE',
         id: { not: caravan.id },
         atmKg: { not: null, lte: maxTowing },
       },
-      orderBy: { atmKg: "desc" },
+      orderBy: { atmKg: 'desc' },
       take: 6,
       select: {
         id: true,
@@ -126,14 +138,14 @@ export async function getComboPageData(
     }),
     prisma.vehicleVariant.findMany({
       where: {
-        status: "CATALOGUE",
+        status: 'CATALOGUE',
         id: { not: vehicle.id },
         maxTowingCapacityKg: {
           not: null,
           gte: Math.floor(caravanAtm * 0.8),
         },
       },
-      orderBy: { maxTowingCapacityKg: "desc" },
+      orderBy: { maxTowingCapacityKg: 'desc' },
       take: 6,
       select: {
         id: true,
@@ -153,17 +165,15 @@ export async function getComboPageData(
     }),
   ]);
 
-  const toMini = (
-    v: {
-      id: string;
-      name: string;
-      slug: string;
-      yearFrom: number;
-      yearTo: number;
-      isCurrentProduction: boolean;
-      model: { slug: string; name: string; make: { slug: string; name: string } };
-    },
-  ): ComboVariantMini => ({
+  const toMini = (v: {
+    id: string;
+    name: string;
+    slug: string;
+    yearFrom: number;
+    yearTo: number;
+    isCurrentProduction: boolean;
+    model: { slug: string; name: string; make: { slug: string; name: string } };
+  }): ComboVariantMini => ({
     id: v.id,
     name: v.name,
     slug: v.slug,
@@ -189,7 +199,7 @@ export async function getAllComboSlugsForSSG(): Promise<
 > {
   const [vehicles, caravans] = await Promise.all([
     prisma.vehicleVariant.findMany({
-      where: { status: "CATALOGUE", maxTowingCapacityKg: { not: null } },
+      where: { status: 'CATALOGUE', maxTowingCapacityKg: { not: null } },
       select: {
         slug: true,
         maxTowingCapacityKg: true,
@@ -197,7 +207,7 @@ export async function getAllComboSlugsForSSG(): Promise<
       },
     }),
     prisma.caravanVariant.findMany({
-      where: { status: "CATALOGUE", atmKg: { not: null } },
+      where: { status: 'CATALOGUE', atmKg: { not: null } },
       select: {
         slug: true,
         atmKg: true,

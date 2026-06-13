@@ -1,14 +1,14 @@
-import { redirect } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { getAdminUser } from "@/modules/admin/lib/auth";
+import { redirect } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getAdminUser } from '@/modules/admin/lib/auth';
 import {
   listAuditLogsAction,
   listAuditActorsAction,
-} from "@/modules/admin/actions/audit.actions";
-import { AuditLogView } from "./_components/AuditLogView";
+} from '@/modules/admin/actions/audit.actions';
+import { AuditLogView } from './_components/AuditLogView';
 
 export const metadata = {
-  title: "Audit Log — Admin",
+  title: 'Audit Log — Admin',
 };
 
 export default async function AuditLogPage({
@@ -17,7 +17,7 @@ export default async function AuditLogPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const adminUser = await getAdminUser();
-  if (!adminUser) redirect("/auth/signin");
+  if (!adminUser) redirect('/auth/signin');
 
   const params = await searchParams;
 
@@ -45,7 +45,7 @@ export default async function AuditLogPage({
         initialEntries={entries}
         initialNextCursor={nextCursor}
         actors={actors}
-        isModerator={adminUser.role === "MODERATOR"}
+        isModerator={adminUser.role === 'MODERATOR'}
       />
     </div>
   );

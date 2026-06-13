@@ -1,42 +1,53 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
-import { ConfirmDialog } from "@/modules/admin/components/ConfirmDialog";
-import { FormField, inputClassName, selectClassName } from "@/modules/admin/components/FormField";
+import { useState, useTransition } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
+import { ConfirmDialog } from '@/modules/admin/components/ConfirmDialog';
+import {
+  FormField,
+  inputClassName,
+  selectClassName,
+} from '@/modules/admin/components/FormField';
 import {
   updateSponsorAction,
   deletePlacementAction,
-} from "@/modules/sponsorship/actions/sponsor-admin.actions";
-import type { SponsorDto, PlacementDto } from "@/modules/sponsorship/actions/sponsor-admin.actions";
-import type { SponsorStatus } from "@prisma/client";
+} from '@/modules/sponsorship/actions/sponsor-admin.actions';
+import type {
+  SponsorDto,
+  PlacementDto,
+} from '@/modules/sponsorship/actions/sponsor-admin.actions';
+import type { SponsorStatus } from '@prisma/client';
 
-const STATUSES: SponsorStatus[] = ["ACTIVE", "PAUSED", "EXPIRED"];
+const STATUSES: SponsorStatus[] = ['ACTIVE', 'PAUSED', 'EXPIRED'];
 
 const tierLabel: Record<string, string> = {
-  FEATURED_FIT: "Featured Fit",
-  CATEGORY_TOP: "Category Top",
-  RECOMMENDATION_PINNED: "Recommendation Pinned",
+  FEATURED_FIT: 'Featured Fit',
+  CATEGORY_TOP: 'Category Top',
+  RECOMMENDATION_PINNED: 'Recommendation Pinned',
 };
 
 const typeLabel: Record<string, string> = {
-  ACCESSORY_FEATURED: "Accessory",
-  CATEGORY_TOP: "Category",
-  RECOMMENDATION_PINNED: "Recommendation",
-  VEHICLE_TYPE_FEATURED: "Vehicle Type",
+  ACCESSORY_FEATURED: 'Accessory',
+  CATEGORY_TOP: 'Category',
+  RECOMMENDATION_PINNED: 'Recommendation',
+  VEHICLE_TYPE_FEATURED: 'Vehicle Type',
 };
 
 function scopeLabel(p: PlacementDto): string {
   if (p.accessoryName) return p.accessoryName;
   if (p.categoryName) return p.categoryName;
-  if (p.vehicleBodyType) return p.vehicleBodyType.replace(/_/g, " ");
-  return "Global";
+  if (p.vehicleBodyType) return p.vehicleBodyType.replace(/_/g, ' ');
+  return 'Global';
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function isActive(p: PlacementDto): boolean {
@@ -57,17 +68,19 @@ export function SponsorDetail({
 
   const [name, setName] = useState(sponsor.name);
   const [status, setStatus] = useState<SponsorStatus>(sponsor.status);
-  const [contactName, setContactName] = useState(sponsor.contactName ?? "");
-  const [contactEmail, setContactEmail] = useState(sponsor.contactEmail ?? "");
-  const [billingReference, setBillingReference] = useState(sponsor.billingReference ?? "");
+  const [contactName, setContactName] = useState(sponsor.contactName ?? '');
+  const [contactEmail, setContactEmail] = useState(sponsor.contactEmail ?? '');
+  const [billingReference, setBillingReference] = useState(
+    sponsor.billingReference ?? '',
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<PlacementDto | null>(null);
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = "Name is required";
+    if (!name.trim()) e.name = 'Name is required';
     if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
-      e.contactEmail = "Invalid email";
+      e.contactEmail = 'Invalid email';
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -84,10 +97,10 @@ export function SponsorDetail({
         billingReference: billingReference.trim() || null,
       });
       if (result.success) {
-        toast("Sponsor updated");
+        toast('Sponsor updated');
         router.refresh();
       } else {
-        toast(result.error, "error");
+        toast(result.error, 'error');
       }
     });
   }
@@ -96,19 +109,21 @@ export function SponsorDetail({
     if (!deleteTarget) return;
     const result = await deletePlacementAction(deleteTarget.id);
     if (result.success) {
-      toast("Placement deleted");
+      toast('Placement deleted');
       setDeleteTarget(null);
       router.refresh();
     } else {
-      toast(result.error, "error");
+      toast(result.error, 'error');
     }
   }
 
   return (
     <div className="space-y-8">
       {/* Edit form */}
-      <div className="max-w-xl rounded-lg border border-tb-neutral-200 p-6 space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Sponsor Details</h2>
+      <div className="border-tb-neutral-200 max-w-xl space-y-4 rounded-lg border p-6">
+        <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase">
+          Sponsor Details
+        </h2>
 
         <FormField label="Name" name="name" error={errors.name}>
           <input
@@ -128,7 +143,9 @@ export function SponsorDetail({
             className={selectClassName}
           >
             {STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </FormField>
@@ -143,7 +160,11 @@ export function SponsorDetail({
           />
         </FormField>
 
-        <FormField label="Contact Email" name="contactEmail" error={errors.contactEmail}>
+        <FormField
+          label="Contact Email"
+          name="contactEmail"
+          error={errors.contactEmail}
+        >
           <input
             id="contactEmail"
             type="email"
@@ -168,9 +189,9 @@ export function SponsorDetail({
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light disabled:opacity-50"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
-            {isPending ? "Saving..." : "Save Changes"}
+            {isPending ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
@@ -178,50 +199,74 @@ export function SponsorDetail({
       {/* Placement history */}
       <div>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Placement History</h2>
+          <h2 className="text-base font-semibold text-gray-900">
+            Placement History
+          </h2>
           <Link
             href={`/admin/sponsorship/${sponsor.id}/placements/new`}
-            className="rounded-lg bg-tb-primary px-4 py-2 text-sm font-medium text-white hover:bg-tb-primary-light"
+            className="bg-tb-primary hover:bg-tb-primary-light rounded-lg px-4 py-2 text-sm font-medium text-white"
           >
             + Add Placement
           </Link>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-tb-neutral-200">
+        <div className="border-tb-neutral-200 overflow-x-auto rounded-lg border">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-tb-neutral-200 bg-tb-neutral-50">
+              <tr className="border-tb-neutral-200 bg-tb-neutral-50 border-b">
                 <th className="px-4 py-3 font-medium text-gray-700">Type</th>
                 <th className="px-4 py-3 font-medium text-gray-700">Scope</th>
                 <th className="px-4 py-3 font-medium text-gray-700">Tier</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Date Range</th>
+                <th className="px-4 py-3 font-medium text-gray-700">
+                  Date Range
+                </th>
                 <th className="px-4 py-3 font-medium text-gray-700">Status</th>
-                <th className="px-4 py-3 font-medium text-gray-700 text-right">Actions</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-700">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {placements.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     No placements yet.
                   </td>
                 </tr>
               ) : (
                 placements.map((p) => (
-                  <tr key={p.id} className="border-b border-tb-neutral-200 last:border-0 hover:bg-tb-neutral-50">
-                    <td className="px-4 py-3 text-gray-600">{typeLabel[p.placementType] ?? p.placementType}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{scopeLabel(p)}</td>
-                    <td className="px-4 py-3 text-gray-600">{tierLabel[p.tier] ?? p.tier}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                  <tr
+                    key={p.id}
+                    className="border-tb-neutral-200 hover:bg-tb-neutral-50 border-b last:border-0"
+                  >
+                    <td className="px-4 py-3 text-gray-600">
+                      {typeLabel[p.placementType] ?? p.placementType}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {scopeLabel(p)}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {tierLabel[p.tier] ?? p.tier}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500">
                       {formatDate(p.startsAt)} – {formatDate(p.endsAt)}
                     </td>
                     <td className="px-4 py-3">
                       {isActive(p) ? (
-                        <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700">Active</span>
+                        <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          Active
+                        </span>
                       ) : new Date(p.endsAt) < new Date() ? (
-                        <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500">Ended</span>
+                        <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                          Ended
+                        </span>
                       ) : (
-                        <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700">Upcoming</span>
+                        <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          Upcoming
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -243,18 +288,20 @@ export function SponsorDetail({
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Placement"
-        message={`Delete this ${deleteTarget ? tierLabel[deleteTarget.tier] : ""} placement? This cannot be undone.`}
+        message={`Delete this ${deleteTarget ? tierLabel[deleteTarget.tier] : ''} placement? This cannot be undone.`}
         onConfirm={handleDeletePlacement}
         onCancel={() => setDeleteTarget(null)}
       />
 
       {/* Back link */}
       <div>
-        <Link href="/admin/sponsorship" className="text-sm text-gray-500 hover:text-tb-primary">
+        <Link
+          href="/admin/sponsorship"
+          className="hover:text-tb-primary text-sm text-gray-500"
+        >
           ← Back to Sponsors
         </Link>
       </div>
-
     </div>
   );
 }

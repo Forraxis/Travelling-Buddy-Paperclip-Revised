@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/account/setups";
+  const callbackUrl = searchParams.get('callbackUrl') ?? '/account/setups';
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(
-    searchParams.get("error") === "ACCOUNT_DELETED"
-      ? "This account has been deleted. Your data will be permanently removed within 30 days."
-      : null
+    searchParams.get('error') === 'ACCOUNT_DELETED'
+      ? 'This account has been deleted. Your data will be permanently removed within 30 days.'
+      : null,
   );
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +24,7 @@ export default function SignInPage() {
     setError(null);
     setLoading(true);
 
-    const result = await signIn("credentials", {
+    const result = await signIn('credentials', {
       email,
       password,
       redirect: false,
@@ -34,9 +34,9 @@ export default function SignInPage() {
 
     if (result?.error) {
       setError(
-        result.error === "ACCOUNT_DELETED"
-          ? "This account has been deleted. Your data will be permanently removed within 30 days."
-          : "Invalid email or password."
+        result.error === 'ACCOUNT_DELETED'
+          ? 'This account has been deleted. Your data will be permanently removed within 30 days.'
+          : 'Invalid email or password.',
       );
       return;
     }
@@ -45,7 +45,7 @@ export default function SignInPage() {
   }
 
   async function handleGoogle() {
-    await signIn("google", { callbackUrl });
+    await signIn('google', { callbackUrl });
   }
 
   return (
@@ -86,7 +86,7 @@ export default function SignInPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
           <div>
@@ -103,7 +103,7 @@ export default function SignInPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             />
           </div>
 
@@ -118,12 +118,12 @@ export default function SignInPage() {
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          Don&apos;t have an account?{" "}
+          Don&apos;t have an account?{' '}
           <Link href="/auth/signup" className="text-blue-600 hover:underline">
             Sign up
           </Link>

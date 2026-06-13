@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 interface Props {
   basePath: string;
@@ -10,7 +10,7 @@ interface Props {
 function buildUrl(
   basePath: string,
   params: Record<string, string | string[] | undefined>,
-  overrides: Record<string, string | undefined>
+  overrides: Record<string, string | undefined>,
 ): string {
   const p = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -32,22 +32,28 @@ function buildUrl(
   return qs ? `${basePath}?${qs}` : basePath;
 }
 
-export function PaginationBar({ basePath, searchParams, nextCursor, hasMore }: Props) {
+export function PaginationBar({
+  basePath,
+  searchParams,
+  nextCursor,
+  hasMore,
+}: Props) {
   const hasPrev = !!searchParams.cursor;
 
   if (!hasPrev && !hasMore) return null;
 
   const prevUrl = buildUrl(basePath, searchParams, { cursor: undefined });
-  const nextUrl = hasMore && nextCursor
-    ? buildUrl(basePath, searchParams, { cursor: nextCursor })
-    : null;
+  const nextUrl =
+    hasMore && nextCursor
+      ? buildUrl(basePath, searchParams, { cursor: nextCursor })
+      : null;
 
   return (
     <div className="mt-6 flex items-center justify-between gap-4">
       {hasPrev ? (
         <Link
           href={prevUrl}
-          className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+          className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
         >
           ← Previous
         </Link>
@@ -57,7 +63,7 @@ export function PaginationBar({ basePath, searchParams, nextCursor, hasMore }: P
       {nextUrl && (
         <Link
           href={nextUrl}
-          className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+          className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
         >
           Next →
         </Link>

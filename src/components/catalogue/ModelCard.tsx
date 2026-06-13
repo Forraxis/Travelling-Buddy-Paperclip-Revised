@@ -1,12 +1,12 @@
-import Link from "next/link";
-import type { VehicleModelDto } from "@/modules/catalogue/types/vehicle.types";
-import type { CaravanModelDto } from "@/modules/catalogue/types/caravan.types";
+import Link from 'next/link';
+import type { VehicleModelDto } from '@/modules/catalogue/types/vehicle.types';
+import type { CaravanModelDto } from '@/modules/catalogue/types/caravan.types';
 
 type ModelDto = VehicleModelDto | CaravanModelDto;
 
 function formatBodyType(bodyType: string): string {
   return bodyType
-    .replace(/_/g, " ")
+    .replace(/_/g, ' ')
     .toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
@@ -21,18 +21,18 @@ export function ModelCard({ model, href, variantCount }: Props) {
   return (
     <Link
       href={href}
-      className="group flex flex-col gap-1 rounded-xl border border-tb-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
+      className="group border-tb-neutral-200 flex flex-col gap-1 rounded-xl border bg-white p-4 transition-shadow hover:shadow-md"
     >
-      <span className="text-base font-semibold text-tb-primary group-hover:text-tb-primary-light">
+      <span className="text-tb-primary group-hover:text-tb-primary-light text-base font-semibold">
         {model.name}
       </span>
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-tb-primary-lighter px-2 py-0.5 text-xs font-medium text-tb-primary">
+        <span className="bg-tb-primary-lighter text-tb-primary rounded-full px-2 py-0.5 text-xs font-medium">
           {formatBodyType(model.bodyType)}
         </span>
         {variantCount !== undefined && (
           <span className="text-xs text-gray-500">
-            {variantCount} {variantCount === 1 ? "variant" : "variants"}
+            {variantCount} {variantCount === 1 ? 'variant' : 'variants'}
           </span>
         )}
       </div>

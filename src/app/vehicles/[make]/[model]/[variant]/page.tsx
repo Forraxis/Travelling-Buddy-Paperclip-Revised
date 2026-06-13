@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   getVariantProfileData,
   getAllVehicleVariantSlugsForSSG,
-} from "@/modules/catalogue/queries/vehicle-profile.queries";
+} from '@/modules/catalogue/queries/vehicle-profile.queries';
 import type {
   AdjacentRangeLink,
   SiblingVariantLink,
   VariantProfileData,
-} from "@/modules/catalogue/queries/vehicle-profile.queries";
-import type { VehicleVariantDto } from "@/modules/catalogue/types/vehicle.types";
+} from '@/modules/catalogue/queries/vehicle-profile.queries';
+import type { VehicleVariantDto } from '@/modules/catalogue/types/vehicle.types';
 
 export const revalidate = 86400;
 
@@ -39,21 +39,25 @@ function coverageYears(v: VehicleVariantDto): number[] {
   return Array.from({ length: end - v.yearFrom + 1 }, (_, i) => v.yearFrom + i);
 }
 
-function yearRangeLabel(v: { yearFrom: number; yearTo: number; isCurrentProduction: boolean }): string {
+function yearRangeLabel(v: {
+  yearFrom: number;
+  yearTo: number;
+  isCurrentProduction: boolean;
+}): string {
   if (v.isCurrentProduction) return `${v.yearFrom}–present`;
   if (v.yearFrom === v.yearTo) return `${v.yearFrom}`;
   return `${v.yearFrom}–${v.yearTo}`;
 }
 
 function enumerateYearsProse(years: number[]): string {
-  if (years.length === 0) return "";
+  if (years.length === 0) return '';
   if (years.length === 1) return `${years[0]}`;
-  const init = years.slice(0, -1).join(", ");
+  const init = years.slice(0, -1).join(', ');
   return `${init}, or ${years[years.length - 1]}`;
 }
 
 function formatKg(n: number | null): string {
-  return n != null ? `${n.toLocaleString()} kg` : "—";
+  return n != null ? `${n.toLocaleString()} kg` : '—';
 }
 
 // ── FAQ builder ─────────────────────────────────────────────────────────────
@@ -70,25 +74,37 @@ interface MetricDef {
 }
 
 const METRICS: MetricDef[] = [
-  { label: "GVM (gross vehicle mass)", shortLabel: "GVM", key: "gvmKg" },
-  { label: "GCM (gross combination mass)", shortLabel: "GCM", key: "gcmKg" },
-  { label: "maximum towing capacity", shortLabel: "max towing capacity", key: "maxTowingCapacityKg" },
-  { label: "kerb weight", shortLabel: "kerb weight", key: "kerbWeightKg" },
-  { label: "front axle limit", shortLabel: "front axle limit", key: "frontAxleLimitKg" },
-  { label: "rear axle limit", shortLabel: "rear axle limit", key: "rearAxleLimitKg" },
+  { label: 'GVM (gross vehicle mass)', shortLabel: 'GVM', key: 'gvmKg' },
+  { label: 'GCM (gross combination mass)', shortLabel: 'GCM', key: 'gcmKg' },
+  {
+    label: 'maximum towing capacity',
+    shortLabel: 'max towing capacity',
+    key: 'maxTowingCapacityKg',
+  },
+  { label: 'kerb weight', shortLabel: 'kerb weight', key: 'kerbWeightKg' },
+  {
+    label: 'front axle limit',
+    shortLabel: 'front axle limit',
+    key: 'frontAxleLimitKg',
+  },
+  {
+    label: 'rear axle limit',
+    shortLabel: 'rear axle limit',
+    key: 'rearAxleLimitKg',
+  },
 ];
 
 function buildFaqs(
   makeName: string,
   modelName: string,
   variantName: string,
-  variant: VehicleVariantDto
+  variant: VehicleVariantDto,
 ): FaqEntry[] {
   const fullName = `${makeName} ${modelName} ${variantName}`;
   const rangeLabel = yearRangeLabel(variant);
   const isSingleYear = variant.yearFrom === variant.yearTo;
   const canonicalTail = isSingleYear
-    ? ""
+    ? ''
     : ` This specification is unchanged across the entire ${rangeLabel} production run.`;
 
   const makeEntry = (year: number, m: MetricDef): FaqEntry | null => {
@@ -124,7 +140,7 @@ function buildFaqs(
   if (entries.length < 15 && mostRecent - earliest > 1) {
     const middleYears = Array.from(
       { length: mostRecent - earliest - 1 },
-      (_, i) => mostRecent - 1 - i
+      (_, i) => mostRecent - 1 - i,
     );
     outer: for (const year of middleYears) {
       for (const m of METRICS) {
@@ -150,27 +166,49 @@ function buildVehicleJsonLd(data: VariantProfileData): object {
   const productionDate = `${variant.yearFrom}/${productionEnd}`;
 
   return {
-    "@context": "https://schema.org",
-    "@type": "Car",
+    '@context': 'https://schema.org',
+    '@type': 'Car',
     name: `${make.name} ${model.name} ${variant.name}`,
-    manufacturer: { "@type": "Organization", name: make.name },
+    manufacturer: { '@type': 'Organization', name: make.name },
     model: model.name,
     vehicleModelDate: productionEnd,
     productionDate,
-    ...(variant.gvmKg != null ? { weightTotal: { "@type": "QuantitativeValue", value: variant.gvmKg, unitCode: "KGM" } } : {}),
-    ...(variant.maxTowingCapacityKg != null ? { towingCapacity: { "@type": "QuantitativeValue", value: variant.maxTowingCapacityKg, unitCode: "KGM" } } : {}),
-    ...(variant.fuelType ? { fuelType: variant.fuelType.charAt(0) + variant.fuelType.slice(1).toLowerCase() } : {}),
+    ...(variant.gvmKg != null
+      ? {
+          weightTotal: {
+            '@type': 'QuantitativeValue',
+            value: variant.gvmKg,
+            unitCode: 'KGM',
+          },
+        }
+      : {}),
+    ...(variant.maxTowingCapacityKg != null
+      ? {
+          towingCapacity: {
+            '@type': 'QuantitativeValue',
+            value: variant.maxTowingCapacityKg,
+            unitCode: 'KGM',
+          },
+        }
+      : {}),
+    ...(variant.fuelType
+      ? {
+          fuelType:
+            variant.fuelType.charAt(0) +
+            variant.fuelType.slice(1).toLowerCase(),
+        }
+      : {}),
   };
 }
 
 function buildFaqJsonLd(faqs: FaqEntry[]): object {
   return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
     mainEntity: faqs.map((f) => ({
-      "@type": "Question",
+      '@type': 'Question',
       name: f.question,
-      acceptedAnswer: { "@type": "Answer", text: f.answer },
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
     })),
   };
 }
@@ -180,7 +218,7 @@ function buildFaqJsonLd(faqs: FaqEntry[]): object {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { make, model, variant } = await params;
   const data = await getVariantProfileData(make, model, variant);
-  if (!data) return { title: "Not Found" };
+  if (!data) return { title: 'Not Found' };
 
   const v = data.variant;
   const makeName = v.model.make.name;
@@ -200,7 +238,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      images: [{ url: "/og/vehicle-default.png", width: 1200, height: 630 }],
+      images: [{ url: '/og/vehicle-default.png', width: 1200, height: 630 }],
     },
   };
 }
@@ -209,12 +247,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 function SpecTable({ variant }: { variant: VehicleVariantDto }) {
   const rows: Array<{ label: string; value: string }> = [
-    { label: "GVM", value: formatKg(variant.gvmKg) },
-    { label: "GCM", value: formatKg(variant.gcmKg) },
-    { label: "Max towing capacity", value: formatKg(variant.maxTowingCapacityKg) },
-    { label: "Kerb weight", value: formatKg(variant.kerbWeightKg) },
-    { label: "Front axle limit", value: formatKg(variant.frontAxleLimitKg) },
-    { label: "Rear axle limit", value: formatKg(variant.rearAxleLimitKg) },
+    { label: 'GVM', value: formatKg(variant.gvmKg) },
+    { label: 'GCM', value: formatKg(variant.gcmKg) },
+    {
+      label: 'Max towing capacity',
+      value: formatKg(variant.maxTowingCapacityKg),
+    },
+    { label: 'Kerb weight', value: formatKg(variant.kerbWeightKg) },
+    { label: 'Front axle limit', value: formatKg(variant.frontAxleLimitKg) },
+    { label: 'Rear axle limit', value: formatKg(variant.rearAxleLimitKg) },
   ];
 
   return (
@@ -222,15 +263,24 @@ function SpecTable({ variant }: { variant: VehicleVariantDto }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">Specification</th>
-            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">Value</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-gray-700">
+              Specification
+            </th>
+            <th className="px-4 py-2.5 text-right font-semibold text-gray-700">
+              Value
+            </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, i) => (
-            <tr key={row.label} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+            <tr
+              key={row.label}
+              className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+            >
               <td className="px-4 py-2.5 text-gray-600">{row.label}</td>
-              <td className="px-4 py-2.5 text-right font-medium text-gray-900">{row.value}</td>
+              <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                {row.value}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -267,10 +317,15 @@ function FaqSection({ faqs }: { faqs: FaqEntry[] }) {
   if (faqs.length === 0) return null;
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-900">Frequently Asked Questions</h2>
+      <h2 className="text-xl font-bold text-gray-900">
+        Frequently Asked Questions
+      </h2>
       <div className="space-y-4">
         {faqs.map((faq, i) => (
-          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4">
+          <div
+            key={i}
+            className="rounded-xl border border-gray-200 bg-white p-4"
+          >
             <p className="font-semibold text-gray-900">{faq.question}</p>
             <p className="mt-1 text-sm text-gray-600">{faq.answer}</p>
           </div>
@@ -282,15 +337,25 @@ function FaqSection({ faqs }: { faqs: FaqEntry[] }) {
 
 // ── Adjacent range + sibling links ──────────────────────────────────────────
 
-function RangeLink({ link, label }: { link: AdjacentRangeLink; label: string }) {
+function RangeLink({
+  link,
+  label,
+}: {
+  link: AdjacentRangeLink;
+  label: string;
+}) {
   const href = `/vehicles/${link.makeSlug}/${link.modelSlug}/${link.slug}/`;
   return (
     <Link
       href={href}
       className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-700"
     >
-      <span className="text-gray-400 text-xs uppercase tracking-wide">{label}</span>
-      <span>{link.name} {yearRangeLabel(link)}</span>
+      <span className="text-xs tracking-wide text-gray-400 uppercase">
+        {label}
+      </span>
+      <span>
+        {link.name} {yearRangeLabel(link)}
+      </span>
     </Link>
   );
 }
@@ -310,7 +375,9 @@ function SiblingLinks({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold text-gray-900">Other {modelName} variants</h2>
+      <h2 className="text-lg font-semibold text-gray-900">
+        Other {modelName} variants
+      </h2>
       <div className="flex flex-wrap gap-2">
         {visible.map((s) => (
           <Link
@@ -318,7 +385,10 @@ function SiblingLinks({
             href={`/vehicles/${s.makeSlug}/${s.modelSlug}/${s.slug}/`}
             className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-700"
           >
-            {s.name} <span className="ml-1 text-xs text-gray-400">({yearRangeLabel(s)})</span>
+            {s.name}{' '}
+            <span className="ml-1 text-xs text-gray-400">
+              ({yearRangeLabel(s)})
+            </span>
           </Link>
         ))}
         {overflow && (
@@ -369,11 +439,15 @@ export default async function VehicleVariantProfilePage({ params }: Props) {
       <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
         {/* Breadcrumbs */}
         <nav className="mb-6 flex items-center gap-1 text-sm text-gray-500">
-          <Link href="/vehicles" className="hover:text-blue-700">Vehicles</Link>
+          <Link href="/vehicles" className="hover:text-blue-700">
+            Vehicles
+          </Link>
           <span>/</span>
           <span className="text-gray-500">{makeName}</span>
           <span>/</span>
-          <Link href={modelHref} className="hover:text-blue-700">{modelName}</Link>
+          <Link href={modelHref} className="hover:text-blue-700">
+            {modelName}
+          </Link>
           <span>/</span>
           <span className="text-gray-900">{v.name}</span>
         </nav>
@@ -385,10 +459,10 @@ export default async function VehicleVariantProfilePage({ params }: Props) {
 
         {/* Lead paragraph */}
         <p className="mt-4 text-base leading-relaxed text-gray-600">
-          If your {modelName} is a {enumerateYearsProse(years)} model, this page covers your exact
-          vehicle. All specifications on this page — GVM, GCM, towing capacity, and axle limits —
-          are unchanged across the entire {rangeLabel} production run of the {makeName} {modelName}{" "}
-          {v.name}.
+          If your {modelName} is a {enumerateYearsProse(years)} model, this page
+          covers your exact vehicle. All specifications on this page — GVM, GCM,
+          towing capacity, and axle limits — are unchanged across the entire{' '}
+          {rangeLabel} production run of the {makeName} {modelName} {v.name}.
         </p>
 
         {/* Year selector */}
@@ -408,17 +482,25 @@ export default async function VehicleVariantProfilePage({ params }: Props) {
 
         {/* Spec table */}
         <div className="mt-10 space-y-3">
-          <h2 className="text-xl font-bold text-gray-900">Headline specifications</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Headline specifications
+          </h2>
           <SpecTable variant={v} />
         </div>
 
         {/* Adjacent-range links */}
         {(data.olderRange || data.newerRange) && (
           <div className="mt-10 space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900">Adjacent production ranges</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Adjacent production ranges
+            </h2>
             <div className="flex flex-col gap-2 sm:flex-row">
-              {data.olderRange && <RangeLink link={data.olderRange} label="Older" />}
-              {data.newerRange && <RangeLink link={data.newerRange} label="Newer" />}
+              {data.olderRange && (
+                <RangeLink link={data.olderRange} label="Older" />
+              )}
+              {data.newerRange && (
+                <RangeLink link={data.newerRange} label="Newer" />
+              )}
             </div>
           </div>
         )}
@@ -443,8 +525,8 @@ export default async function VehicleVariantProfilePage({ params }: Props) {
             Ready to check your rig compliance?
           </p>
           <p className="mt-1 text-xs text-blue-700">
-            Use the TravellingBuddy calculator to verify your GVM, GCM, and axle loads before you
-            head out.
+            Use the TravellingBuddy calculator to verify your GVM, GCM, and axle
+            loads before you head out.
           </p>
           <Link
             href={`/calculator?v=${v.slug}`}

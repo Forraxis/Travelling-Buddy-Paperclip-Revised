@@ -1,14 +1,14 @@
-import fs from "fs";
-import path from "path";
-import matter from "gray-matter";
+import fs from 'fs';
+import path from 'path';
+import matter from 'gray-matter';
 
-const GUIDES_DIR = path.join(process.cwd(), "src/content/guides");
+const GUIDES_DIR = path.join(process.cwd(), 'src/content/guides');
 
 export type GuideCategory =
-  | "regulatory"
-  | "state-guidance"
-  | "accessory-category"
-  | "decision";
+  | 'regulatory'
+  | 'state-guidance'
+  | 'accessory-category'
+  | 'decision';
 
 export interface GuideFrontmatter {
   title: string;
@@ -29,17 +29,21 @@ export function getAllGuideSlugs(): string[] {
   if (!fs.existsSync(GUIDES_DIR)) return [];
   return fs
     .readdirSync(GUIDES_DIR)
-    .filter((f) => f.endsWith(".md") || f.endsWith(".mdx"))
-    .map((f) => f.replace(/\.mdx?$/, ""));
+    .filter((f) => f.endsWith('.md') || f.endsWith('.mdx'))
+    .map((f) => f.replace(/\.mdx?$/, ''));
 }
 
 export function getGuideBySlug(slug: string): GuideFile | null {
   const mdxPath = path.join(GUIDES_DIR, `${slug}.mdx`);
   const mdPath = path.join(GUIDES_DIR, `${slug}.md`);
-  const filePath = fs.existsSync(mdxPath) ? mdxPath : fs.existsSync(mdPath) ? mdPath : null;
+  const filePath = fs.existsSync(mdxPath)
+    ? mdxPath
+    : fs.existsSync(mdPath)
+      ? mdPath
+      : null;
   if (!filePath) return null;
 
-  const raw = fs.readFileSync(filePath, "utf-8");
+  const raw = fs.readFileSync(filePath, 'utf-8');
   const { data, content } = matter(raw);
 
   return {

@@ -3,21 +3,28 @@
 import type { PickerVariant, PickerConfig } from './types';
 
 function yearSpan(v: PickerVariant) {
-  return v.isCurrentProduction ? `${v.yearFrom}–present` : `${v.yearFrom}–${v.yearTo}`;
+  return v.isCurrentProduction
+    ? `${v.yearFrom}–present`
+    : `${v.yearFrom}–${v.yearTo}`;
 }
 
 function specLine(v: PickerVariant) {
   if (v.entityType === 'vehicle') {
     return [
       v.gvmKg && `GVM ${v.gvmKg.toLocaleString()} kg`,
-      v.maxTowingCapacityKg && `Tow ${v.maxTowingCapacityKg.toLocaleString()} kg`,
+      v.maxTowingCapacityKg &&
+        `Tow ${v.maxTowingCapacityKg.toLocaleString()} kg`,
       v.kerbWeightKg && `Kerb ${v.kerbWeightKg.toLocaleString()} kg`,
-    ].filter(Boolean).join(' · ');
+    ]
+      .filter(Boolean)
+      .join(' · ');
   }
   return [
     v.atmKg && `ATM ${v.atmKg.toLocaleString()} kg`,
     v.tbmKg && `TBM ${v.tbmKg} kg`,
-  ].filter(Boolean).join(' · ');
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 interface CompactCardProps {
@@ -32,12 +39,16 @@ export function CompactCard({ variant, config, onChange }: CompactCardProps) {
      * ~80px height mirrors the empty-state card so the panel does not reflow
      * vertically when a selection lands (spec §7.5).
      */
-    <div className="flex h-20 items-center gap-3 rounded-lg border border-tb-neutral-200 bg-white px-4">
+    <div className="border-tb-neutral-200 flex h-20 items-center gap-3 rounded-lg border bg-white px-4">
       {/* Make logo / silhouette */}
-      <div className="flex h-12 w-12 flex-none items-center justify-center rounded-md bg-tb-neutral-50 text-sm font-bold uppercase text-tb-primary">
+      <div className="bg-tb-neutral-50 text-tb-primary flex h-12 w-12 flex-none items-center justify-center rounded-md text-sm font-bold uppercase">
         {variant.makeLogoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={variant.makeLogoUrl} alt={variant.makeName} className="h-10 w-10 object-contain" />
+          <img
+            src={variant.makeLogoUrl}
+            alt={variant.makeName}
+            className="h-10 w-10 object-contain"
+          />
         ) : (
           variant.makeName.slice(0, 2)
         )}
@@ -58,7 +69,7 @@ export function CompactCard({ variant, config, onChange }: CompactCardProps) {
       <button
         type="button"
         onClick={onChange}
-        className="flex-none text-xs font-medium text-tb-primary-light underline-offset-2 hover:underline"
+        className="text-tb-primary-light flex-none text-xs font-medium underline-offset-2 hover:underline"
         aria-label={`Change ${config.label}`}
       >
         Change

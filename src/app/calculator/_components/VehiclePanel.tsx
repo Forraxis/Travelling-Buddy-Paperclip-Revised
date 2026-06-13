@@ -37,7 +37,7 @@ function FuelSection({ variant }: FuelSectionProps) {
     <div>
       <div className="mb-1 flex items-center justify-between">
         <label className="text-sm font-medium text-gray-700">Fuel level</label>
-        <span className="text-sm tabular-nums text-gray-500">{fuelKg} kg</span>
+        <span className="text-sm text-gray-500 tabular-nums">{fuelKg} kg</span>
       </div>
       <input
         type="range"
@@ -77,12 +77,16 @@ function PassengersSection() {
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-gray-700">Passengers</label>
+      <label className="mb-2 block text-sm font-medium text-gray-700">
+        Passengers
+      </label>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center rounded-md border border-[#e5e7eb] bg-white">
           <button
             type="button"
-            onClick={() => setJourney({ passengers: Math.max(0, passengers - 1) })}
+            onClick={() =>
+              setJourney({ passengers: Math.max(0, passengers - 1) })
+            }
             disabled={passengers === 0}
             aria-label="Remove passenger"
             className="px-3 py-1.5 text-base text-gray-600 transition-colors hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-30"
@@ -90,14 +94,16 @@ function PassengersSection() {
             −
           </button>
           <span
-            className="w-8 select-none text-center text-sm font-semibold tabular-nums"
+            className="w-8 text-center text-sm font-semibold tabular-nums select-none"
             aria-live="polite"
           >
             {passengers}
           </span>
           <button
             type="button"
-            onClick={() => setJourney({ passengers: Math.min(9, passengers + 1) })}
+            onClick={() =>
+              setJourney({ passengers: Math.min(9, passengers + 1) })
+            }
             disabled={passengers === 9}
             aria-label="Add passenger"
             className="px-3 py-1.5 text-base text-gray-600 transition-colors hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-30"
@@ -115,11 +121,14 @@ function PassengersSection() {
             value={passengerWeightKg}
             onChange={(e) =>
               setJourney({
-                passengerWeightKg: Math.min(200, Math.max(30, Number(e.target.value))),
+                passengerWeightKg: Math.min(
+                  200,
+                  Math.max(30, Number(e.target.value)),
+                ),
               })
             }
             aria-label="Average passenger weight in kg"
-            className="w-16 rounded-md border border-[#e5e7eb] px-2 py-1 text-right text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-[#2e75b6]"
+            className="w-16 rounded-md border border-[#e5e7eb] px-2 py-1 text-right text-sm tabular-nums focus:ring-1 focus:ring-[#2e75b6] focus:outline-none"
           />
           <span className="text-xs text-gray-500">kg</span>
         </div>
@@ -135,7 +144,9 @@ function CargoSection() {
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-gray-700">Vehicle cargo</label>
+      <label className="mb-2 block text-sm font-medium text-gray-700">
+        Vehicle cargo
+      </label>
       <div className="flex items-center gap-1.5">
         <input
           type="number"
@@ -147,7 +158,7 @@ function CargoSection() {
           }
           placeholder="0"
           aria-label="Vehicle cargo in kg"
-          className="w-24 rounded-md border border-[#e5e7eb] px-2 py-1.5 text-right text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-[#2e75b6]"
+          className="w-24 rounded-md border border-[#e5e7eb] px-2 py-1.5 text-right text-sm tabular-nums focus:ring-1 focus:ring-[#2e75b6] focus:outline-none"
         />
         <span className="text-xs text-gray-500">kg</span>
       </div>
@@ -158,14 +169,17 @@ function CargoSection() {
 // ── Main panel ────────────────────────────────────────────────────────────────
 
 export function VehiclePanel() {
-  const { state, setVehicleVariant, addAccessory, removeAccessory } = useCalculatorState();
-  const [selectedVariant, setSelectedVariant] = useState<PickerVariant | null>(null);
+  const { state, setVehicleVariant, addAccessory, removeAccessory } =
+    useCalculatorState();
+  const [selectedVariant, setSelectedVariant] = useState<PickerVariant | null>(
+    null,
+  );
 
   // Hydrate from URL-persisted vehicleVariantId on mount
   useEffect(() => {
     if (!state.vehicleVariantId || selectedVariant) return;
     fetch(`/api/v1/vehicles/variants/${state.vehicleVariantId}`)
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((v) => {
         if (!v) return;
         const pv: PickerVariant = {
@@ -190,7 +204,7 @@ export function VehiclePanel() {
         setSelectedVariant(pv);
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.vehicleVariantId]);
 
   const handleSelect = useCallback(
@@ -220,20 +234,27 @@ export function VehiclePanel() {
     [removeAccessory],
   );
 
-  const totalAccessoryKg = state.accessories.reduce((sum, a) => sum + a.massKg, 0);
+  const totalAccessoryKg = state.accessories.reduce(
+    (sum, a) => sum + a.massKg,
+    0,
+  );
   // addedFitmentIds: the state uses accessoryId field to store what is actually a fitmentId
   const addedFitmentIds = state.accessories.map((a) => a.accessoryId);
 
   return (
     <section>
       {/* Vehicle picker — renders empty-state CTA or compact card */}
-      <EntityPicker config={VEHICLE_CONFIG} onSelect={handleSelect} initialVariant={selectedVariant} />
+      <EntityPicker
+        config={VEHICLE_CONFIG}
+        onSelect={handleSelect}
+        initialVariant={selectedVariant}
+      />
 
       {selectedVariant && (
         <>
           {/* Journey assumptions */}
           <div className="mt-4 rounded-lg border border-[#e5e7eb] bg-white p-4">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <p className="mb-4 text-xs font-semibold tracking-wide text-gray-400 uppercase">
               Journey assumptions
             </p>
             <div className="space-y-4 divide-y divide-[#e5e7eb]">
@@ -249,7 +270,7 @@ export function VehiclePanel() {
 
           {/* Accessories */}
           <div className="mt-4 rounded-lg border border-[#e5e7eb] bg-white p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <p className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase">
               Accessories
             </p>
 
@@ -261,7 +282,7 @@ export function VehiclePanel() {
 
             {/* Mass summary — only shown when accessories are present */}
             {state.accessories.length > 0 && (
-              <p className="mt-3 text-xs tabular-nums text-gray-500">
+              <p className="mt-3 text-xs text-gray-500 tabular-nums">
                 Accessories: {Math.round(totalAccessoryKg)} kg
               </p>
             )}

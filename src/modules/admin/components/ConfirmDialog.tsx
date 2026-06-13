@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect } from 'react';
 
 export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = "Delete",
+  confirmLabel = 'Delete',
   onConfirm,
   onCancel,
 }: {
@@ -30,7 +30,7 @@ export function ConfirmDialog({
     <dialog
       ref={dialogRef}
       onClose={onCancel}
-      className="rounded-xl border border-tb-neutral-200 bg-white p-0 shadow-xl backdrop:bg-black/40"
+      className="border-tb-neutral-200 rounded-xl border bg-white p-0 shadow-xl backdrop:bg-black/40"
     >
       <div className="w-[24rem] p-6">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
@@ -39,7 +39,7 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-tb-neutral-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-tb-neutral-50"
+            className="border-tb-neutral-200 hover:bg-tb-neutral-50 rounded-lg border px-4 py-2 text-sm font-medium text-gray-700"
           >
             Cancel
           </button>

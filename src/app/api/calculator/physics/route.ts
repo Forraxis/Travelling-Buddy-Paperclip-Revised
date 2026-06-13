@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { withRateLimit, serverError } from "@/lib/api-helpers";
-import { z } from "zod";
-import { calculate } from "@/lib/physics/engine";
-import type { AccessoryLoad, MountingLocation } from "@/lib/physics/types";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { withRateLimit, serverError } from '@/lib/api-helpers';
+import { z } from 'zod';
+import { calculate } from '@/lib/physics/engine';
+import type { AccessoryLoad, MountingLocation } from '@/lib/physics/types';
 
 const accessorySchema = z.object({
   accessoryId: z.string(),
@@ -23,25 +23,28 @@ const schema = z.object({
 });
 
 const CARAVAN_LOCATIONS = new Set([
-  "CARAVAN_DRAWBAR",
-  "CARAVAN_A_FRAME",
-  "CARAVAN_CHASSIS_FRONT",
-  "CARAVAN_CHASSIS_MID",
-  "CARAVAN_CHASSIS_REAR",
-  "CARAVAN_UNDERBODY",
-  "CARAVAN_ROOF",
-  "CARAVAN_WALL_LEFT",
-  "CARAVAN_WALL_RIGHT",
-  "CARAVAN_WALL_FRONT",
-  "CARAVAN_WALL_REAR",
-  "CARAVAN_BUMPER_BAR",
-  "CARAVAN_BOOT",
-  "CARAVAN_TUNNEL_BOOT",
-  "CARAVAN_TOOLBAR_EXTERNAL",
-  "CARAVAN_TOOLBAR_INTERNAL",
+  'CARAVAN_DRAWBAR',
+  'CARAVAN_A_FRAME',
+  'CARAVAN_CHASSIS_FRONT',
+  'CARAVAN_CHASSIS_MID',
+  'CARAVAN_CHASSIS_REAR',
+  'CARAVAN_UNDERBODY',
+  'CARAVAN_ROOF',
+  'CARAVAN_WALL_LEFT',
+  'CARAVAN_WALL_RIGHT',
+  'CARAVAN_WALL_FRONT',
+  'CARAVAN_WALL_REAR',
+  'CARAVAN_BUMPER_BAR',
+  'CARAVAN_BOOT',
+  'CARAVAN_TUNNEL_BOOT',
+  'CARAVAN_TOOLBAR_EXTERNAL',
+  'CARAVAN_TOOLBAR_INTERNAL',
 ]);
 
-function toAccessoryLoad(a: { massKg: number; mountingLocation: string }): AccessoryLoad {
+function toAccessoryLoad(a: {
+  massKg: number;
+  mountingLocation: string;
+}): AccessoryLoad {
   return {
     installedWeightKg: a.massKg,
     mountingLocation: a.mountingLocation as MountingLocation,
@@ -58,7 +61,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
     const {
@@ -76,7 +79,7 @@ export async function POST(request: Request) {
       where: { id: vehicleVariantId },
     });
     if (!vehicle) {
-      return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
     }
 
     let caravan = null;
@@ -107,7 +110,11 @@ export async function POST(request: Request) {
         frontOverhangMm: vehicle.frontOverhangMm,
         rearOverhangMm: vehicle.rearOverhangMm,
         fuelTankCapacityL: vehicle.fuelTankCapacityL ?? 0,
-        fuelType: (vehicle.fuelType ?? "PETROL") as "DIESEL" | "PETROL" | "HYBRID" | "ELECTRIC",
+        fuelType: (vehicle.fuelType ?? 'PETROL') as
+          | 'DIESEL'
+          | 'PETROL'
+          | 'HYBRID'
+          | 'ELECTRIC',
       },
       caravan: caravan
         ? {
@@ -116,10 +123,10 @@ export async function POST(request: Request) {
             tareKg: caravan.tareKg ?? 0,
             tbmKg: caravan.tbmKg ?? 0,
             axleConfiguration: caravan.axleConfiguration as
-              | "SINGLE_AXLE"
-              | "DUAL_AXLE_CLOSE_COUPLED"
-              | "DUAL_AXLE_SPREAD"
-              | "TRIPLE_AXLE",
+              | 'SINGLE_AXLE'
+              | 'DUAL_AXLE_CLOSE_COUPLED'
+              | 'DUAL_AXLE_SPREAD'
+              | 'TRIPLE_AXLE',
             couplingToAxleMm: caravan.couplingToAxleMm ?? 0,
             axleSpacingMm: caravan.axleSpacingMm,
             freshWaterCapacityL: caravan.freshWaterCapacityL ?? 0,
@@ -133,7 +140,7 @@ export async function POST(request: Request) {
       fuelPercent,
       freshWaterPercent,
       greyWaterPercent,
-      regulationSetCode: "AU_ADR",
+      regulationSetCode: 'AU_ADR',
     });
 
     return NextResponse.json(result);

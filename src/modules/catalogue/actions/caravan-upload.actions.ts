@@ -1,12 +1,12 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
-import { getAdminUser } from "@/modules/admin/lib/auth";
+import { revalidatePath } from 'next/cache';
+import { prisma } from '@/lib/db';
+import { getAdminUser } from '@/modules/admin/lib/auth';
 import {
   validateAndPreviewCaravanCsv,
   type CaravanCsvPreviewResult,
-} from "../csv/caravan-csv";
+} from '../csv/caravan-csv';
 
 type ActionResult<T = unknown> =
   | { success: true; data: T }
@@ -15,30 +15,30 @@ type ActionResult<T = unknown> =
 function slugify(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export async function previewCaravanUploadAction(
-  csvText: string
+  csvText: string,
 ): Promise<ActionResult<CaravanCsvPreviewResult>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
     const preview = validateAndPreviewCaravanCsv(csvText);
     return { success: true, data: preview };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed to parse CSV";
+    const msg = e instanceof Error ? e.message : 'Failed to parse CSV';
     return { success: false, error: msg };
   }
 }
 
 export async function commitCaravanUploadAction(
-  csvText: string
+  csvText: string,
 ): Promise<ActionResult<{ imported: number; skipped: number }>> {
   const user = await getAdminUser();
-  if (!user) return { success: false, error: "Unauthorized" };
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   const preview = validateAndPreviewCaravanCsv(csvText);
 
@@ -50,7 +50,7 @@ export async function commitCaravanUploadAction(
   }
 
   if (preview.deduplicated.length === 0) {
-    return { success: false, error: "No valid rows to import." };
+    return { success: false, error: 'No valid rows to import.' };
   }
 
   let imported = 0;
@@ -134,9 +134,9 @@ export async function commitCaravanUploadAction(
     try {
       await prisma.auditLog.create({
         data: {
-          entityType: "CaravanBulkImport",
+          entityType: 'CaravanBulkImport',
           entityId: `bulk-${Date.now()}`,
-          action: "CREATE",
+          action: 'CREATE',
           changedBy: user.id,
           changes: {
             imported,
@@ -150,10 +150,10 @@ export async function commitCaravanUploadAction(
       // Silently ignore audit log failures (e.g. dev user not in DB)
     }
 
-    revalidatePath("/admin/catalogue/caravans");
+    revalidatePath('/admin/catalogue/caravans');
     return { success: true, data: { imported, skipped } };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Import failed";
+    const msg = e instanceof Error ? e.message : 'Import failed';
     return { success: false, error: msg };
   }
 }

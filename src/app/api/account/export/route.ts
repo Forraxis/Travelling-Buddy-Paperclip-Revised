@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 
 /**
  * POST /api/account/export
@@ -65,7 +65,7 @@ import { prisma } from "@/lib/db";
 const EXPORT_WINDOW_MS = 5 * 60 * 1000;
 const exportTimestamps = new Map<string, number>();
 
-if (typeof setInterval !== "undefined") {
+if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     const now = Date.now();
     for (const [key, ts] of exportTimestamps) {
@@ -77,7 +77,7 @@ if (typeof setInterval !== "undefined") {
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const userId = session.user.id;
@@ -85,13 +85,18 @@ export async function POST() {
   const lastExport = exportTimestamps.get(userId);
 
   if (lastExport && now - lastExport < EXPORT_WINDOW_MS) {
-    const retryAfter = Math.ceil((EXPORT_WINDOW_MS - (now - lastExport)) / 1000);
+    const retryAfter = Math.ceil(
+      (EXPORT_WINDOW_MS - (now - lastExport)) / 1000,
+    );
     return NextResponse.json(
-      { error: "Export rate limit exceeded. Please wait before requesting another export." },
+      {
+        error:
+          'Export rate limit exceeded. Please wait before requesting another export.',
+      },
       {
         status: 429,
-        headers: { "Retry-After": String(retryAfter) },
-      }
+        headers: { 'Retry-After': String(retryAfter) },
+      },
     );
   }
 
@@ -138,13 +143,13 @@ export async function POST() {
           },
           customLoads: true,
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
       },
     },
   });
 
   if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
   const defaultPrefs = {
@@ -155,7 +160,7 @@ export async function POST() {
   };
 
   const storedPrefs =
-    typeof user.notificationPreferences === "object" &&
+    typeof user.notificationPreferences === 'object' &&
     user.notificationPreferences !== null
       ? user.notificationPreferences
       : {};
@@ -231,8 +236,8 @@ export async function POST() {
   return new Response(body, {
     status: 200,
     headers: {
-      "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename=travellingbuddy-export-${dateStr}.json`,
+      'Content-Type': 'application/json',
+      'Content-Disposition': `attachment; filename=travellingbuddy-export-${dateStr}.json`,
     },
   });
 }

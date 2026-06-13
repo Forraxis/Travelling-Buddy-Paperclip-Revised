@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { withRateLimit, serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { withRateLimit, serverError } from '@/lib/api-helpers';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const limited = withRateLimit(request);
   if (limited) return limited;
@@ -12,10 +12,10 @@ export async function GET(
   try {
     const { id: brandId } = await params;
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get("categoryId") ?? undefined;
-    const mountingLocation = searchParams.get("mountingLocation") ?? undefined;
-    const vehicleVariantId = searchParams.get("vehicleVariantId") ?? undefined;
-    const caravanVariantId = searchParams.get("caravanVariantId") ?? undefined;
+    const categoryId = searchParams.get('categoryId') ?? undefined;
+    const mountingLocation = searchParams.get('mountingLocation') ?? undefined;
+    const vehicleVariantId = searchParams.get('vehicleVariantId') ?? undefined;
+    const caravanVariantId = searchParams.get('caravanVariantId') ?? undefined;
 
     const variantFilter = vehicleVariantId
       ? { vehicleVariantId }
@@ -26,10 +26,12 @@ export async function GET(
     const fitments = await prisma.accessoryFitment.findMany({
       where: {
         ...variantFilter,
-        ...(mountingLocation ? { mountingLocation: mountingLocation as never } : {}),
+        ...(mountingLocation
+          ? { mountingLocation: mountingLocation as never }
+          : {}),
         accessory: {
           brandId,
-          status: "ACTIVE",
+          status: 'ACTIVE',
           ...(categoryId ? { categoryId } : {}),
         },
       },
@@ -41,7 +43,7 @@ export async function GET(
           },
         },
       },
-      orderBy: [{ accessory: { name: "asc" } }, { mountingLocation: "asc" }],
+      orderBy: [{ accessory: { name: 'asc' } }, { mountingLocation: 'asc' }],
     });
 
     const items = fitments.map((f) => ({
@@ -57,9 +59,9 @@ export async function GET(
       installedWeightKg: Number(f.installedWeightKg),
     }));
 
-    const allLocations = [...new Set(
-      fitments.map((f) => f.mountingLocation as string)
-    )].sort();
+    const allLocations = [
+      ...new Set(fitments.map((f) => f.mountingLocation as string)),
+    ].sort();
 
     return NextResponse.json({ items, allLocations });
   } catch (err) {

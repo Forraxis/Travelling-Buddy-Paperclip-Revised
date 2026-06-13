@@ -38,7 +38,10 @@ function proxyHandler(request: NextRequest) {
     }
   }
 
-  if (PROTECTED_PAGES.some((p) => p.test(pathname)) && !hasSessionCookie(request)) {
+  if (
+    PROTECTED_PAGES.some((p) => p.test(pathname)) &&
+    !hasSessionCookie(request)
+  ) {
     const signIn = new URL('/auth/signin', request.url);
     signIn.searchParams.set('callbackUrl', request.url);
     return NextResponse.redirect(signIn);

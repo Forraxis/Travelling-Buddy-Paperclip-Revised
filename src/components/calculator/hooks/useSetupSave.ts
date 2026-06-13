@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useCalculatorState } from "@/modules/calculator/context";
-import { saveLocalSetup } from "@/lib/local-setups";
-import { generateSetupName } from "@/lib/setup-name";
+import { useCallback, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useCalculatorState } from '@/modules/calculator/context';
+import { saveLocalSetup } from '@/lib/local-setups';
+import { generateSetupName } from '@/lib/setup-name';
 
 interface SaveOptions {
   vehicleName?: { name: string; model: { name: string } } | null;
@@ -18,7 +18,10 @@ interface SaveResult {
   isAnonymous?: boolean;
 }
 
-export function useSetupSave(setupId: string | null, options: SaveOptions = {}) {
+export function useSetupSave(
+  setupId: string | null,
+  options: SaveOptions = {},
+) {
   const { data: session } = useSession();
   const { state } = useCalculatorState();
   const [saving, setSaving] = useState(false);
@@ -53,16 +56,16 @@ export function useSetupSave(setupId: string | null, options: SaveOptions = {}) 
       if (session?.user) {
         if (setupId) {
           const res = await fetch(`/api/setups/${setupId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(buildPayload()),
           });
           if (!res.ok) return { ok: false };
           return { ok: true, id: setupId };
         } else {
-          const res = await fetch("/api/setups", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+          const res = await fetch('/api/setups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(buildPayload()),
           });
           if (!res.ok) return { ok: false };
@@ -75,7 +78,7 @@ export function useSetupSave(setupId: string | null, options: SaveOptions = {}) 
           : `Setup ${new Date().toLocaleDateString()}`;
         const rigIdentifier = options.vehicleName
           ? `${options.vehicleName.model.name} ${options.vehicleName.name}`
-          : "Unknown vehicle";
+          : 'Unknown vehicle';
         saveLocalSetup(name, rigIdentifier, state);
         return { ok: true, isAnonymous: true };
       }
@@ -84,7 +87,14 @@ export function useSetupSave(setupId: string | null, options: SaveOptions = {}) 
     } finally {
       setSaving(false);
     }
-  }, [session, state, setupId, buildPayload, options.vehicleName, options.caravanName]);
+  }, [
+    session,
+    state,
+    setupId,
+    buildPayload,
+    options.vehicleName,
+    options.caravanName,
+  ]);
 
   return { save, saving, canSave: !!state.vehicleVariantId };
 }

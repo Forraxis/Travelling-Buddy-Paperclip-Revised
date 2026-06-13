@@ -1,25 +1,30 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { createVehicleService } from "@/modules/catalogue/services/vehicle.service";
-import { paginationSchema } from "@/modules/catalogue/validation/schemas";
-import { parseSearchParams, withRateLimit, notFound, serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { createVehicleService } from '@/modules/catalogue/services/vehicle.service';
+import { paginationSchema } from '@/modules/catalogue/validation/schemas';
+import {
+  parseSearchParams,
+  withRateLimit,
+  notFound,
+  serverError,
+} from '@/lib/api-helpers';
 
 const service = createVehicleService(prisma);
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ modelId: string }> }
+  { params }: { params: Promise<{ modelId: string }> },
 ) {
   const limited = withRateLimit(request);
   if (limited) return limited;
 
   const { modelId } = await params;
   const parsed = parseSearchParams(request, paginationSchema);
-  if ("error" in parsed) return parsed.error;
+  if ('error' in parsed) return parsed.error;
 
   try {
     const model = await service.getModelById(modelId);
-    if (!model) return notFound("Vehicle model");
+    if (!model) return notFound('Vehicle model');
 
     const result = await service.listVariantsByModel(modelId, parsed.data);
     return NextResponse.json(result);

@@ -1,15 +1,15 @@
-import { redirect } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { auth } from "@/lib/auth";
-import { getTrustTierConfigAction } from "@/modules/admin/actions/trust-tier-config.actions";
-import { TrustTierConfigForm } from "./_components/TrustTierConfigForm";
+import { redirect } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { auth } from '@/lib/auth';
+import { getTrustTierConfigAction } from '@/modules/admin/actions/trust-tier-config.actions';
+import { TrustTierConfigForm } from './_components/TrustTierConfigForm';
 
-export const metadata = { title: "Trust Tier Thresholds — Admin" };
+export const metadata = { title: 'Trust Tier Thresholds — Admin' };
 
 export default async function TrustTierSettingsPage() {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
-    redirect("/admin");
+  if (session?.user?.role !== 'ADMIN') {
+    redirect('/admin');
   }
 
   const config = await getTrustTierConfigAction();

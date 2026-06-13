@@ -1,7 +1,7 @@
-import { notFound } from "next/navigation";
-import { AdminPageHeader } from "@/modules/admin/components";
-import { getAccessoryByIdAction } from "@/modules/catalogue/actions/accessory-admin.actions";
-import { FitmentForm } from "../FitmentForm";
+import { notFound } from 'next/navigation';
+import { AdminPageHeader } from '@/modules/admin/components';
+import { getAccessoryByIdAction } from '@/modules/catalogue/actions/accessory-admin.actions';
+import { FitmentForm } from '../FitmentForm';
 
 export default async function NewFitmentPage({
   params,

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from '@prisma/client';
 import type {
   AccessoryBrandDto,
   CreateAccessoryBrandInput,
@@ -7,20 +7,20 @@ import type {
   PaginationOptions,
   PaginatedResult,
   AccessoryBrandSearchResult,
-} from "../types/accessory-brand.types";
+} from '../types/accessory-brand.types';
 
 const DEFAULT_PAGE_SIZE = 25;
 
 export function createBrandService(prisma: PrismaClient) {
   async function create(
-    input: CreateAccessoryBrandInput
+    input: CreateAccessoryBrandInput,
   ): Promise<AccessoryBrandDto> {
     return prisma.accessoryBrand.create({ data: input });
   }
 
   async function update(
     id: string,
-    input: UpdateAccessoryBrandInput
+    input: UpdateAccessoryBrandInput,
   ): Promise<AccessoryBrandDto> {
     return prisma.accessoryBrand.update({ where: { id }, data: input });
   }
@@ -39,7 +39,7 @@ export function createBrandService(prisma: PrismaClient) {
 
   async function list(
     filter: AccessoryBrandFilter = {},
-    opts: PaginationOptions = {}
+    opts: PaginationOptions = {},
   ): Promise<PaginatedResult<AccessoryBrandDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const where: Record<string, unknown> = {};
@@ -50,7 +50,7 @@ export function createBrandService(prisma: PrismaClient) {
       where,
       take: limit + 1,
       ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
     const hasMore = items.length > limit;
     if (hasMore) items.pop();
@@ -63,12 +63,12 @@ export function createBrandService(prisma: PrismaClient) {
 
   async function search(
     query: string,
-    limit = 10
+    limit = 10,
   ): Promise<AccessoryBrandSearchResult> {
     const brands = await prisma.accessoryBrand.findMany({
-      where: { name: { contains: query, mode: "insensitive" } },
+      where: { name: { contains: query, mode: 'insensitive' } },
       take: limit,
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
     return { brands };
   }

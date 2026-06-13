@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { createCategoryService } from "@/modules/catalogue/services/category.service";
-import { Breadcrumbs } from "@/components/catalogue/Breadcrumbs";
-import { SearchInput } from "@/components/catalogue/SearchInput";
-import { PaginationBar } from "@/components/catalogue/PaginationBar";
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import Link from 'next/link';
+import { prisma } from '@/lib/db';
+import { createCategoryService } from '@/modules/catalogue/services/category.service';
+import { Breadcrumbs } from '@/components/catalogue/Breadcrumbs';
+import { SearchInput } from '@/components/catalogue/SearchInput';
+import { PaginationBar } from '@/components/catalogue/PaginationBar';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 const categoryService = createCategoryService(prisma);
 
@@ -22,7 +22,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { brand: categorySlug } = await params;
   const category = await categoryService.getBySlug(categorySlug);
-  if (!category) return { title: "Category Not Found" };
+  if (!category) return { title: 'Category Not Found' };
   return {
     title: category.name,
     description: category.description ?? `Browse ${category.name} accessories.`,
@@ -43,7 +43,7 @@ function AccessoryCard({ accessory }: { accessory: AccessoryListItem }) {
   return (
     <Link
       href={`/accessories/${accessory.brandSlug}/${accessory.slug}/`}
-      className="group flex flex-col gap-2 rounded-xl border border-tb-neutral-200 bg-white p-4 transition-shadow hover:shadow-md"
+      className="group border-tb-neutral-200 flex flex-col gap-2 rounded-xl border bg-white p-4 transition-shadow hover:shadow-md"
     >
       {accessory.imageUrls[0] && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -53,7 +53,7 @@ function AccessoryCard({ accessory }: { accessory: AccessoryListItem }) {
           className="h-36 w-full rounded-lg object-cover"
         />
       )}
-      <span className="text-sm font-semibold text-tb-primary group-hover:text-tb-primary-light">
+      <span className="text-tb-primary group-hover:text-tb-primary-light text-sm font-semibold">
         {accessory.name}
       </span>
       {accessory.priceMin !== null && (
@@ -65,10 +65,13 @@ function AccessoryCard({ accessory }: { accessory: AccessoryListItem }) {
   );
 }
 
-export default async function CategoryAccessoriesPage({ params, searchParams }: Props) {
+export default async function CategoryAccessoriesPage({
+  params,
+  searchParams,
+}: Props) {
   const { brand: categorySlug } = await params;
   const sp = await searchParams;
-  const q = sp.q?.trim() ?? "";
+  const q = sp.q?.trim() ?? '';
   const cursor = sp.cursor;
 
   const category = await categoryService.getBySlug(categorySlug);
@@ -82,8 +85,8 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
     const rawItems = await prisma.accessory.findMany({
       where: {
         categoryId: category.id,
-        status: "ACTIVE",
-        name: { contains: q, mode: "insensitive" },
+        status: 'ACTIVE',
+        name: { contains: q, mode: 'insensitive' },
       },
       take: 50,
       select: {
@@ -101,16 +104,18 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
       name: r.name,
       slug: r.slug,
       imageUrls: r.imageUrls,
-      priceMin: r.priceMin ? (r.priceMin as unknown as { toNumber(): number }).toNumber() : null,
+      priceMin: r.priceMin
+        ? (r.priceMin as unknown as { toNumber(): number }).toNumber()
+        : null,
       currencyCode: r.currencyCode,
       brandSlug: r.brand.slug,
     }));
   } else {
     const rawItems = await prisma.accessory.findMany({
-      where: { categoryId: category.id, status: "ACTIVE" },
+      where: { categoryId: category.id, status: 'ACTIVE' },
       take: PAGE_SIZE + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: 'asc' },
       select: {
         id: true,
         name: true,
@@ -129,7 +134,9 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
       name: r.name,
       slug: r.slug,
       imageUrls: r.imageUrls,
-      priceMin: r.priceMin ? (r.priceMin as unknown as { toNumber(): number }).toNumber() : null,
+      priceMin: r.priceMin
+        ? (r.priceMin as unknown as { toNumber(): number }).toNumber()
+        : null,
       currencyCode: r.currencyCode,
       brandSlug: r.brand.slug,
     }));
@@ -139,14 +146,16 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
     <div className="space-y-6">
       <Breadcrumbs
         crumbs={[
-          { label: "Accessories", href: "/accessories" },
+          { label: 'Accessories', href: '/accessories' },
           { label: category.name },
         ]}
       />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-tb-primary">{category.name}</h1>
+          <h1 className="text-tb-primary text-2xl font-bold">
+            {category.name}
+          </h1>
           {category.description && (
             <p className="mt-1 text-sm text-gray-500">{category.description}</p>
           )}
@@ -164,7 +173,7 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
             <Link
               key={child.id}
               href={`/accessories/${child.slug}/`}
-              className="rounded-full border border-tb-neutral-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 hover:border-tb-primary-light hover:text-tb-primary"
+              className="border-tb-neutral-200 hover:border-tb-primary-light hover:text-tb-primary rounded-full border bg-white px-3 py-1 text-xs font-medium text-gray-600"
             >
               {child.name}
             </Link>
@@ -173,8 +182,10 @@ export default async function CategoryAccessoriesPage({ params, searchParams }: 
       )}
 
       {items.length === 0 ? (
-        <div className="rounded-xl border border-tb-neutral-200 py-16 text-center text-gray-400">
-          {q ? `No accessories match "${q}".` : `No accessories in ${category.name} yet.`}
+        <div className="border-tb-neutral-200 rounded-xl border py-16 text-center text-gray-400">
+          {q
+            ? `No accessories match "${q}".`
+            : `No accessories in ${category.name} yet.`}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

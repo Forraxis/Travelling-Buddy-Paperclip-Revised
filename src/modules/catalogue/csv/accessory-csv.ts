@@ -1,28 +1,33 @@
-import { z } from "zod";
-import type { AccessoryStatus } from "@prisma/client";
-import { parseCsvToRecords } from "./csv-parser";
+import { z } from 'zod';
+import type { AccessoryStatus } from '@prisma/client';
+import { parseCsvToRecords } from './csv-parser';
 
 // ── Constants ──────────────────────────────────────
 
 export const ACCESSORY_CSV_HEADERS = [
-  "brand_name",
-  "category_name",
-  "name",
-  "slug",
-  "description",
-  "status",
+  'brand_name',
+  'category_name',
+  'name',
+  'slug',
+  'description',
+  'status',
 ] as const;
 
 export const ACCESSORY_CSV_EXAMPLE_ROW = [
-  "ARB",
-  "Bull Bars",
-  "Summit Bull Bar – Toyota LandCruiser 200 Series",
-  "",
-  "Heavy-duty steel bull bar with integrated winch mount and LED light bar bracket.",
-  "ACTIVE",
+  'ARB',
+  'Bull Bars',
+  'Summit Bull Bar – Toyota LandCruiser 200 Series',
+  '',
+  'Heavy-duty steel bull bar with integrated winch mount and LED light bar bracket.',
+  'ACTIVE',
 ];
 
-const ACCESSORY_STATUSES = ["ACTIVE", "DISCONTINUED", "PLACEHOLDER", "COMMUNITY"] as const;
+const ACCESSORY_STATUSES = [
+  'ACTIVE',
+  'DISCONTINUED',
+  'PLACEHOLDER',
+  'COMMUNITY',
+] as const;
 
 // ── Parsed row type ────────────────────────────────
 
@@ -40,25 +45,25 @@ export interface AccessoryCsvRowParsed {
 function slugify(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 const accessoryCsvRowSchema = z.object({
-  brand_name: z.string().min(1, "Required"),
-  category_name: z.string().min(1, "Required"),
-  name: z.string().min(1, "Required"),
+  brand_name: z.string().min(1, 'Required'),
+  category_name: z.string().min(1, 'Required'),
+  name: z.string().min(1, 'Required'),
   slug: z.string().optional(),
   description: z.string().optional(),
   status: z
     .string()
     .optional()
     .transform((v, ctx) => {
-      const val = (v ?? "ACTIVE").trim().toUpperCase();
+      const val = (v ?? 'ACTIVE').trim().toUpperCase();
       if (!ACCESSORY_STATUSES.includes(val as AccessoryStatus)) {
         ctx.addIssue({
-          code: "custom",
-          message: `Must be one of: ${ACCESSORY_STATUSES.join(", ")}`,
+          code: 'custom',
+          message: `Must be one of: ${ACCESSORY_STATUSES.join(', ')}`,
         });
         return z.NEVER;
       }
@@ -88,21 +93,23 @@ export interface AccessoryCsvPreviewResult {
 
 function validateRow(
   raw: Record<string, string>,
-  rowNumber: number
+  rowNumber: number,
 ): AccessoryCsvRowResult {
   const result = accessoryCsvRowSchema.safeParse(raw);
 
   if (!result.success) {
     const errors: Record<string, string> = {};
     for (const issue of result.error.issues) {
-      const path = issue.path.length > 0 ? String(issue.path[0]) : "_";
+      const path = issue.path.length > 0 ? String(issue.path[0]) : '_';
       if (!errors[path]) errors[path] = issue.message;
     }
     return { rowNumber, raw, errors };
   }
 
   const d = result.data;
-  const derivedSlug = d.slug?.trim() ? slugify(d.slug.trim()) : slugify(d.name.trim());
+  const derivedSlug = d.slug?.trim()
+    ? slugify(d.slug.trim())
+    : slugify(d.name.trim());
 
   const parsed: AccessoryCsvRowParsed = {
     brandName: d.brand_name.trim(),
@@ -118,9 +125,10 @@ function validateRow(
 
 // ── Deduplication (by brand+slug) ──────────────────
 
-function deduplicateAccessoryRows(
-  rows: AccessoryCsvRowParsed[]
-): { deduplicated: AccessoryCsvRowParsed[]; duplicateRows: number } {
+function deduplicateAccessoryRows(rows: AccessoryCsvRowParsed[]): {
+  deduplicated: AccessoryCsvRowParsed[];
+  duplicateRows: number;
+} {
   const seen = new Set<string>();
   const deduplicated: AccessoryCsvRowParsed[] = [];
   let duplicateRows = 0;
@@ -141,19 +149,19 @@ function deduplicateAccessoryRows(
 // ── Main entry point ───────────────────────────────
 
 export function validateAndPreviewAccessoryCsv(
-  csvText: string
+  csvText: string,
 ): AccessoryCsvPreviewResult {
   const { records } = parseCsvToRecords(csvText);
 
   const rows: AccessoryCsvRowResult[] = records.map((raw, i) =>
-    validateRow(raw, i + 2)
+    validateRow(raw, i + 2),
   );
 
   const validRows = rows.filter((r) => r.parsed);
   const errorRows = rows.filter((r) => r.errors);
 
   const { deduplicated, duplicateRows } = deduplicateAccessoryRows(
-    validRows.map((r) => r.parsed!)
+    validRows.map((r) => r.parsed!),
   );
 
   return {

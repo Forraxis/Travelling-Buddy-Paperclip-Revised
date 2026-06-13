@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { withRateLimit, serverError } from "@/lib/api-helpers";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { withRateLimit, serverError } from '@/lib/api-helpers';
 
 export async function GET(request: Request) {
   const limited = withRateLimit(request);
@@ -8,10 +8,10 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const q = searchParams.get("q")?.trim() ?? "";
-    const limit = Math.min(parseInt(searchParams.get("limit") ?? "15", 10), 50);
-    const vehicleVariantId = searchParams.get("vehicleVariantId");
-    const caravanVariantId = searchParams.get("caravanVariantId");
+    const q = searchParams.get('q')?.trim() ?? '';
+    const limit = Math.min(parseInt(searchParams.get('limit') ?? '15', 10), 50);
+    const vehicleVariantId = searchParams.get('vehicleVariantId');
+    const caravanVariantId = searchParams.get('caravanVariantId');
 
     if (!q) return NextResponse.json({ items: [] });
 
@@ -23,10 +23,10 @@ export async function GET(request: Request) {
 
     const accessories = await prisma.accessory.findMany({
       where: {
-        status: "ACTIVE",
+        status: 'ACTIVE',
         OR: [
-          { name: { contains: q, mode: "insensitive" } },
-          { brand: { name: { contains: q, mode: "insensitive" } } },
+          { name: { contains: q, mode: 'insensitive' } },
+          { brand: { name: { contains: q, mode: 'insensitive' } } },
         ],
         ...(fitmentVariantFilter
           ? { fitments: { some: fitmentVariantFilter } }

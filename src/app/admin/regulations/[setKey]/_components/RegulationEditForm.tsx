@@ -1,10 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/modules/admin/components/Toast";
-import { saveRegulationVersionAction } from "@/modules/regulations/actions/regulation.actions";
-import type { RegulationData, RegulatoryReference } from "@/modules/regulations/types/regulation.types";
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/modules/admin/components/Toast';
+import { saveRegulationVersionAction } from '@/modules/regulations/actions/regulation.actions';
+import type {
+  RegulationData,
+  RegulatoryReference,
+} from '@/modules/regulations/types/regulation.types';
 
 interface Props {
   code: string;
@@ -17,7 +20,7 @@ function todayIso() {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-4 border-b border-tb-neutral-200 pb-2 text-sm font-semibold uppercase tracking-wide text-tb-neutral-600">
+    <h3 className="border-tb-neutral-200 text-tb-neutral-600 mb-4 border-b pb-2 text-sm font-semibold tracking-wide uppercase">
       {children}
     </h3>
   );
@@ -34,17 +37,19 @@ function FieldRow({
 }) {
   return (
     <div className="mb-5">
-      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-      <p className="mb-1.5 text-xs text-tb-neutral-400">{helper}</p>
+      <label className="mb-1 block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      <p className="text-tb-neutral-400 mb-1.5 text-xs">{helper}</p>
       {children}
     </div>
   );
 }
 
 const inputCls =
-  "w-full rounded-md border border-tb-neutral-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+  'w-full rounded-md border border-tb-neutral-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
-const checkboxLabelCls = "ml-2 text-sm text-gray-700";
+const checkboxLabelCls = 'ml-2 text-sm text-gray-700';
 
 export function RegulationEditForm({ code, initialData }: Props) {
   const router = useRouter();
@@ -53,51 +58,70 @@ export function RegulationEditForm({ code, initialData }: Props) {
 
   const [data, setData] = useState<RegulationData>(initialData);
   const [effectiveDate, setEffectiveDate] = useState(todayIso());
-  const [changeSummary, setChangeSummary] = useState("");
+  const [changeSummary, setChangeSummary] = useState('');
 
-  function setGvmUpgrade<K extends keyof RegulationData["gvmUpgrade"]>(
+  function setGvmUpgrade<K extends keyof RegulationData['gvmUpgrade']>(
     key: K,
-    value: RegulationData["gvmUpgrade"][K]
+    value: RegulationData['gvmUpgrade'][K],
   ) {
     setData((d) => ({ ...d, gvmUpgrade: { ...d.gvmUpgrade, [key]: value } }));
   }
 
-  function setTowingLicence<K extends keyof RegulationData["towingLicence"]>(
+  function setTowingLicence<K extends keyof RegulationData['towingLicence']>(
     key: K,
-    value: RegulationData["towingLicence"][K]
+    value: RegulationData['towingLicence'][K],
   ) {
-    setData((d) => ({ ...d, towingLicence: { ...d.towingLicence, [key]: value } }));
+    setData((d) => ({
+      ...d,
+      towingLicence: { ...d.towingLicence, [key]: value },
+    }));
   }
 
-  function setTrailerBrakes<K extends keyof RegulationData["trailerBrakes"]>(
+  function setTrailerBrakes<K extends keyof RegulationData['trailerBrakes']>(
     key: K,
-    value: RegulationData["trailerBrakes"][K]
+    value: RegulationData['trailerBrakes'][K],
   ) {
-    setData((d) => ({ ...d, trailerBrakes: { ...d.trailerBrakes, [key]: value } }));
+    setData((d) => ({
+      ...d,
+      trailerBrakes: { ...d.trailerBrakes, [key]: value },
+    }));
   }
 
-  function setLengthLimits<K extends keyof RegulationData["lengthLimits"]>(
+  function setLengthLimits<K extends keyof RegulationData['lengthLimits']>(
     key: K,
-    value: RegulationData["lengthLimits"][K]
+    value: RegulationData['lengthLimits'][K],
   ) {
-    setData((d) => ({ ...d, lengthLimits: { ...d.lengthLimits, [key]: value } }));
+    setData((d) => ({
+      ...d,
+      lengthLimits: { ...d.lengthLimits, [key]: value },
+    }));
   }
 
-  function setOverhangLimits<K extends keyof RegulationData["overhangLimits"]>(
+  function setOverhangLimits<K extends keyof RegulationData['overhangLimits']>(
     key: K,
-    value: RegulationData["overhangLimits"][K]
+    value: RegulationData['overhangLimits'][K],
   ) {
-    setData((d) => ({ ...d, overhangLimits: { ...d.overhangLimits, [key]: value } }));
+    setData((d) => ({
+      ...d,
+      overhangLimits: { ...d.overhangLimits, [key]: value },
+    }));
   }
 
-  function setSpeedLimits<K extends keyof RegulationData["towingSpeedLimits"]>(
+  function setSpeedLimits<K extends keyof RegulationData['towingSpeedLimits']>(
     key: K,
-    value: RegulationData["towingSpeedLimits"][K]
+    value: RegulationData['towingSpeedLimits'][K],
   ) {
-    setData((d) => ({ ...d, towingSpeedLimits: { ...d.towingSpeedLimits, [key]: value } }));
+    setData((d) => ({
+      ...d,
+      towingSpeedLimits: { ...d.towingSpeedLimits, [key]: value },
+    }));
   }
 
-  function updateRef(index: number, field: keyof RegulatoryReference, value: string) {
+  function updateRef(
+    index: number,
+    field: keyof RegulatoryReference,
+    value: string,
+  ) {
     setData((d) => {
       const refs = [...d.regulatoryReferences];
       refs[index] = { ...refs[index], [field]: value };
@@ -108,30 +132,40 @@ export function RegulationEditForm({ code, initialData }: Props) {
   function addRef() {
     setData((d) => ({
       ...d,
-      regulatoryReferences: [...d.regulatoryReferences, { title: "", url: "", notes: "" }],
+      regulatoryReferences: [
+        ...d.regulatoryReferences,
+        { title: '', url: '', notes: '' },
+      ],
     }));
   }
 
   function removeRef(index: number) {
     setData((d) => ({
       ...d,
-      regulatoryReferences: d.regulatoryReferences.filter((_, i) => i !== index),
+      regulatoryReferences: d.regulatoryReferences.filter(
+        (_, i) => i !== index,
+      ),
     }));
   }
 
   function handleSave() {
     if (!changeSummary.trim()) {
-      toast("Change summary is required before saving", "error");
+      toast('Change summary is required before saving', 'error');
       return;
     }
     startTransition(async () => {
-      const result = await saveRegulationVersionAction(code, data, effectiveDate, changeSummary);
+      const result = await saveRegulationVersionAction(
+        code,
+        data,
+        effectiveDate,
+        changeSummary,
+      );
       if (result.success) {
-        toast("New version saved successfully");
-        setChangeSummary("");
+        toast('New version saved successfully');
+        setChangeSummary('');
         router.refresh();
       } else {
-        toast(result.error, "error");
+        toast(result.error, 'error');
       }
     });
   }
@@ -149,7 +183,9 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="number"
             className={inputCls}
             value={data.gvmUpgrade.maxUpgradePercent}
-            onChange={(e) => setGvmUpgrade("maxUpgradePercent", Number(e.target.value))}
+            onChange={(e) =>
+              setGvmUpgrade('maxUpgradePercent', Number(e.target.value))
+            }
             min={0}
             max={100}
             step={0.1}
@@ -163,8 +199,10 @@ export function RegulationEditForm({ code, initialData }: Props) {
             <input
               type="checkbox"
               checked={data.gvmUpgrade.requiresEngineerCert}
-              onChange={(e) => setGvmUpgrade("requiresEngineerCert", e.target.checked)}
-              className="h-4 w-4 rounded border-tb-neutral-300 text-blue-600"
+              onChange={(e) =>
+                setGvmUpgrade('requiresEngineerCert', e.target.checked)
+              }
+              className="border-tb-neutral-300 h-4 w-4 rounded text-blue-600"
             />
             <span className={checkboxLabelCls}>Required</span>
           </label>
@@ -177,27 +215,36 @@ export function RegulationEditForm({ code, initialData }: Props) {
             <input
               type="checkbox"
               checked={data.gvmUpgrade.requiresVehicleInspection}
-              onChange={(e) => setGvmUpgrade("requiresVehicleInspection", e.target.checked)}
-              className="h-4 w-4 rounded border-tb-neutral-300 text-blue-600"
+              onChange={(e) =>
+                setGvmUpgrade('requiresVehicleInspection', e.target.checked)
+              }
+              className="border-tb-neutral-300 h-4 w-4 rounded text-blue-600"
             />
             <span className={checkboxLabelCls}>Required</span>
           </label>
         </FieldRow>
-        <FieldRow label="Source URL" helper="Link to the governing regulation document.">
+        <FieldRow
+          label="Source URL"
+          helper="Link to the governing regulation document."
+        >
           <input
             type="url"
             className={inputCls}
             placeholder="https://..."
-            value={data.gvmUpgrade.sourceUrl ?? ""}
-            onChange={(e) => setGvmUpgrade("sourceUrl", e.target.value || undefined)}
+            value={data.gvmUpgrade.sourceUrl ?? ''}
+            onChange={(e) =>
+              setGvmUpgrade('sourceUrl', e.target.value || undefined)
+            }
           />
         </FieldRow>
         <FieldRow label="Notes" helper="Additional notes shown to admins only.">
           <textarea
             className={inputCls}
             rows={2}
-            value={data.gvmUpgrade.notes ?? ""}
-            onChange={(e) => setGvmUpgrade("notes", e.target.value || undefined)}
+            value={data.gvmUpgrade.notes ?? ''}
+            onChange={(e) =>
+              setGvmUpgrade('notes', e.target.value || undefined)
+            }
           />
         </FieldRow>
       </section>
@@ -213,7 +260,12 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="number"
             className={inputCls}
             value={data.towingLicence.standardLicenceMaxGtmKg}
-            onChange={(e) => setTowingLicence("standardLicenceMaxGtmKg", Number(e.target.value))}
+            onChange={(e) =>
+              setTowingLicence(
+                'standardLicenceMaxGtmKg',
+                Number(e.target.value),
+              )
+            }
             min={0}
           />
         </FieldRow>
@@ -226,7 +278,10 @@ export function RegulationEditForm({ code, initialData }: Props) {
             className={inputCls}
             value={data.towingLicence.heavyVehicleLicenceThresholdKg}
             onChange={(e) =>
-              setTowingLicence("heavyVehicleLicenceThresholdKg", Number(e.target.value))
+              setTowingLicence(
+                'heavyVehicleLicenceThresholdKg',
+                Number(e.target.value),
+              )
             }
             min={0}
           />
@@ -236,16 +291,20 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="url"
             className={inputCls}
             placeholder="https://..."
-            value={data.towingLicence.sourceUrl ?? ""}
-            onChange={(e) => setTowingLicence("sourceUrl", e.target.value || undefined)}
+            value={data.towingLicence.sourceUrl ?? ''}
+            onChange={(e) =>
+              setTowingLicence('sourceUrl', e.target.value || undefined)
+            }
           />
         </FieldRow>
         <FieldRow label="Notes" helper="">
           <textarea
             className={inputCls}
             rows={2}
-            value={data.towingLicence.notes ?? ""}
-            onChange={(e) => setTowingLicence("notes", e.target.value || undefined)}
+            value={data.towingLicence.notes ?? ''}
+            onChange={(e) =>
+              setTowingLicence('notes', e.target.value || undefined)
+            }
           />
         </FieldRow>
       </section>
@@ -262,7 +321,10 @@ export function RegulationEditForm({ code, initialData }: Props) {
             className={inputCls}
             value={data.trailerBrakes.brakesRequiredAboveGtmKg}
             onChange={(e) =>
-              setTrailerBrakes("brakesRequiredAboveGtmKg", Number(e.target.value))
+              setTrailerBrakes(
+                'brakesRequiredAboveGtmKg',
+                Number(e.target.value),
+              )
             }
             min={0}
           />
@@ -276,7 +338,10 @@ export function RegulationEditForm({ code, initialData }: Props) {
             className={inputCls}
             value={data.trailerBrakes.electricBrakesRequiredAboveGtmKg}
             onChange={(e) =>
-              setTrailerBrakes("electricBrakesRequiredAboveGtmKg", Number(e.target.value))
+              setTrailerBrakes(
+                'electricBrakesRequiredAboveGtmKg',
+                Number(e.target.value),
+              )
             }
             min={0}
           />
@@ -289,27 +354,36 @@ export function RegulationEditForm({ code, initialData }: Props) {
             <input
               type="checkbox"
               checked={data.trailerBrakes.breakawaySystemRequired}
-              onChange={(e) => setTrailerBrakes("breakawaySystemRequired", e.target.checked)}
-              className="h-4 w-4 rounded border-tb-neutral-300 text-blue-600"
+              onChange={(e) =>
+                setTrailerBrakes('breakawaySystemRequired', e.target.checked)
+              }
+              className="border-tb-neutral-300 h-4 w-4 rounded text-blue-600"
             />
             <span className={checkboxLabelCls}>Required</span>
           </label>
         </FieldRow>
-        <FieldRow label="Source URL" helper="Link to trailer brake regulations.">
+        <FieldRow
+          label="Source URL"
+          helper="Link to trailer brake regulations."
+        >
           <input
             type="url"
             className={inputCls}
             placeholder="https://..."
-            value={data.trailerBrakes.sourceUrl ?? ""}
-            onChange={(e) => setTrailerBrakes("sourceUrl", e.target.value || undefined)}
+            value={data.trailerBrakes.sourceUrl ?? ''}
+            onChange={(e) =>
+              setTrailerBrakes('sourceUrl', e.target.value || undefined)
+            }
           />
         </FieldRow>
         <FieldRow label="Notes" helper="">
           <textarea
             className={inputCls}
             rows={2}
-            value={data.trailerBrakes.notes ?? ""}
-            onChange={(e) => setTrailerBrakes("notes", e.target.value || undefined)}
+            value={data.trailerBrakes.notes ?? ''}
+            onChange={(e) =>
+              setTrailerBrakes('notes', e.target.value || undefined)
+            }
           />
         </FieldRow>
       </section>
@@ -325,7 +399,9 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="number"
             className={inputCls}
             value={data.lengthLimits.maxVehicleLengthM}
-            onChange={(e) => setLengthLimits("maxVehicleLengthM", Number(e.target.value))}
+            onChange={(e) =>
+              setLengthLimits('maxVehicleLengthM', Number(e.target.value))
+            }
             min={0}
             step={0.1}
           />
@@ -338,7 +414,9 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="number"
             className={inputCls}
             value={data.lengthLimits.maxTrailerLengthM}
-            onChange={(e) => setLengthLimits("maxTrailerLengthM", Number(e.target.value))}
+            onChange={(e) =>
+              setLengthLimits('maxTrailerLengthM', Number(e.target.value))
+            }
             min={0}
             step={0.1}
           />
@@ -351,7 +429,9 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="number"
             className={inputCls}
             value={data.lengthLimits.maxCombinedLengthM}
-            onChange={(e) => setLengthLimits("maxCombinedLengthM", Number(e.target.value))}
+            onChange={(e) =>
+              setLengthLimits('maxCombinedLengthM', Number(e.target.value))
+            }
             min={0}
             step={0.1}
           />
@@ -361,16 +441,20 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="url"
             className={inputCls}
             placeholder="https://..."
-            value={data.lengthLimits.sourceUrl ?? ""}
-            onChange={(e) => setLengthLimits("sourceUrl", e.target.value || undefined)}
+            value={data.lengthLimits.sourceUrl ?? ''}
+            onChange={(e) =>
+              setLengthLimits('sourceUrl', e.target.value || undefined)
+            }
           />
         </FieldRow>
         <FieldRow label="Notes" helper="">
           <textarea
             className={inputCls}
             rows={2}
-            value={data.lengthLimits.notes ?? ""}
-            onChange={(e) => setLengthLimits("notes", e.target.value || undefined)}
+            value={data.lengthLimits.notes ?? ''}
+            onChange={(e) =>
+              setLengthLimits('notes', e.target.value || undefined)
+            }
           />
         </FieldRow>
       </section>
@@ -387,7 +471,10 @@ export function RegulationEditForm({ code, initialData }: Props) {
             className={inputCls}
             value={data.overhangLimits.maxFrontOverhangPercent}
             onChange={(e) =>
-              setOverhangLimits("maxFrontOverhangPercent", Number(e.target.value))
+              setOverhangLimits(
+                'maxFrontOverhangPercent',
+                Number(e.target.value),
+              )
             }
             min={0}
             max={100}
@@ -402,7 +489,9 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="number"
             className={inputCls}
             value={data.overhangLimits.maxRearOverhangM}
-            onChange={(e) => setOverhangLimits("maxRearOverhangM", Number(e.target.value))}
+            onChange={(e) =>
+              setOverhangLimits('maxRearOverhangM', Number(e.target.value))
+            }
             min={0}
             step={0.01}
           />
@@ -412,16 +501,20 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="url"
             className={inputCls}
             placeholder="https://..."
-            value={data.overhangLimits.sourceUrl ?? ""}
-            onChange={(e) => setOverhangLimits("sourceUrl", e.target.value || undefined)}
+            value={data.overhangLimits.sourceUrl ?? ''}
+            onChange={(e) =>
+              setOverhangLimits('sourceUrl', e.target.value || undefined)
+            }
           />
         </FieldRow>
         <FieldRow label="Notes" helper="">
           <textarea
             className={inputCls}
             rows={2}
-            value={data.overhangLimits.notes ?? ""}
-            onChange={(e) => setOverhangLimits("notes", e.target.value || undefined)}
+            value={data.overhangLimits.notes ?? ''}
+            onChange={(e) =>
+              setOverhangLimits('notes', e.target.value || undefined)
+            }
           />
         </FieldRow>
       </section>
@@ -438,7 +531,7 @@ export function RegulationEditForm({ code, initialData }: Props) {
               type="number"
               className={inputCls}
               value={data.towingSpeedLimits.urban}
-              onChange={(e) => setSpeedLimits("urban", Number(e.target.value))}
+              onChange={(e) => setSpeedLimits('urban', Number(e.target.value))}
               min={0}
             />
           </FieldRow>
@@ -450,7 +543,7 @@ export function RegulationEditForm({ code, initialData }: Props) {
               type="number"
               className={inputCls}
               value={data.towingSpeedLimits.rural}
-              onChange={(e) => setSpeedLimits("rural", Number(e.target.value))}
+              onChange={(e) => setSpeedLimits('rural', Number(e.target.value))}
               min={0}
             />
           </FieldRow>
@@ -462,7 +555,9 @@ export function RegulationEditForm({ code, initialData }: Props) {
               type="number"
               className={inputCls}
               value={data.towingSpeedLimits.highway}
-              onChange={(e) => setSpeedLimits("highway", Number(e.target.value))}
+              onChange={(e) =>
+                setSpeedLimits('highway', Number(e.target.value))
+              }
               min={0}
             />
           </FieldRow>
@@ -472,16 +567,20 @@ export function RegulationEditForm({ code, initialData }: Props) {
             type="url"
             className={inputCls}
             placeholder="https://..."
-            value={data.towingSpeedLimits.sourceUrl ?? ""}
-            onChange={(e) => setSpeedLimits("sourceUrl", e.target.value || undefined)}
+            value={data.towingSpeedLimits.sourceUrl ?? ''}
+            onChange={(e) =>
+              setSpeedLimits('sourceUrl', e.target.value || undefined)
+            }
           />
         </FieldRow>
         <FieldRow label="Notes" helper="">
           <textarea
             className={inputCls}
             rows={2}
-            value={data.towingSpeedLimits.notes ?? ""}
-            onChange={(e) => setSpeedLimits("notes", e.target.value || undefined)}
+            value={data.towingSpeedLimits.notes ?? ''}
+            onChange={(e) =>
+              setSpeedLimits('notes', e.target.value || undefined)
+            }
           />
         </FieldRow>
       </section>
@@ -491,9 +590,12 @@ export function RegulationEditForm({ code, initialData }: Props) {
         <SectionHeading>Regulatory References</SectionHeading>
         <div className="space-y-3">
           {data.regulatoryReferences.map((ref, i) => (
-            <div key={i} className="rounded-md border border-tb-neutral-200 p-4">
+            <div
+              key={i}
+              className="border-tb-neutral-200 rounded-md border p-4"
+            >
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-medium text-tb-neutral-500">
+                <span className="text-tb-neutral-500 text-xs font-medium">
                   Reference {i + 1}
                 </span>
                 <button
@@ -510,21 +612,21 @@ export function RegulationEditForm({ code, initialData }: Props) {
                   className={inputCls}
                   placeholder="Title (e.g. Road Transport (Vehicle Registration) Regulation 2017)"
                   value={ref.title}
-                  onChange={(e) => updateRef(i, "title", e.target.value)}
+                  onChange={(e) => updateRef(i, 'title', e.target.value)}
                 />
                 <input
                   type="url"
                   className={inputCls}
                   placeholder="URL"
                   value={ref.url}
-                  onChange={(e) => updateRef(i, "url", e.target.value)}
+                  onChange={(e) => updateRef(i, 'url', e.target.value)}
                 />
                 <input
                   type="text"
                   className={inputCls}
                   placeholder="Notes (optional)"
-                  value={ref.notes ?? ""}
-                  onChange={(e) => updateRef(i, "notes", e.target.value)}
+                  value={ref.notes ?? ''}
+                  onChange={(e) => updateRef(i, 'notes', e.target.value)}
                 />
               </div>
             </div>
@@ -532,7 +634,7 @@ export function RegulationEditForm({ code, initialData }: Props) {
           <button
             type="button"
             onClick={addRef}
-            className="rounded-md border border-dashed border-tb-neutral-300 px-4 py-2 text-sm text-tb-neutral-500 hover:border-blue-400 hover:text-blue-600"
+            className="border-tb-neutral-300 text-tb-neutral-500 rounded-md border border-dashed px-4 py-2 text-sm hover:border-blue-400 hover:text-blue-600"
           >
             + Add reference
           </button>
@@ -541,10 +643,13 @@ export function RegulationEditForm({ code, initialData }: Props) {
 
       {/* Version Save */}
       <section className="rounded-lg border border-blue-200 bg-blue-50 p-5">
-        <h3 className="mb-3 text-sm font-semibold text-blue-800">Save as New Version</h3>
+        <h3 className="mb-3 text-sm font-semibold text-blue-800">
+          Save as New Version
+        </h3>
         <p className="mb-4 text-xs text-blue-600">
-          Saving creates a new immutable version. Existing versions are never modified. The most
-          recent version with an effective date on or before today is used in calculations.
+          Saving creates a new immutable version. Existing versions are never
+          modified. The most recent version with an effective date on or before
+          today is used in calculations.
         </p>
         <div className="mb-4 grid grid-cols-2 gap-4">
           <FieldRow
@@ -558,7 +663,10 @@ export function RegulationEditForm({ code, initialData }: Props) {
               onChange={(e) => setEffectiveDate(e.target.value)}
             />
           </FieldRow>
-          <FieldRow label="Change summary (required)" helper="Brief description of what changed and why.">
+          <FieldRow
+            label="Change summary (required)"
+            helper="Brief description of what changed and why."
+          >
             <input
               type="text"
               className={inputCls}
@@ -574,7 +682,7 @@ export function RegulationEditForm({ code, initialData }: Props) {
           disabled={isPending || !changeSummary.trim()}
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isPending ? "Saving…" : "Save New Version"}
+          {isPending ? 'Saving…' : 'Save New Version'}
         </button>
       </section>
     </div>
