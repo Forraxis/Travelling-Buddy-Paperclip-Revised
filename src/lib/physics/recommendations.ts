@@ -264,6 +264,24 @@ export function generateRecommendations(
     });
   }
 
+  // 8b. Single axle over its share while total GTM is still legal — only
+  // surfaces on spread tandems where load is concentrated toward one end.
+  if (cr.gtmStatus === 'ok' && cr.axles.length > 1) {
+    const over = cr.axles.find((a) => a.status !== 'ok');
+    if (over) {
+      recs.push({
+        id: 'axle-imbalance',
+        severity: over.status === 'fail' ? 'critical' : 'warn',
+        metric: 'gtm',
+        title:
+          over.status === 'fail'
+            ? 'One caravan axle overloaded'
+            : 'Caravan axle load uneven',
+        body: `Total axle load is within the GTM limit, but the ${over.index === 0 ? 'front' : 'rear'} axle carries ${Math.round(over.loadKg)} kg against its ${Math.round(over.limitKg)} kg share because the load sits toward one end of the van. Move heavy items toward the centre of the axle group to balance the axles.`,
+      });
+    }
+  }
+
   // 9. Caravan payload gone
   if (cr.payloadStatus === 'fail') {
     recs.push({

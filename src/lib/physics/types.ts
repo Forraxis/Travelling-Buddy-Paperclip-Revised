@@ -163,6 +163,14 @@ export interface VehicleResult {
   towBallPctStatus?: MetricStatus;
 }
 
+export interface CaravanAxleResult {
+  /** 0-based, ordered front (nearest coupling) → rear. */
+  index: number;
+  loadKg: number;
+  limitKg: number;
+  status: MetricStatus;
+}
+
 export interface CaravanResult {
   totalWeightKg: number;
   effectiveTareKg: number;
@@ -175,12 +183,14 @@ export interface CaravanResult {
   gtmKg: number;
   gtmLimitKg: number;
   gtmStatus: MetricStatus;
-  axle1Kg?: number;
-  axle1LimitKg?: number;
-  axle1Status?: MetricStatus;
-  axle2Kg?: number;
-  axle2LimitKg?: number;
-  axle2Status?: MetricStatus;
+  /**
+   * Per-physical-axle load breakdown (1 entry for single, 2 for dual, 3 for
+   * triple). Even split for single/close-coupled/triple (load-sharing
+   * suspension equalises by design); CoG-based lever split for spread tandems
+   * where load sharing is weaker — this is what surfaces a single overloaded
+   * axle while total GTM is still within limit.
+   */
+  axles: CaravanAxleResult[];
   payloadRemainingKg: number;
   payloadStatus: MetricStatus;
 }

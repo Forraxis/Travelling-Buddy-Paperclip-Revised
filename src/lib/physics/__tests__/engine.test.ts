@@ -335,35 +335,93 @@ describe('Scenario 6: both vehicle and caravan near individual limits, GCM excee
     ));
 });
 
-// --- Scenario 7: Dual-axle caravan, GTM splits 50/50 ---
-describe('Scenario 7: dual-axle caravan GTM split', () => {
+// --- Scenario 7: Close-coupled dual-axle GTM split (load-sharing → even) ---
+describe('Scenario 7: close-coupled dual-axle GTM splits evenly', () => {
   const result = calculate(
     baseInput({
       vehicle: landcruiser79,
-      caravan: dualAxleVan,
+      caravan: dualAxleVan, // DUAL_AXLE_CLOSE_COUPLED
       caravanAccessories: [],
       freshWaterPercent: 50,
       greyWaterPercent: 25,
     }),
   );
+  const cr = result.caravan!;
 
-  it('has axle1 and axle2 results', () => {
-    expect(result.caravan!.axle1Kg).toBeDefined();
-    expect(result.caravan!.axle2Kg).toBeDefined();
+  it('produces two axle results', () => expect(cr.axles.length).toBe(2));
+  it('axle loads sum to GTM', () =>
+    expect(cr.axles[0].loadKg + cr.axles[1].loadKg).toBeCloseTo(cr.gtmKg, 0));
+  it('close-coupled (load-sharing) splits evenly', () =>
+    expect(cr.axles[0].loadKg).toBeCloseTo(cr.axles[1].loadKg, 0));
+  it('each axle within its half-share limit', () => {
+    expect(cr.axles[0].status).not.toBe('fail');
+    expect(cr.axles[1].status).not.toBe('fail');
   });
-  it('axle1 + axle2 ≈ GTM', () => {
-    const cr = result.caravan!;
-    expect(cr.axle1Kg! + cr.axle2Kg!).toBeCloseTo(cr.gtmKg, 0);
-  });
-  it('axle1 ≈ axle2 (50/50 split)', () => {
-    const cr = result.caravan!;
-    expect(cr.axle1Kg).toBeCloseTo(cr.axle2Kg!, 0);
-  });
-  it('each axle is within limit', () => {
-    const cr = result.caravan!;
-    expect(cr.axle1Status).not.toBe('fail');
-    expect(cr.axle2Status).not.toBe('fail');
-  });
+});
+
+// --- Scenario 7b: Spread-axle van — position-dependent split overloads one axle ---
+describe('Scenario 7b: spread-axle van overloads the front group axle while GTM is legal', () => {
+  const spreadVan: import('../types').CaravanInput = {
+    ...midSizeVan,
+    axleConfiguration: 'DUAL_AXLE_SPREAD',
+    couplingToAxleMm: 3000,
+    axleSpacingMm: 1600,
+    atmKg: 3500,
+    // GTM limit set so the total passes (~0.88) but a single axle's half-share
+    // (1225 kg) is exceeded once the nose-forward load biases the front axle.
+    gtmKg: 2450,
+    tareKg: 2000,
+  };
+  const result = calculate(
+    baseInput({
+      vehicle: landcruiser79,
+      caravan: spreadVan,
+      caravanAccessories: [],
+      freshWaterPercent: 0,
+      greyWaterPercent: 100,
+    }),
+  );
+  const cr = result.caravan!;
+
+  it('splits unevenly (front axle heavier — load CoG is forward of the group)', () =>
+    expect(cr.axles[0].loadKg).toBeGreaterThan(cr.axles[1].loadKg));
+  it('axle loads still sum to GTM', () =>
+    expect(cr.axles[0].loadKg + cr.axles[1].loadKg).toBeCloseTo(cr.gtmKg, 0));
+  it('total GTM is within limit', () => expect(cr.gtmStatus).toBe('ok'));
+  it('one axle is over its share', () =>
+    expect(cr.axles.some((a) => a.status !== 'ok')).toBe(true));
+  it('surfaces an axle-imbalance recommendation', () =>
+    expect(result.recommendations.some((r) => r.id === 'axle-imbalance')).toBe(
+      true,
+    ));
+});
+
+// --- Scenario 7c: Triple-axle van splits three ways ---
+describe('Scenario 7c: triple-axle van splits GTM three ways', () => {
+  const tripleVan: import('../types').CaravanInput = {
+    ...dualAxleVan,
+    axleConfiguration: 'TRIPLE_AXLE',
+    gtmKg: 4200,
+    atmKg: 4500,
+  };
+  const result = calculate(
+    baseInput({
+      vehicle: landcruiser79,
+      caravan: tripleVan,
+      caravanAccessories: [],
+      freshWaterPercent: 50,
+      greyWaterPercent: 25,
+    }),
+  );
+  const cr = result.caravan!;
+
+  it('produces three axle results', () => expect(cr.axles.length).toBe(3));
+  it('axle loads sum to GTM', () =>
+    expect(
+      cr.axles[0].loadKg + cr.axles[1].loadKg + cr.axles[2].loadKg,
+    ).toBeCloseTo(cr.gtmKg, 0));
+  it('each axle carries ~one third', () =>
+    expect(cr.axles[0].loadKg).toBeCloseTo(cr.gtmKg / 3, 0));
 });
 
 // --- Scenario 8: Weighbridge calibration offset ---

@@ -63,6 +63,7 @@ function computeCaravan(
   accessoryMassKg: number;
   towBallMassKg: number;
   gtmKg: number;
+  loadCogFromCouplingMm: number;
   accessoryLoads: Array<{ weight: number; posXMm: number }>;
 } {
   const effectiveTareKg = caravan.tareKg + caravanTareOffset;
@@ -103,6 +104,18 @@ function computeCaravan(
   const towBallMassKg = momentSum / axleX;
   const gtmKg = totalWeightKg - towBallMassKg;
 
+  // Longitudinal CoG of the total caravan load, measured from the coupling
+  // (+rearward). Used to split load across spread tandem axles.
+  let loadMomentFromCoupling =
+    effectiveTareKg * tareCogX +
+    freshWaterMassKg * freshCogX +
+    greyWaterMassKg * greyCogX;
+  for (const { weight, posXMm } of accessoryLoads) {
+    loadMomentFromCoupling += weight * posXMm;
+  }
+  const loadCogFromCouplingMm =
+    totalWeightKg > 0 ? loadMomentFromCoupling / totalWeightKg : axleX;
+
   return {
     totalWeightKg,
     effectiveTareKg,
@@ -111,8 +124,59 @@ function computeCaravan(
     accessoryMassKg,
     towBallMassKg,
     gtmKg,
+    loadCogFromCouplingMm,
     accessoryLoads,
   };
+}
+
+// Split the caravan's GTM across its physical axles.
+//
+// Single axle carries the full GTM. Close-coupled tandems and triples use
+// load-sharing suspension (rocker/equaliser) that balances static load by
+// design → even split. Spread tandems share load more weakly, so we split by
+// the lever rule from the load CoG — this is what lets one axle read over its
+// share while total GTM is still legal. Per-axle limit is GTM_limit / n
+// (the catalogue has no separate per-axle rating yet — see PHYSICS_NOTES.md).
+function computeCaravanAxles(
+  axleConfiguration: CaravanInput['axleConfiguration'],
+  gtmKg: number,
+  gtmLimitKg: number,
+  couplingToAxleMm: number,
+  axleSpacingMm: number | null | undefined,
+  loadCogFromCouplingMm: number,
+): Array<{
+  index: number;
+  loadKg: number;
+  limitKg: number;
+  status: MetricStatus;
+}> {
+  const make = (loadKg: number, limitKg: number, index: number) => ({
+    index,
+    loadKg,
+    limitKg,
+    status: weightStatus(loadKg, limitKg),
+  });
+
+  if (axleConfiguration === 'SINGLE_AXLE') {
+    return [make(gtmKg, gtmLimitKg, 0)];
+  }
+
+  if (axleConfiguration === 'DUAL_AXLE_SPREAD') {
+    const s = axleSpacingMm && axleSpacingMm > 0 ? axleSpacingMm : 1000;
+    const frontX = couplingToAxleMm - s / 2;
+    const limitPer = gtmLimitKg / 2;
+    // Reaction on each axle from GTM acting at the load CoG (lever rule).
+    let rear = (gtmKg * (loadCogFromCouplingMm - frontX)) / s;
+    rear = Math.max(0, Math.min(gtmKg, rear));
+    const front = gtmKg - rear;
+    return [make(front, limitPer, 0), make(rear, limitPer, 1)];
+  }
+
+  // Even split — close-coupled tandem / triple (load-sharing suspension).
+  const n = axleConfiguration === 'TRIPLE_AXLE' ? 3 : 2;
+  const per = gtmKg / n;
+  const limitPer = gtmLimitKg / n;
+  return Array.from({ length: n }, (_, i) => make(per, limitPer, i));
 }
 
 function computeVehicleAxles(
@@ -189,25 +253,14 @@ export function calculate(input: PhysicsInput): PhysicsResult {
       cv.greyWaterMassKg;
     const payloadStatus: MetricStatus = payloadRemainingKg < 0 ? 'fail' : 'ok';
 
-    const isDual =
-      caravan.axleConfiguration === 'DUAL_AXLE_CLOSE_COUPLED' ||
-      caravan.axleConfiguration === 'DUAL_AXLE_SPREAD';
-
-    let axle1Kg: number | undefined;
-    let axle1LimitKg: number | undefined;
-    let axle1Status: MetricStatus | undefined;
-    let axle2Kg: number | undefined;
-    let axle2LimitKg: number | undefined;
-    let axle2Status: MetricStatus | undefined;
-
-    if (isDual) {
-      axle1Kg = cv.gtmKg * 0.5;
-      axle2Kg = cv.gtmKg * 0.5;
-      axle1LimitKg = caravan.gtmKg / 2;
-      axle2LimitKg = caravan.gtmKg / 2;
-      axle1Status = weightStatus(axle1Kg, axle1LimitKg);
-      axle2Status = weightStatus(axle2Kg, axle2LimitKg);
-    }
+    const axles = computeCaravanAxles(
+      caravan.axleConfiguration,
+      cv.gtmKg,
+      caravan.gtmKg,
+      caravan.couplingToAxleMm,
+      caravan.axleSpacingMm,
+      cv.loadCogFromCouplingMm,
+    );
 
     caravanResult = {
       totalWeightKg: cv.totalWeightKg,
@@ -221,12 +274,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
       gtmKg: cv.gtmKg,
       gtmLimitKg: caravan.gtmKg,
       gtmStatus,
-      axle1Kg,
-      axle1LimitKg,
-      axle1Status,
-      axle2Kg,
-      axle2LimitKg,
-      axle2Status,
+      axles,
       payloadRemainingKg,
       payloadStatus,
     };
@@ -328,8 +376,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
       caravanResult.gtmStatus,
       caravanResult.payloadStatus,
     );
-    if (caravanResult.axle1Status) allStatuses.push(caravanResult.axle1Status);
-    if (caravanResult.axle2Status) allStatuses.push(caravanResult.axle2Status);
+    for (const axle of caravanResult.axles) allStatuses.push(axle.status);
   }
 
   const overallStatus = worstStatus(...allStatuses);

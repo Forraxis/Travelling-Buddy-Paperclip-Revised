@@ -276,25 +276,24 @@ export function buildSchematicModel(
       axleMms,
     };
 
-    // Caravan axle gauge. Per-axle load is the engine's split (currently even);
-    // we render one gauge per physical axle so the picture matches the metrics.
+    // One gauge per physical axle, using the engine's per-axle split. axleMms
+    // and result.caravan.axles are both ordered front (nearest coupling) → rear,
+    // so they map by index. Fallback to an even share if axles is unexpectedly
+    // empty so the gauge still renders.
     const cr = result.caravan;
-    const perAxleLoad =
-      cr.axle1Kg != null ? cr.axle1Kg : cr.gtmKg / axleMms.length;
-    const perAxleLimit =
-      cr.axle1LimitKg != null
-        ? cr.axle1LimitKg
-        : cr.gtmLimitKg / axleMms.length;
-    const perAxleStatus: MetricStatus = cr.axle1Status ?? cr.gtmStatus;
     axleMms.forEach((xMm, i) => {
+      const a = cr.axles[i];
+      const loadKg = a ? a.loadKg : cr.gtmKg / axleMms.length;
+      const limitKg = a ? a.limitKg : cr.gtmLimitKg / axleMms.length;
+      const status: MetricStatus = a ? a.status : cr.gtmStatus;
       axles.push({
         id: `caravan-${i}`,
         label: axleMms.length > 1 ? `Van ${i + 1}` : 'Van',
         xMm,
-        loadKg: perAxleLoad,
-        limitKg: perAxleLimit,
-        ratio: ratioOf(perAxleLoad, perAxleLimit),
-        status: perAxleStatus,
+        loadKg,
+        limitKg,
+        ratio: ratioOf(loadKg, limitKg),
+        status,
       });
     });
 
