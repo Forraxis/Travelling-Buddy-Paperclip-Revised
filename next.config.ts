@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
     },
   },
   outputFileTracingRoot: projectRoot,
-  allowedDevOrigins: ['tb.dev.ragebots.me'],
+  allowedDevOrigins: ['tbr.dev.ragebots.me'],
 };
 
 export default withNextIntl(nextConfig);
