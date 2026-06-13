@@ -54,7 +54,7 @@ export async function commitCaravanUploadAction(
   }
 
   let imported = 0;
-  let skipped = 0;
+  const skipped = 0;
 
   try {
     await prisma.$transaction(async (tx) => {

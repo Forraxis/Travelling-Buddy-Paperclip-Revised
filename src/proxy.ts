@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { routing } from './i18n/routing';
+
+// NextAuth's `auth()` wrapper augments the request with the resolved session.
+type AuthedRequest = NextRequest & { auth: Session | null };
 
 const DEV_AUTH_BYPASS =
   process.env.NODE_ENV === 'development' ||
@@ -15,7 +19,7 @@ function hasSessionCookie(request: NextRequest): boolean {
   );
 }
 
-function proxyHandler(request: NextRequest) {
+function proxyHandler(request: AuthedRequest) {
   const { pathname } = request.nextUrl;
   const session = request.auth;
 

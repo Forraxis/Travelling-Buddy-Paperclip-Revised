@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -55,12 +56,12 @@ export default async function SubmitCaravanPage({
   return (
     <div className="bg-tb-neutral-50 min-h-screen">
       <header className="border-tb-neutral-200 border-b bg-white px-4 py-3">
-        <a
+        <Link
           href="/"
           className="text-tb-primary text-sm font-semibold hover:underline"
         >
           TravellingBuddy
-        </a>
+        </Link>
       </header>
       <main className="mx-auto max-w-lg px-4 py-8">
         <div className="mb-6">
