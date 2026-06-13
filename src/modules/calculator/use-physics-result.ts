@@ -2,7 +2,15 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { calculate } from '@/lib/physics/engine';
-import type { PhysicsResult, PhysicsInput, MountingLocation } from '@/lib/physics/types';
+import type {
+  PhysicsResult,
+  PhysicsInput,
+  MountingLocation,
+} from '@/lib/physics/types';
+import {
+  buildSchematicModel,
+  type SchematicModel,
+} from '@/components/schematic/model';
 import { useCalculatorState } from './context';
 
 type AnyVariant = Record<string, unknown>;
@@ -12,7 +20,34 @@ export interface SnapshotOverrides {
   caravanSnapshot?: AnyVariant | null;
 }
 
-export function usePhysicsResult(snapshots?: SnapshotOverrides): PhysicsResult | null {
+export interface PhysicsView {
+  result: PhysicsResult;
+  schematic: SchematicModel | null;
+}
+
+function rigTitle(
+  vehicle: AnyVariant | null,
+  caravan: AnyVariant | null,
+): string {
+  const part = (v: AnyVariant | null): string => {
+    if (!v) return '';
+    const model = (v.model ?? {}) as AnyVariant;
+    const make = (model.make ?? {}) as AnyVariant;
+    return [make.name, model.name, v.name].filter(Boolean).join(' ').trim();
+  };
+  const veh = part(vehicle);
+  const car = part(caravan);
+  return car ? `${veh} + ${car}` : veh || 'Your rig';
+}
+
+/**
+ * Computes the physics result and the side-profile schematic model from the
+ * current calculator state. Returns null until a vehicle is selected and its
+ * spec has loaded. {@link usePhysicsResult} is a thin selector over this.
+ */
+export function usePhysicsView(
+  snapshots?: SnapshotOverrides,
+): PhysicsView | null {
   const { state } = useCalculatorState();
   const [vehicleVariant, setVehicleVariant] = useState<AnyVariant | null>(null);
   const [caravanVariant, setCaravanVariant] = useState<AnyVariant | null>(null);
@@ -25,9 +60,15 @@ export function usePhysicsResult(snapshots?: SnapshotOverrides): PhysicsResult |
     let active = true;
     fetch(`/api/v1/vehicles/variants/${state.vehicleVariantId}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (active) setVehicleVariant(data); })
-      .catch(() => { if (active) setVehicleVariant(null); });
-    return () => { active = false; };
+      .then((data) => {
+        if (active) setVehicleVariant(data);
+      })
+      .catch(() => {
+        if (active) setVehicleVariant(null);
+      });
+    return () => {
+      active = false;
+    };
   }, [state.vehicleVariantId]);
 
   useEffect(() => {
@@ -38,9 +79,15 @@ export function usePhysicsResult(snapshots?: SnapshotOverrides): PhysicsResult |
     let active = true;
     fetch(`/api/v1/caravans/variants/${state.caravanVariantId}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (active) setCaravanVariant(data); })
-      .catch(() => { if (active) setCaravanVariant(null); });
-    return () => { active = false; };
+      .then((data) => {
+        if (active) setCaravanVariant(data);
+      })
+      .catch(() => {
+        if (active) setCaravanVariant(null);
+      });
+    return () => {
+      active = false;
+    };
   }, [state.caravanVariantId]);
 
   const effectiveVehicle = vehicleVariant ?? snapshots?.vehicleSnapshot ?? null;
@@ -51,12 +98,20 @@ export function usePhysicsResult(snapshots?: SnapshotOverrides): PhysicsResult |
 
     const freshWaterCapL = Number(effectiveCaravan?.freshWaterCapacityL ?? 0);
     const greyWaterCapL = Number(effectiveCaravan?.greyWaterCapacityL ?? 0);
-    const freshWaterPercent = freshWaterCapL > 0
-      ? Math.min(100, (state.caravanAssumptions.freshWaterL / freshWaterCapL) * 100)
-      : 0;
-    const greyWaterPercent = greyWaterCapL > 0
-      ? Math.min(100, (state.caravanAssumptions.greyWaterL / greyWaterCapL) * 100)
-      : 0;
+    const freshWaterPercent =
+      freshWaterCapL > 0
+        ? Math.min(
+            100,
+            (state.caravanAssumptions.freshWaterL / freshWaterCapL) * 100,
+          )
+        : 0;
+    const greyWaterPercent =
+      greyWaterCapL > 0
+        ? Math.min(
+            100,
+            (state.caravanAssumptions.greyWaterL / greyWaterCapL) * 100,
+          )
+        : 0;
 
     const input: PhysicsInput = {
       vehicle: {
@@ -68,22 +123,41 @@ export function usePhysicsResult(snapshots?: SnapshotOverrides): PhysicsResult |
         rearAxleLimitKg: Number(effectiveVehicle.rearAxleLimitKg),
         maxTowBallDownloadKg: Number(effectiveVehicle.maxTowBallDownloadKg),
         wheelbaseMm: Number(effectiveVehicle.wheelbaseMm),
-        frontOverhangMm: effectiveVehicle.frontOverhangMm != null ? Number(effectiveVehicle.frontOverhangMm) : null,
-        rearOverhangMm: effectiveVehicle.rearOverhangMm != null ? Number(effectiveVehicle.rearOverhangMm) : null,
+        frontOverhangMm:
+          effectiveVehicle.frontOverhangMm != null
+            ? Number(effectiveVehicle.frontOverhangMm)
+            : null,
+        rearOverhangMm:
+          effectiveVehicle.rearOverhangMm != null
+            ? Number(effectiveVehicle.rearOverhangMm)
+            : null,
         fuelTankCapacityL: Number(effectiveVehicle.fuelTankCapacityL),
-        fuelType: effectiveVehicle.fuelType as 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC',
+        fuelType: effectiveVehicle.fuelType as
+          | 'DIESEL'
+          | 'PETROL'
+          | 'HYBRID'
+          | 'ELECTRIC',
       },
-      caravan: effectiveCaravan ? {
-        atmKg: Number(effectiveCaravan.atmKg),
-        gtmKg: Number(effectiveCaravan.gtmKg),
-        tareKg: Number(effectiveCaravan.tareKg),
-        tbmKg: Number(effectiveCaravan.tbmKg),
-        axleConfiguration: effectiveCaravan.axleConfiguration as 'SINGLE_AXLE' | 'DUAL_AXLE_CLOSE_COUPLED' | 'DUAL_AXLE_SPREAD' | 'TRIPLE_AXLE',
-        couplingToAxleMm: Number(effectiveCaravan.couplingToAxleMm),
-        axleSpacingMm: effectiveCaravan.axleSpacingMm != null ? Number(effectiveCaravan.axleSpacingMm) : null,
-        freshWaterCapacityL: freshWaterCapL,
-        greyWaterCapacityL: greyWaterCapL,
-      } : undefined,
+      caravan: effectiveCaravan
+        ? {
+            atmKg: Number(effectiveCaravan.atmKg),
+            gtmKg: Number(effectiveCaravan.gtmKg),
+            tareKg: Number(effectiveCaravan.tareKg),
+            tbmKg: Number(effectiveCaravan.tbmKg),
+            axleConfiguration: effectiveCaravan.axleConfiguration as
+              | 'SINGLE_AXLE'
+              | 'DUAL_AXLE_CLOSE_COUPLED'
+              | 'DUAL_AXLE_SPREAD'
+              | 'TRIPLE_AXLE',
+            couplingToAxleMm: Number(effectiveCaravan.couplingToAxleMm),
+            axleSpacingMm:
+              effectiveCaravan.axleSpacingMm != null
+                ? Number(effectiveCaravan.axleSpacingMm)
+                : null,
+            freshWaterCapacityL: freshWaterCapL,
+            greyWaterCapacityL: greyWaterCapL,
+          }
+        : undefined,
       vehicleAccessories: state.accessories.map((a) => ({
         installedWeightKg: a.massKg,
         mountingLocation: a.mountingLocation as MountingLocation,
@@ -108,9 +182,64 @@ export function usePhysicsResult(snapshots?: SnapshotOverrides): PhysicsResult |
     };
 
     try {
-      return calculate(input);
+      const result = calculate(input);
+      const schematic = buildSchematicModel({
+        title: rigTitle(effectiveVehicle, effectiveCaravan),
+        vehicle: {
+          wheelbaseMm: Number(effectiveVehicle.wheelbaseMm),
+          frontOverhangMm:
+            effectiveVehicle.frontOverhangMm != null
+              ? Number(effectiveVehicle.frontOverhangMm)
+              : null,
+          rearOverhangMm:
+            effectiveVehicle.rearOverhangMm != null
+              ? Number(effectiveVehicle.rearOverhangMm)
+              : null,
+          bodyType: ((effectiveVehicle.model ?? {}) as AnyVariant).bodyType as
+            | string
+            | undefined,
+        },
+        caravan: effectiveCaravan
+          ? {
+              couplingToAxleMm: Number(effectiveCaravan.couplingToAxleMm),
+              axleSpacingMm:
+                effectiveCaravan.axleSpacingMm != null
+                  ? Number(effectiveCaravan.axleSpacingMm)
+                  : null,
+              bodyLengthMm:
+                effectiveCaravan.bodyLengthMm != null
+                  ? Number(effectiveCaravan.bodyLengthMm)
+                  : null,
+              overallLengthMm:
+                effectiveCaravan.overallLengthMm != null
+                  ? Number(effectiveCaravan.overallLengthMm)
+                  : null,
+              axleConfiguration: String(effectiveCaravan.axleConfiguration),
+              bodyType: ((effectiveCaravan.model ?? {}) as AnyVariant)
+                .bodyType as string | undefined,
+            }
+          : null,
+        vehicleAccessories: state.accessories.map((a) => ({
+          id: a.accessoryId,
+          weightKg: a.massKg,
+          mountingLocation: a.mountingLocation as MountingLocation,
+        })),
+        caravanAccessories: state.caravanAccessories.map((a) => ({
+          id: a.accessoryId,
+          weightKg: a.massKg,
+          mountingLocation: a.mountingLocation as MountingLocation,
+        })),
+        result,
+      });
+      return { result, schematic };
     } catch {
       return null;
     }
   }, [effectiveVehicle, effectiveCaravan, state]);
+}
+
+export function usePhysicsResult(
+  snapshots?: SnapshotOverrides,
+): PhysicsResult | null {
+  return usePhysicsView(snapshots)?.result ?? null;
 }

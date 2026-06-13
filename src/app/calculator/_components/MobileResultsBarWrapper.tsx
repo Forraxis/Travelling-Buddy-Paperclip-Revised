@@ -4,13 +4,14 @@ import { useCallback, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useCalculatorState } from '@/modules/calculator/context';
-import { usePhysicsResult } from '@/modules/calculator/use-physics-result';
+import { usePhysicsView } from '@/modules/calculator/use-physics-result';
 import { useSetupSave } from '@/components/calculator/hooks/useSetupSave';
 import { MobileResultsBar } from './MobileResultsBar';
 
 export function MobileResultsBarWrapper() {
   const { state } = useCalculatorState();
-  const result = usePhysicsResult();
+  const view = usePhysicsView();
+  const result = view?.result ?? null;
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,7 +65,9 @@ export function MobileResultsBarWrapper() {
       }
     } else {
       // Fetch shareToken for existing setup
-      const data = await fetch(`/api/setups/${setupId}`).then((r) => (r.ok ? r.json() : null));
+      const data = await fetch(`/api/setups/${setupId}`).then((r) =>
+        r.ok ? r.json() : null,
+      );
       token = data?.shareToken;
     }
     if (!token) {
@@ -72,7 +75,9 @@ export function MobileResultsBarWrapper() {
       return;
     }
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/setup/share/${token}`);
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/setup/share/${token}`,
+      );
       showToast('Share link copied to clipboard');
     } catch {
       showToast('Failed to copy link');
@@ -84,12 +89,13 @@ export function MobileResultsBarWrapper() {
       <MobileResultsBar
         vehicleSelected={state.vehicleVariantId !== null}
         result={result}
+        schematic={view?.schematic ?? null}
         onSave={handleSave}
         onShare={handleShare}
         saving={saving}
       />
       {toast && (
-        <div className="fixed bottom-20 right-4 z-50 rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg md:hidden">
+        <div className="fixed right-4 bottom-20 z-50 rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg md:hidden">
           {toast}
         </div>
       )}
