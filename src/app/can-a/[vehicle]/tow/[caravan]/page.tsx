@@ -12,6 +12,10 @@ import type {
 } from '@/modules/catalogue/queries/combo.queries';
 import type { VehicleVariantDto } from '@/modules/catalogue/types/vehicle.types';
 import type { CaravanVariantDto } from '@/modules/catalogue/types/caravan.types';
+import {
+  getComboFragments,
+  comboFragmentCriteria,
+} from '@/lib/content/fragments';
 
 export const revalidate = 86400;
 
@@ -712,8 +716,28 @@ export default async function ComboPage({ params }: Props) {
   const caravanProfileHref = `/caravans/${cMake.slug}/${cModel.slug}/${c.slug}/`;
   const calculatorHref = `/calculator?v=${v.slug}&c=${c.slug}`;
 
-  // Fragments corpus — placeholder; editorial content authored separately in phase 12.9
-  // const fragments = await loadComboFragments(vehicleSlug, caravanSlug);
+  // Hand-authored prose fragments, selected by this combination's characteristics
+  // (spec §9.3). Estimate GVM headroom the same way computeComboMetrics does:
+  // kerb + full fuel + 2 passengers (160 kg) + caravan tow-ball mass.
+  const comboFuelMassKg =
+    v.fuelTankCapacityL != null
+      ? v.fuelTankCapacityL * (FUEL_DENSITY[v.fuelType ?? ''] ?? 0.73)
+      : null;
+  const gvmActualKg =
+    v.kerbWeightKg != null && comboFuelMassKg != null
+      ? v.kerbWeightKg + comboFuelMassKg + 160 + (c.tbmKg ?? 0)
+      : null;
+  const gvmHeadroomKg =
+    gvmActualKg != null && v.gvmKg != null ? v.gvmKg - gvmActualKg : null;
+
+  const fragments = getComboFragments(
+    comboFragmentCriteria({
+      vehicleBodyType: vModel.bodyType,
+      caravanAtmKg: c.atmKg,
+      gvmHeadroomKg,
+      axleConfiguration: c.axleConfiguration,
+    }),
+  );
 
   return (
     <>
@@ -805,6 +829,20 @@ export default async function ComboPage({ params }: Props) {
             Verify with exact load →
           </Link>
         </div>
+
+        {/* Hand-authored prose, selected by combination characteristics */}
+        {fragments.length > 0 && (
+          <section className="mt-8 space-y-3">
+            <h2 className="text-xl font-bold text-gray-900">
+              About this combination
+            </h2>
+            {fragments.map((f) => (
+              <p key={f.id} className="text-sm leading-relaxed text-gray-600">
+                {f.body}
+              </p>
+            ))}
+          </section>
+        )}
 
         {/* 10 Metric bars */}
         <div className="mt-10 space-y-3">

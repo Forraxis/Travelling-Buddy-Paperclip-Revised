@@ -51,6 +51,67 @@ export function getAllFragmentFiles(): string[] {
     .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'));
 }
 
+/**
+ * Map raw catalogue values (DB enums + numbers) onto the fragment tag
+ * vocabulary used to select combo-page prose. Kept separate from the page so
+ * the mapping is unit-testable.
+ */
+export function comboFragmentCriteria(input: {
+  vehicleBodyType?: string | null;
+  caravanAtmKg?: number | null;
+  gvmHeadroomKg?: number | null;
+  axleConfiguration?: string | null;
+}): Partial<FragmentTags> {
+  const criteria: Partial<FragmentTags> = {};
+
+  const body = (input.vehicleBodyType ?? '').toUpperCase();
+  if (body.includes('UTE')) criteria.vehicle_body_type = 'ute';
+  else if (body.includes('TROOP')) criteria.vehicle_body_type = 'troopcarrier';
+  else if (body.includes('VAN')) criteria.vehicle_body_type = 'van';
+  else if (body.includes('SUV')) criteria.vehicle_body_type = 'suv';
+  else if (body.includes('WAGON')) criteria.vehicle_body_type = 'wagon';
+
+  if (input.caravanAtmKg != null) {
+    criteria.caravan_size_class =
+      input.caravanAtmKg < 2000
+        ? 'small'
+        : input.caravanAtmKg < 3000
+          ? 'medium'
+          : 'large';
+  }
+
+  if (input.gvmHeadroomKg != null) {
+    const h = input.gvmHeadroomKg;
+    // Single non-overlapping bucket per value (the corpus has overlapping
+    // ranges; pick the narrowest band the value falls in).
+    criteria.gvm_headroom_range =
+      h < 100
+        ? '0-100kg'
+        : h < 200
+          ? '0-200kg'
+          : h < 300
+            ? '100-300kg'
+            : h < 500
+              ? '200-500kg'
+              : '500kg+';
+  }
+
+  const axle = (input.axleConfiguration ?? '').toUpperCase();
+  if (axle === 'SINGLE_AXLE') criteria.axle_config = 'single';
+  else if (axle === 'TRIPLE_AXLE') criteria.axle_config = 'triple';
+  else if (axle.startsWith('DUAL')) criteria.axle_config = 'tandem';
+
+  return criteria;
+}
+
+/** Load every fragment file and return those matching the given criteria. */
+export function getComboFragments(
+  criteria: Partial<FragmentTags>,
+): ComboFragment[] {
+  const all = getAllFragmentFiles().flatMap(loadFragments);
+  return matchFragments(all, criteria);
+}
+
 export function matchFragments(
   fragments: ComboFragment[],
   criteria: Partial<FragmentTags>,
