@@ -5,9 +5,15 @@
   --color-foreground: #171717;
 
   /* TravellingBuddy design tokens */
+  --color-tb-ink: #112334;
   --color-tb-primary: #1b3a5c;
   --color-tb-primary-light: #2e75b6;
   --color-tb-primary-lighter: #e8f0fe;
+  /* Outback-clay accent — warm, distinct from the amber warning colour */
+  --color-tb-accent: #c2603f;
+  --color-tb-accent-dark: #9e4a2e;
+  --color-tb-accent-light: #f4e3da;
+  --color-tb-sand: #f6f1ea;
   --color-tb-success: #16a34a;
   --color-tb-success-light: #dcfce7;
   --color-tb-warning: #d97706;
@@ -15,11 +21,14 @@
   --color-tb-danger: #dc2626;
   --color-tb-danger-light: #fee2e2;
   --color-tb-neutral-50: #f9fafb;
+  --color-tb-neutral-100: #f3f4f6;
   --color-tb-neutral-200: #e5e7eb;
+  --color-tb-neutral-300: #d1d5db;
 
   /* Fonts */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
 
   /* Border radius */
   --radius-sm: 4px;
@@ -31,4 +40,24 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
+}
+
+/* Staggered reveal for the homepage hero (use with inline animation-delay) */
+@keyframes tb-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tb-reveal {
+  animation: tb-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tb-reveal {
+    animation: none;
+  }
 }
