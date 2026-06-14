@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
-import RigSchematic from '@/components/schematic/RigSchematic';
+import SchematicViewer from '@/components/schematic/SchematicViewer';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -389,7 +389,7 @@ function SheetResultsContent({
   return (
     <>
       <VerdictBanner result={result} />
-      {schematic && <RigSchematic model={schematic} />}
+      {schematic && <SchematicViewer model={schematic} />}
       <GvmBar result={result} />
       <PayloadCard result={result} />
       <TowBallCard result={result} />

@@ -20,7 +20,9 @@ import type {
 import {
   resolveVehiclePositionMm,
   resolveCaravanPositionMm,
+  resolveVehicleLateralMm,
 } from '@/lib/physics/position-map';
+import { vehicleProfile, caravanProfile } from './vehicle-profiles';
 
 export type VehicleBodyKind = 'ute' | 'wagon' | 'suv' | 'van';
 export type CaravanBodyKind = 'caravan' | 'poptop' | 'camper' | 'offroad';
@@ -45,6 +47,8 @@ export interface SchematicAccessory {
   id: string;
   weightKg: number;
   mountingLocation: MountingLocation;
+  /** Lateral position from centreline, mm (+ = right). Defaults per mount. */
+  cogYMm?: number | null;
   label?: string | null;
 }
 
@@ -80,6 +84,8 @@ export interface AccessoryDot {
   weightKg: number;
   label: string;
   side: 'vehicle' | 'caravan';
+  /** Lateral position from centreline, mm (+ = right) — for the top-down view. */
+  yMm: number;
 }
 
 export interface VehicleShape {
@@ -89,6 +95,10 @@ export interface VehicleShape {
   rearAxleMm: number;
   frontAxleMm: number;
   hitchMm: number;
+  /** Body width, mm — for the top-down view. */
+  widthMm: number;
+  /** Track width (tyre centres), mm. */
+  trackWidthMm: number;
 }
 
 export interface CaravanShape {
@@ -101,6 +111,8 @@ export interface CaravanShape {
   couplingMm: number;
   /** One entry per physical axle, global mm. */
   axleMms: number[];
+  /** Body width, mm — for the top-down view. */
+  widthMm: number;
 }
 
 export interface SchematicModel {
@@ -113,6 +125,8 @@ export interface SchematicModel {
   caravan?: CaravanShape;
   axles: AxleGauge[];
   dots: AccessoryDot[];
+  /** Lateral distribution for the top-down view (from the physics result). */
+  lateral?: PhysicsResult['vehicle']['lateral'];
 }
 
 function vehicleBodyKind(bodyType?: string | null): VehicleBodyKind {
@@ -187,14 +201,21 @@ export function buildSchematicModel(
   // Tow hitch sits at the rear, matching position-map's TOW_HITCH (= -rearOverhang).
   const hitchMm = -rearOverhang;
 
+  const vKind = vehicleBodyKind(vehicle.bodyType);
+  const vProfile = vehicleProfile(vKind);
   const vehicleShape: VehicleShape = {
-    kind: vehicleBodyKind(vehicle.bodyType),
+    kind: vKind,
     rearBumperMm,
     frontBumperMm,
     rearAxleMm,
     frontAxleMm,
     hitchMm,
+    widthMm: vProfile.bodyWidthMm,
+    trackWidthMm: vProfile.trackWidthMm,
   };
+  const lateralResolverVehicle = {
+    trackWidthMm: vProfile.trackWidthMm,
+  } as never;
 
   const axles: AxleGauge[] = [
     {
@@ -228,6 +249,10 @@ export function buildSchematicModel(
       frontOverhangMm: frontOverhang,
       rearOverhangMm: rearOverhang,
     } as never);
+    const yMm =
+      acc.cogYMm != null
+        ? acc.cogYMm
+        : resolveVehicleLateralMm(acc.mountingLocation, lateralResolverVehicle);
     dots.push({
       id: acc.id,
       n: ++n,
@@ -236,6 +261,7 @@ export function buildSchematicModel(
       weightKg: acc.weightKg,
       label: acc.label || locationLabel(acc.mountingLocation),
       side: 'vehicle',
+      yMm,
     });
   }
 
@@ -270,12 +296,14 @@ export function buildSchematicModel(
       axleMms = [nominalAxleMm];
     }
 
+    const cKind = caravanBodyKind(caravan.bodyType);
     caravanShape = {
-      kind: caravanBodyKind(caravan.bodyType),
+      kind: cKind,
       bodyRearMm,
       bodyFrontMm,
       couplingMm,
       axleMms,
+      widthMm: caravanProfile(cKind).bodyWidthMm,
     };
 
     // One gauge per physical axle, using the engine's per-axle split. axleMms
@@ -311,6 +339,7 @@ export function buildSchematicModel(
         weightKg: acc.weightKg,
         label: acc.label || locationLabel(acc.mountingLocation),
         side: 'caravan',
+        yMm: acc.cogYMm ?? 0,
       });
     }
   }
@@ -336,5 +365,6 @@ export function buildSchematicModel(
     caravan: caravanShape,
     axles,
     dots,
+    lateral: result.vehicle.lateral,
   };
 }

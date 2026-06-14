@@ -11,6 +11,10 @@ import {
   buildSchematicModel,
   type SchematicModel,
 } from '@/components/schematic/model';
+import {
+  vehicleProfile,
+  vehicleBodyKindFromType,
+} from '@/components/schematic/vehicle-profiles';
 import { useCalculatorState } from './context';
 
 type AnyVariant = Record<string, unknown>;
@@ -131,6 +135,13 @@ export function usePhysicsView(
           effectiveVehicle.rearOverhangMm != null
             ? Number(effectiveVehicle.rearOverhangMm)
             : null,
+        trackWidthMm: vehicleProfile(
+          vehicleBodyKindFromType(
+            ((effectiveVehicle.model ?? {}) as AnyVariant).bodyType as
+              | string
+              | undefined,
+          ),
+        ).trackWidthMm,
         fuelTankCapacityL: Number(effectiveVehicle.fuelTankCapacityL),
         fuelType: effectiveVehicle.fuelType as
           | 'DIESEL'
