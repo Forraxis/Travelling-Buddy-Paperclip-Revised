@@ -85,7 +85,18 @@ function computeCaravan(
     effectiveTareKg + freshWaterMassKg + greyWaterMassKg + accessoryMassKg;
 
   const axleX = caravan.couplingToAxleMm;
-  const tareCogX = axleX * CARAVAN_TARE_COG_FRACTION;
+  // Anchor the tare centre-of-gravity to the manufacturer-published tow ball
+  // mass rather than a fixed fraction. Bare-van TBM = tare × (axleX − tareCogX)
+  // / axleX, so tareCogX = axleX × (1 − TBM/tare) reproduces the published
+  // figure exactly, per van. A fixed fraction computed a flat 14% of tare for
+  // every van, which was ~15% off published on average across the catalogue
+  // (over-reading dual-axle vans, under-reading single-axle). Falls back to the
+  // generic fraction when TBM/tare data is missing or implausible.
+  const tareFraction =
+    caravan.tbmKg > 0 && caravan.tareKg > 0
+      ? Math.min(0.95, Math.max(0.6, 1 - caravan.tbmKg / caravan.tareKg))
+      : CARAVAN_TARE_COG_FRACTION;
+  const tareCogX = axleX * tareFraction;
   const freshCogX = axleX * FRESH_WATER_COG_FRACTION;
   const greyCogX = axleX * GREY_WATER_COG_FRACTION;
 
@@ -247,7 +258,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     const gtmStatus = weightStatus(cv.gtmKg, caravan.gtmKg);
     const payloadRemainingKg =
       caravan.atmKg -
-      caravan.tareKg -
+      cv.effectiveTareKg -
       cv.accessoryMassKg -
       cv.freshWaterMassKg -
       cv.greyWaterMassKg;
@@ -286,7 +297,8 @@ export function calculate(input: PhysicsInput): PhysicsResult {
   const fuelDensity = FUEL_DENSITY[vehicle.fuelType] ?? 0.73;
   const fuelMassKg =
     (input.fuelPercent / 100) * vehicle.fuelTankCapacityL * fuelDensity;
-  const passengerMassKg = passengers * PASSENGER_KG;
+  const passengerMassKg =
+    passengers * (input.passengerAvgWeightKg ?? PASSENGER_KG);
   const vehicleAccessoryMassKg = vehicleAccessories.reduce(
     (s, a) => s + resolvedAccessoryWeight(a),
     0,

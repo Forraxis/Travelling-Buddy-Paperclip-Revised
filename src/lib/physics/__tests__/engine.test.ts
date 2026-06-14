@@ -172,7 +172,9 @@ describe('Scenario 3: LandCruiser 79 + mid-size van, conservative load', () => {
   const result = calculate(
     baseInput({
       vehicle: landcruiser79,
-      caravan: midSizeVan,
+      // midSizeVan's published TBM (350) sits exactly at the tow-ball limit, so
+      // give this "conservative" case a van with genuine TBM headroom (320).
+      caravan: { ...midSizeVan, tbmKg: 320 },
       vehicleAccessories: [
         {
           installedWeightKg: 25,
@@ -480,24 +482,30 @@ describe('Scenario 9: water fill affects TBM', () => {
     ).toBeGreaterThan(10));
 });
 
-// --- Scenario 10: Bare van baseline — TBM matches manufacturer within 5% ---
-describe('Scenario 10: bare caravan, computed TBM within 5% of manufacturer TBM', () => {
-  const result = calculate(
-    baseInput({
-      vehicle: landcruiser79,
-      caravan: midSizeVan,
-      caravanAccessories: [],
-      freshWaterPercent: 0,
-      greyWaterPercent: 0,
-      cargoKg: 0,
-    }),
-  );
+// --- Scenario 10: Bare van baseline — TBM anchored to manufacturer figure ---
+describe('Scenario 10: bare caravan, computed TBM matches manufacturer TBM', () => {
+  const bare = (caravan: import('../types').CaravanInput) =>
+    calculate(
+      baseInput({
+        vehicle: landcruiser79,
+        caravan,
+        caravanAccessories: [],
+        freshWaterPercent: 0,
+        greyWaterPercent: 0,
+        cargoKg: 0,
+      }),
+    );
 
-  it('computed TBM is within 5% of manufacturer tbmKg', () => {
-    const computed = result.caravan!.towBallMassKg;
-    const mfr = midSizeVan.tbmKg;
-    const tolerance = mfr * 0.05;
-    expect(Math.abs(computed - mfr)).toBeLessThanOrEqual(tolerance);
+  // The tare CoG is anchored to the published TBM, so a bare van (no water,
+  // no accessories, no calibration) reproduces the manufacturer figure exactly
+  // — across axle configs, not just one fixture.
+  it('single-axle bare TBM == published', () => {
+    const r = bare(midSizeVan);
+    expect(r.caravan!.towBallMassKg).toBeCloseTo(midSizeVan.tbmKg, 0);
+  });
+  it('dual-axle bare TBM == published', () => {
+    const r = bare(dualAxleVan);
+    expect(r.caravan!.towBallMassKg).toBeCloseTo(dualAxleVan.tbmKg, 0);
   });
 });
 

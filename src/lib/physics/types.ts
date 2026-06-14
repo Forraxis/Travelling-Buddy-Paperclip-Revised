@@ -116,6 +116,8 @@ export interface PhysicsInput {
   vehicleAccessories: AccessoryLoad[];
   caravanAccessories?: AccessoryLoad[];
   passengers: number;
+  /** Average weight per passenger (kg). Defaults to 80 when omitted. */
+  passengerAvgWeightKg?: number;
   cargoKg: number;
   fuelPercent: number;
   freshWaterPercent: number;

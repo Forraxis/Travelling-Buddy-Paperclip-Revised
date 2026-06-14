@@ -171,6 +171,7 @@ export function usePhysicsView(
         quantity: 1,
       })),
       passengers: state.journey.passengers,
+      passengerAvgWeightKg: state.journey.passengerWeightKg,
       cargoKg: state.journey.cargoKg,
       fuelPercent: state.journey.fuelPercent,
       freshWaterPercent,

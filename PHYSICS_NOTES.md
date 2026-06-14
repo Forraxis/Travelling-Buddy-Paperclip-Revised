@@ -1,59 +1,71 @@
-# Physics Engine — Modelling Notes & Sign-off Items
+# Physics Engine — Sign-off Review & Modelling Notes
 
-This documents the safety-critical modelling choices in `src/lib/physics/`. Per
-Build-Plan Rule 11, the **caravan axle-split change below needs Tim's sign-off**
-on the engineering assumptions before it should be trusted in production.
+Safety-critical core (`src/lib/physics/`). Per Build-Plan Rule 11, the changes
+marked **⚠ REVIEW** below need Tim's sign-off on the math before they're trusted.
 
-## Caravan per-axle load split (changed this round)
+Re-run the catalogue validation any time: `npx jiti scripts/physics-harden.ts`
 
-`CaravanResult.axle1*/axle2*` (a fixed 50/50 split that could never differ from
-the GTM status) was replaced with a generic `CaravanResult.axles[]` array and a
-position-aware split in `computeCaravanAxles()`:
+---
 
-| Axle config            | Split model                                            | Rationale |
-|------------------------|--------------------------------------------------------|-----------|
-| `SINGLE_AXLE`          | 1 axle carries full GTM                                | Trivial |
-| `DUAL_AXLE_CLOSE_COUPLED` | Even (GTM/2 each)                                   | Load-sharing suspension (rocker/equaliser) balances static load by design |
-| `TRIPLE_AXLE`          | Even (GTM/3 each)                                       | Same — load-sharing. **Previously got NO per-axle breakdown (bug).** |
-| `DUAL_AXLE_SPREAD`     | Lever rule from the load CoG → can overload one axle   | Spread axles share load weakly; position matters |
+## ⚠ REVIEW — changes that need your sign-off
 
-The spread-axle split is what surfaces the spec §4.3 case ("one axle over while
-total GTM is legal"), via the new `axle-imbalance` recommendation.
+### 1. Caravan tow-ball-mass baseline anchored to published TBM (the big one)
+**What changed:** `computeCaravan` previously placed the tare centre-of-gravity
+at a fixed `0.86 × couplingToAxle`, which computes bare-van TBM as a flat **14%
+of tare for every van**. The catalogue validation showed that's **~15% off the
+manufacturer-published TBM on average** (only 6/20 within 5%, max 36% off) —
+systematically over-reading dual-axle vans and under-reading single-axle vans.
 
-### Assumptions that need your sign-off
-1. **Load-sharing → even split for close-coupled tandems and triples.** This is
-   true for the standard AU caravan rocker/equaliser suspension. If a van has
-   independent (non-equalising) axles, the even split understates the loaded
-   axle. We have no suspension-type field to distinguish them. **Decision needed:**
-   accept the load-sharing assumption for v1, or add a `suspensionType` /
-   `loadSharing` field to `CaravanVariant`.
-2. **Per-axle limit = GTM_limit / n.** The catalogue has no per-axle GAWR for
-   caravans, so each axle's limit is the manufacturer GTM divided by axle count.
-   A real per-axle rating would be more accurate. **Decision needed:** add a
-   per-axle rating field, or keep the GTM/n approximation.
-3. **Spread-axle lever rule uses the *total* load CoG** as the GTM application
-   point (ignores that the tow-ball reaction is taken at the coupling). This is
-   a standard planning-grade approximation and is directionally correct
-   (nose-forward load → front group axle heavier), but the magnitude is
-   approximate. Acceptable for v1?
+It now anchors the tare CoG to the published figure: `tareCogX = axleX × (1 −
+TBM/tare)`, so the bare-van computed TBM **reproduces the manufacturer value
+exactly, per van** (falls back to 0.86 if TBM/tare data is missing).
 
-The split direction was validated in tests (`Scenario 7b`): because the bare-van
-CoG sits forward of the axle (which is *why* there's positive tow-ball mass), a
-nose-forward van loads the **front** axle of a spread group more — and a tight
-GTM can leave the front axle over its share while total GTM passes.
+**Why it matters:** bare TBM is the baseline for tow-ball %, the rear-axle lever
+effect, and GTM — so a 15% baseline error propagated into several safety metrics.
 
-## Pre-existing items flagged in the earlier review (NOT changed — your call)
+**Evidence (`scripts/physics-harden.ts`, n=20 caravans):**
 
-- **Vehicle kerb CoG fraction** (`VEHICLE_KERB_COG_FRACTION = 0.45`, engine.ts)
-  places the unladen CoG slightly *rear* of centre. Most engine-forward 4WD utes
-  carry ~55–60% of kerb on the *front* axle. If 0.45 is too low it systematically
-  understates front-axle load / overstates rear. The caravan side is calibrated
-  to a known TBM figure; the vehicle side is not. **Recommend one weighbridge
-  comparison to calibrate.**
-- **Passenger weight** is hard-coded at 80 kg/person (`PASSENGER_KG`); spec §7.2
-  wants a configurable average. (`journey.passengerWeightKg` exists in calculator
-  state but the engine ignores it.)
-- **`payloadRemainingKg`** uses the raw `tareKg`, while `totalWeightKg` uses the
-  calibrated tare — a small inconsistency if a weighbridge tare offset is set.
+| | before (fixed 0.86) | after (anchored) |
+|---|---|---|
+| within 5% of published | 6/20 | **20/20** |
+| mean abs deviation | 15.4% | **0.0%** |
+| max deviation | 35.6% | **0.0%** |
 
-These are documented for decision; none were changed overnight.
+The water/accessory delta logic and the axle split are unchanged. One test
+fixture (Scenario 3) was updated because its van's published TBM sat *exactly* at
+the tow-ball limit — the old under-read hid that; the new accuracy exposed it.
+
+### 2. Position-aware caravan axle split (from the earlier change)
+Replaced the cosmetic 50/50 `axle1/axle2` with a generic `axles[]`: even split for
+single/close-coupled/triple (load-sharing suspension), CoG lever split for spread
+tandems (surfaces "one axle over while GTM legal"). **Validation: all 20 caravans
+have the correct axle count and axle loads that sum to GTM.** The load-sharing
+assumption + `GTM/n` per-axle limit (no per-axle GAWR in the catalogue) are the
+items to confirm — see "Assumptions" below.
+
+---
+
+## ✅ Done this round (safe, no sign-off needed)
+- **Configurable passenger weight** — the engine ignored `journey.passengerWeightKg`
+  and hard-coded 80 kg/person; it now uses the user's value (defaults to 80).
+- **Payload uses calibrated tare** — `payloadRemainingKg` now uses the calibrated
+  `effectiveTareKg` instead of raw `tareKg`, consistent with `totalWeightKg`.
+
+## 🏳 Flagged, left as-is (your call)
+- **Vehicle kerb CoG fraction** (`VEHICLE_KERB_COG_FRACTION = 0.45`) — places the
+  unladen CoG slightly rear of centre; most engine-forward 4WD utes carry ~55–60%
+  of kerb on the *front* axle, so this may understate front / overstate rear.
+  **Left at 0.45 per your call** — needs a real unladen front-axle weight from a
+  weighbridge to calibrate (the caravan side now has that anchor; the vehicle side
+  has no published axle weights to calibrate against). Vehicle bare axle loads are
+  numerically sane across all 37 catalogue vehicles (finite, positive, sum to total).
+
+## Assumptions worth confirming
+- **Load-sharing → even split** for close-coupled tandems and triples (true for
+  standard AU rocker/equaliser suspension). Independent/non-equalising axles would
+  need a `suspensionType` field to model differently.
+- **Per-axle limit = GTM_limit / n** — the catalogue has no per-axle GAWR for
+  caravans. A real per-axle rating would be more accurate.
+- **Published TBM is the tare/at-rest figure** — the anchor assumes the catalogue's
+  `tbmKg` is measured at tare (the manufacturer norm). If a record's TBM is an
+  at-ATM figure, that van's baseline would be slightly high.
