@@ -17,6 +17,7 @@ import {
   comboFragmentCriteria,
 } from '@/lib/content/fragments';
 import { breadcrumbJsonLd } from '@/lib/seo/json-ld';
+import AdSlot from '@/components/monetisation/AdSlot';
 
 export const revalidate = 86400;
 
@@ -936,6 +937,9 @@ export default async function ComboPage({ params }: Props) {
             />
           </div>
         </div>
+
+        {/* Display ad (content page) — inert until AdSense client is configured */}
+        <AdSlot slot="combo-mid" className="mt-10" />
 
         {/* FAQ */}
         <div className="mt-10">

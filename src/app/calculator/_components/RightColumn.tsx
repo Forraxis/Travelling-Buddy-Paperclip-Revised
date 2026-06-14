@@ -400,6 +400,25 @@ function RecommendationsPanel({ result }: { result: PhysicsResult }) {
                   {rec.title}
                 </p>
                 <p className="text-xs text-gray-500">{rec.body}</p>
+                {rec.actions && rec.actions.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                    {rec.actions.map((a, i) => {
+                      const href =
+                        a.type === 'internal_link' && a.payload
+                          ? a.payload
+                          : '/accessories/';
+                      return (
+                        <a
+                          key={i}
+                          href={href}
+                          className="text-tb-accent hover:text-tb-accent-dark text-xs font-semibold hover:underline"
+                        >
+                          {a.label} →
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           );

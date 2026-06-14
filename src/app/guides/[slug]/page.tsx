@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { getAllGuideSlugs, getGuideBySlug } from '@/lib/content/guides';
+import AdSlot from '@/components/monetisation/AdSlot';
 import type { GuideCategory } from '@/lib/content/guides';
 
 // Revalidate once per day
@@ -221,6 +222,9 @@ export default async function GuideSlugPage({ params }: Props) {
                 </ul>
               </section>
             )}
+
+          {/* Display ad — inert until AdSense client is configured */}
+          <AdSlot slot="guide-foot" className="mt-10" />
         </article>
 
         {/* Related links sidebar */}
