@@ -10,5 +10,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Unit tests live under src/. The e2e/ Playwright specs run separately via
+    // `npm run test:e2e` and must not be picked up by Vitest.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });

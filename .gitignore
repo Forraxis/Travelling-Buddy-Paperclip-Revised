@@ -49,3 +49,9 @@ next-env.d.ts
 *.log
 *.pid
 *.seed
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
