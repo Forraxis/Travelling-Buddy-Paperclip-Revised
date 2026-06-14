@@ -10,20 +10,24 @@ import type {
 import type { MetricStatus } from '@/lib/physics/types';
 
 // ── Geometry constants (viewBox units) ───────────────────────────────────────
-const VB_W = 920;
-const VB_H = 360;
-const PAD = 44;
+const VB_W = 1000;
+const VB_H = 384;
+const PAD = 48;
 const DRAW_W = VB_W - PAD * 2;
-const GROUND_Y = 248;
-const WHEEL_R = 24;
-const GAUGE_TOP = 280;
-const GAUGE_H = 58;
+const GROUND_Y = 250;
+const WHEEL_R = 26;
+const GAUGE_TOP = 288;
+const GAUGE_H = 54;
 
-const TB_PRIMARY = '#1b3a5c';
-const BODY_FILL = '#cbd5e1';
-const BODY_FILL_VAN = '#e2e8f0';
-const WHEEL = '#475569';
-const WHEEL_HUB = '#cbd5e1';
+// ── Palette ───────────────────────────────────────────────────────────────────
+const STROKE = '#1b3a5c';
+const BODY = '#cdd9e6';
+const BODY_VAN = '#dfe7ef';
+const GLASS = '#eef4fa';
+const TIRE = '#374151';
+const RIM = '#9aa7b6';
+const HUB = '#e8edf2';
+const GROUND = '#e3e9f0';
 
 function statusHex(status: MetricStatus): string {
   if (status === 'fail') return '#dc2626';
@@ -31,145 +35,274 @@ function statusHex(status: MetricStatus): string {
   return '#16a34a';
 }
 
-// ── Silhouette path builders ─────────────────────────────────────────────────
-// All take an x-mapping function and the relevant shape, return an SVG path.
+// ── Wheel (tyre + rim + hub) ─────────────────────────────────────────────────
+function Wheel({ cx }: { cx: number }) {
+  return (
+    <g>
+      <circle cx={cx} cy={GROUND_Y} r={WHEEL_R} fill={TIRE} />
+      <circle cx={cx} cy={GROUND_Y} r={WHEEL_R * 0.58} fill={RIM} />
+      <circle cx={cx} cy={GROUND_Y} r={WHEEL_R * 0.24} fill={HUB} />
+    </g>
+  );
+}
 
-function utePath(p: (mm: number) => number, v: VehicleShape): string {
+function Wheels({ xs }: { xs: number[] }) {
+  return (
+    <>
+      {xs.map((x, i) => (
+        <Wheel key={i} cx={x} />
+      ))}
+    </>
+  );
+}
+
+// ── Vehicle silhouettes ──────────────────────────────────────────────────────
+// All face right (front at far right). Returns body path + glass + detail.
+function VehicleArt({ v, p }: { v: VehicleShape; p: (mm: number) => number }) {
   const rear = p(v.rearBumperMm);
   const front = p(v.frontBumperMm);
-  const frontAxle = p(v.frontAxleMm);
-  const cabFront = frontAxle + (front - frontAxle) * 0.15;
-  const cabRear = rear + (front - rear) * 0.42;
-  const deck = GROUND_Y - 30; // tray deck height
-  const bonnet = GROUND_Y - 46;
-  const roof = GROUND_Y - 96;
-  const windscreenTop = cabRear + (cabFront - cabRear) * 0.55;
-  return [
-    `M ${rear} ${deck}`,
-    `L ${rear} ${GROUND_Y - 10}`,
-    `L ${front} ${GROUND_Y - 10}`,
-    `L ${front} ${bonnet}`,
-    `L ${cabFront} ${bonnet}`,
-    `L ${windscreenTop} ${roof}`,
-    `L ${cabRear} ${roof}`,
-    `L ${cabRear} ${deck}`,
-    'Z',
-  ].join(' ');
+  const len = front - rear;
+  const base = GROUND_Y - 8; // body sits just above the wheel centres
+  const fill = v.kind === 'van' ? BODY_VAN : BODY;
+
+  if (v.kind === 'ute') {
+    const deck = GROUND_Y - 36; // tray deck
+    const bonnet = GROUND_Y - 52;
+    const roof = GROUND_Y - 104;
+    const cabRear = rear + len * 0.4;
+    const cabFront = rear + len * 0.66;
+    const wsTop = rear + len * 0.6;
+    const bonnetFront = rear + len * 0.82;
+    return (
+      <g>
+        <path
+          d={[
+            `M ${rear} ${base}`,
+            `L ${rear} ${deck} L ${rear + 6} ${deck - 4}`,
+            `L ${cabRear} ${deck - 4} L ${cabRear} ${roof + 8}`,
+            `Q ${cabRear} ${roof} ${cabRear + 10} ${roof}`,
+            `L ${wsTop} ${roof}`,
+            `L ${cabFront} ${bonnet + 6}`,
+            `L ${bonnetFront} ${bonnet}`,
+            `Q ${front} ${bonnet} ${front} ${bonnet + 14}`,
+            `L ${front} ${base} Z`,
+          ].join(' ')}
+          fill={fill}
+          stroke={STROKE}
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+        {/* cab glass */}
+        <path
+          d={`M ${cabRear + 8} ${roof + 6} L ${wsTop - 6} ${roof + 6} L ${cabFront - 8} ${bonnet + 4} L ${cabRear + 8} ${bonnet + 4} Z`}
+          fill={GLASS}
+          stroke={STROKE}
+          strokeWidth={1.2}
+        />
+        {/* B-pillar */}
+        <line
+          x1={(cabRear + cabFront) / 2 - 4}
+          y1={roof + 6}
+          x2={(cabRear + cabFront) / 2 - 4}
+          y2={bonnet + 4}
+          stroke={STROKE}
+          strokeWidth={1.2}
+        />
+      </g>
+    );
+  }
+
+  // wagon / suv / van share a single-box profile with per-kind roofline
+  const roof =
+    v.kind === 'van'
+      ? GROUND_Y - 128
+      : v.kind === 'suv'
+        ? GROUND_Y - 110
+        : GROUND_Y - 116;
+  const beltline = GROUND_Y - 56;
+  const bonnet = v.kind === 'van' ? GROUND_Y - 96 : GROUND_Y - 58;
+  const roofStart = rear + len * (v.kind === 'van' ? 0.08 : 0.16);
+  const roofEnd =
+    rear + len * (v.kind === 'suv' ? 0.62 : v.kind === 'van' ? 0.78 : 0.66);
+  const noseTop = rear + len * (v.kind === 'van' ? 0.84 : 0.8);
+  return (
+    <g>
+      <path
+        d={[
+          `M ${rear} ${base}`,
+          `L ${rear} ${beltline}`,
+          `L ${roofStart} ${roof + 6} Q ${roofStart} ${roof} ${roofStart + 8} ${roof}`,
+          `L ${roofEnd} ${roof}`,
+          `L ${noseTop} ${bonnet}`,
+          `L ${front - 6} ${bonnet} Q ${front} ${bonnet} ${front} ${bonnet + 12}`,
+          `L ${front} ${base} Z`,
+        ].join(' ')}
+        fill={fill}
+        stroke={STROKE}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+      />
+      {/* greenhouse glass with pillars */}
+      <path
+        d={`M ${roofStart + 10} ${roof + 6} L ${roofEnd - 6} ${roof + 6} L ${noseTop - 8} ${bonnet + 4} L ${rear + 10} ${bonnet + 4} L ${rear + 10} ${beltline - 4} Z`}
+        fill={GLASS}
+        stroke={STROKE}
+        strokeWidth={1.2}
+        strokeLinejoin="round"
+      />
+      {[0.38, 0.62].map((f, i) => {
+        const x = roofStart + (roofEnd - roofStart) * f;
+        return (
+          <line
+            key={i}
+            x1={x}
+            y1={roof + 6}
+            x2={x}
+            y2={bonnet + 2}
+            stroke={STROKE}
+            strokeWidth={1.2}
+          />
+        );
+      })}
+    </g>
+  );
 }
 
-function wagonPath(p: (mm: number) => number, v: VehicleShape): string {
-  const rear = p(v.rearBumperMm);
-  const front = p(v.frontBumperMm);
-  const base = GROUND_Y - 10;
-  const beltline = GROUND_Y - 40;
-  const roof = GROUND_Y - 100;
-  const bonnet = GROUND_Y - 52;
-  const roofStart = rear + (front - rear) * 0.18;
-  const roofEnd = rear + (front - rear) * 0.66;
-  const bonnetStart = rear + (front - rear) * 0.78;
-  return [
-    `M ${rear} ${base}`,
-    `L ${rear} ${beltline}`,
-    `L ${roofStart} ${roof}`,
-    `L ${roofEnd} ${roof}`,
-    `L ${bonnetStart} ${bonnet}`,
-    `L ${front} ${bonnet}`,
-    `L ${front} ${base}`,
-    'Z',
-  ].join(' ');
-}
-
-function vanPath(p: (mm: number) => number, v: VehicleShape): string {
-  const rear = p(v.rearBumperMm);
-  const front = p(v.frontBumperMm);
-  const base = GROUND_Y - 10;
-  const roof = GROUND_Y - 112;
-  const bonnet = GROUND_Y - 70;
-  const nose = rear + (front - rear) * 0.82;
-  return [
-    `M ${rear} ${base}`,
-    `L ${rear} ${roof}`,
-    `L ${nose} ${roof}`,
-    `L ${front} ${bonnet}`,
-    `L ${front} ${base}`,
-    'Z',
-  ].join(' ');
-}
-
-function vehiclePath(p: (mm: number) => number, v: VehicleShape): string {
-  if (v.kind === 'ute') return utePath(p, v);
-  if (v.kind === 'van') return vanPath(p, v);
-  return wagonPath(p, v);
-}
-
-function caravanPaths(
-  p: (mm: number) => number,
-  c: CaravanShape,
-): { body: string; drawbar: string } {
+// ── Caravan silhouettes ──────────────────────────────────────────────────────
+function CaravanArt({ c, p }: { c: CaravanShape; p: (mm: number) => number }) {
   const rear = p(c.bodyRearMm);
   const bodyFront = p(c.bodyFrontMm);
   const coupling = p(c.couplingMm);
-  const base = GROUND_Y - 10;
+  const len = bodyFront - rear;
+  const base = GROUND_Y - 8;
+  const drawY = GROUND_Y - 18;
+
   const roof =
     c.kind === 'camper'
-      ? GROUND_Y - 58
+      ? GROUND_Y - 64
       : c.kind === 'poptop'
-        ? GROUND_Y - 96
-        : GROUND_Y - 118;
-  const drawY = GROUND_Y - 22;
+        ? GROUND_Y - 88
+        : c.kind === 'offroad'
+          ? GROUND_Y - 124
+          : GROUND_Y - 132;
+  const floor = c.kind === 'offroad' ? GROUND_Y - 26 : GROUND_Y - 12; // raised clearance
 
-  let body: string;
+  // A-frame drawbar from the body front down to the coupling.
+  const drawbar = (
+    <path
+      d={`M ${bodyFront} ${base - 6} L ${coupling} ${drawY} L ${coupling} ${drawY + 5} L ${bodyFront - 2} ${base} Z`}
+      fill={TIRE}
+    />
+  );
+
+  let body;
   if (c.kind === 'camper') {
-    // Low wedge.
-    body = [
-      `M ${rear} ${base}`,
-      `L ${rear} ${roof + 14}`,
-      `L ${bodyFront} ${roof}`,
-      `L ${bodyFront} ${base}`,
-      'Z',
-    ].join(' ');
+    body = (
+      <path
+        d={`M ${rear} ${floor} L ${rear} ${roof + 16} L ${rear + len * 0.22} ${roof} L ${bodyFront} ${roof + 6} L ${bodyFront} ${floor} Z`}
+        fill={BODY_VAN}
+        stroke={STROKE}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+      />
+    );
   } else if (c.kind === 'poptop') {
-    // Box with a slightly inset raised top band.
-    const bandTop = roof;
-    const wallTop = GROUND_Y - 70;
-    body = [
-      `M ${rear} ${base}`,
-      `L ${rear} ${wallTop}`,
-      `L ${rear + (bodyFront - rear) * 0.12} ${bandTop}`,
-      `L ${bodyFront - (bodyFront - rear) * 0.12} ${bandTop}`,
-      `L ${bodyFront} ${wallTop}`,
-      `L ${bodyFront} ${base}`,
-      'Z',
-    ].join(' ');
+    const wall = GROUND_Y - 64;
+    body = (
+      <g>
+        <path
+          d={`M ${rear} ${floor} L ${rear} ${wall} L ${bodyFront} ${wall} L ${bodyFront} ${floor} Z`}
+          fill={BODY_VAN}
+          stroke={STROKE}
+          strokeWidth={2.5}
+          strokeLinejoin="round"
+        />
+        {/* raised pop-top band */}
+        <path
+          d={`M ${rear + 10} ${wall} L ${rear + 16} ${roof} L ${bodyFront - 16} ${roof} L ${bodyFront - 10} ${wall} Z`}
+          fill={GLASS}
+          stroke={STROKE}
+          strokeWidth={2}
+          strokeLinejoin="round"
+        />
+      </g>
+    );
   } else {
-    body = [
-      `M ${rear} ${base}`,
-      `L ${rear} ${roof}`,
-      `L ${bodyFront} ${roof}`,
-      `L ${bodyFront} ${base}`,
-      'Z',
-    ].join(' ');
+    // full-height / off-road box, slightly rounded top corners
+    body = (
+      <path
+        d={[
+          `M ${rear} ${floor}`,
+          `L ${rear} ${roof + 12} Q ${rear} ${roof} ${rear + 12} ${roof}`,
+          `L ${bodyFront - 12} ${roof} Q ${bodyFront} ${roof} ${bodyFront} ${roof + 12}`,
+          `L ${bodyFront} ${floor} Z`,
+        ].join(' ')}
+        fill={BODY_VAN}
+        stroke={STROKE}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+      />
+    );
   }
 
-  // A-frame drawbar from body front down to the coupling.
-  const drawbar = `M ${bodyFront} ${base - 4} L ${coupling} ${drawY} L ${coupling} ${drawY + 6} L ${bodyFront} ${base + 2} Z`;
-  return { body, drawbar };
+  // Door (toward the front/kerb side) + window — only on full-height/off-road.
+  const detail =
+    c.kind === 'camper' || c.kind === 'poptop' ? null : (
+      <g>
+        <rect
+          x={rear + len * 0.58}
+          y={roof + 18}
+          width={len * 0.16}
+          height={floor - (roof + 18) - 4}
+          rx={2}
+          fill="none"
+          stroke={STROKE}
+          strokeWidth={1.4}
+        />
+        <rect
+          x={rear + len * 0.18}
+          y={roof + 18}
+          width={len * 0.26}
+          height={(floor - roof) * 0.34}
+          rx={2}
+          fill={GLASS}
+          stroke={STROKE}
+          strokeWidth={1.4}
+        />
+      </g>
+    );
+
+  return (
+    <g>
+      {drawbar}
+      {body}
+      {detail}
+      {/* off-road: stone guard on the A-frame */}
+      {c.kind === 'offroad' && (
+        <rect
+          x={bodyFront - 4}
+          y={floor - 26}
+          width={6}
+          height={26}
+          fill={TIRE}
+        />
+      )}
+    </g>
+  );
 }
 
-// ── Axle load gauge (vertical bar beneath an axle) ───────────────────────────
+// ── Axle load gauge ──────────────────────────────────────────────────────────
 function Gauge({ g, p }: { g: AxleGauge; p: (mm: number) => number }) {
   const x = p(g.xMm);
-  const w = 16;
-  const limitY = GAUGE_TOP + GAUGE_H * 0.18; // limit line near the top of the track
+  const w = 18;
+  const limitY = GAUGE_TOP + GAUGE_H * 0.16;
   const trackBottom = GAUGE_TOP + GAUGE_H;
-  const trackH = trackBottom - limitY; // height representing 0..limit
+  const trackH = trackBottom - limitY;
   const fillH = Math.min(g.ratio, 1) * trackH;
-  const overH = g.ratio > 1 ? Math.min(g.ratio - 1, 0.5) * trackH : 0;
-  const fillY = trackBottom - fillH;
+  const overH = g.ratio > 1 ? Math.min(g.ratio - 1, 0.4) * trackH : 0;
   const color = statusHex(g.status);
   return (
     <g>
-      {/* track */}
       <rect
         x={x - w / 2}
         y={limitY}
@@ -178,16 +311,14 @@ function Gauge({ g, p }: { g: AxleGauge; p: (mm: number) => number }) {
         rx={3}
         fill="#eef2f6"
       />
-      {/* fill */}
       <rect
         x={x - w / 2}
-        y={fillY}
+        y={trackBottom - fillH}
         width={w}
         height={fillH}
         rx={3}
         fill={color}
       />
-      {/* overflow cap above limit line */}
       {overH > 0 && (
         <rect
           x={x - w / 2}
@@ -198,11 +329,10 @@ function Gauge({ g, p }: { g: AxleGauge; p: (mm: number) => number }) {
           fill="#dc2626"
         />
       )}
-      {/* limit tick */}
       <line
-        x1={x - w / 2 - 3}
+        x1={x - w / 2 - 4}
         y1={limitY}
-        x2={x + w / 2 + 3}
+        x2={x + w / 2 + 4}
         y2={limitY}
         stroke="#94a3b8"
         strokeWidth={1.5}
@@ -210,22 +340,23 @@ function Gauge({ g, p }: { g: AxleGauge; p: (mm: number) => number }) {
       />
       <text
         x={x}
-        y={trackBottom + 13}
+        y={trackBottom + 16}
         textAnchor="middle"
-        fontSize={11}
-        fill="#64748b"
+        fontSize={12}
+        fontWeight={600}
+        fill="#475569"
       >
         {g.label}
       </text>
       <text
         x={x}
-        y={trackBottom + 25}
+        y={trackBottom + 30}
         textAnchor="middle"
-        fontSize={10}
+        fontSize={11}
         fill={color}
-        fontWeight={600}
+        fontWeight={700}
       >
-        {Math.round(g.loadKg)}/{Math.round(g.limitKg)}
+        {Math.round(g.loadKg).toLocaleString()} kg
       </text>
     </g>
   );
@@ -234,20 +365,20 @@ function Gauge({ g, p }: { g: AxleGauge; p: (mm: number) => number }) {
 // ── Accessory dot ────────────────────────────────────────────────────────────
 function Dot({ d, p }: { d: AccessoryDot; p: (mm: number) => number }) {
   const x = p(d.xMm);
-  const bodyTop = GROUND_Y - 118;
-  const bodyBase = GROUND_Y - 14;
+  const bodyTop = GROUND_Y - 126;
+  const bodyBase = GROUND_Y - 16;
   const y = bodyBase - d.heightHint * (bodyBase - bodyTop);
-  const r = Math.max(7, Math.min(15, 6 + Math.sqrt(d.weightKg) * 0.9));
+  const r = Math.max(8, Math.min(16, 6 + Math.sqrt(d.weightKg) * 0.95));
   return (
     <g>
       <circle
         cx={x}
         cy={y}
         r={r}
-        fill={TB_PRIMARY}
-        fillOpacity={0.88}
+        fill={STROKE}
+        fillOpacity={0.9}
         stroke="#fff"
-        strokeWidth={1.5}
+        strokeWidth={2}
       />
       <text
         x={x}
@@ -260,28 +391,6 @@ function Dot({ d, p }: { d: AccessoryDot; p: (mm: number) => number }) {
         {d.n}
       </text>
     </g>
-  );
-}
-
-function Wheels({
-  axleMms,
-  p,
-}: {
-  axleMms: number[];
-  p: (mm: number) => number;
-}) {
-  return (
-    <>
-      {axleMms.map((mm, i) => {
-        const x = p(mm);
-        return (
-          <g key={i}>
-            <circle cx={x} cy={GROUND_Y} r={WHEEL_R} fill={WHEEL} />
-            <circle cx={x} cy={GROUND_Y} r={WHEEL_R * 0.42} fill={WHEEL_HUB} />
-          </g>
-        );
-      })}
-    </>
   );
 }
 
@@ -298,11 +407,10 @@ export default function RigSchematic({ model, className }: RigSchematicProps) {
 
   const v = model.vehicle;
   const c = model.caravan;
-  const caravanPs = c ? caravanPaths(p, c) : null;
 
   return (
     <figure
-      className={`border-tb-neutral-200 mb-4 rounded-lg border bg-white p-3 ${className ?? ''}`}
+      className={`border-tb-neutral-200 to-tb-neutral-50 mb-4 rounded-xl border bg-gradient-to-b from-white p-3 ${className ?? ''}`}
       aria-label={`Side-profile weight schematic for ${model.title}`}
     >
       <svg
@@ -311,62 +419,43 @@ export default function RigSchematic({ model, className }: RigSchematicProps) {
         role="img"
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* ground line */}
+        {/* ground line + soft shadow */}
         <line
-          x1={8}
-          y1={GROUND_Y}
-          x2={VB_W - 8}
-          y2={GROUND_Y}
-          stroke="#e2e8f0"
-          strokeWidth={2}
+          x1={12}
+          y1={GROUND_Y + WHEEL_R}
+          x2={VB_W - 12}
+          y2={GROUND_Y + WHEEL_R}
+          stroke={GROUND}
+          strokeWidth={2.5}
         />
 
-        {/* caravan (drawn first so the vehicle overlaps the coupling) */}
-        {c && caravanPs && (
+        {c && (
           <g>
-            <path d={caravanPs.drawbar} fill={WHEEL} />
-            <path
-              d={caravanPs.body}
-              fill={BODY_FILL_VAN}
-              stroke={TB_PRIMARY}
-              strokeWidth={2}
-              strokeLinejoin="round"
-            />
-            <Wheels axleMms={c.axleMms} p={p} />
+            <CaravanArt c={c} p={p} />
+            <Wheels xs={c.axleMms.map(p)} />
           </g>
         )}
 
-        {/* vehicle */}
         <g>
-          <path
-            d={vehiclePath(p, v)}
-            fill={v.kind === 'van' ? BODY_FILL_VAN : BODY_FILL}
-            stroke={TB_PRIMARY}
-            strokeWidth={2}
-            strokeLinejoin="round"
-          />
-          <Wheels axleMms={[v.rearAxleMm, v.frontAxleMm]} p={p} />
-          {/* tow hitch nub */}
+          <VehicleArt v={v} p={p} />
+          <Wheels xs={[v.rearAxleMm, v.frontAxleMm].map(p)} />
           {c && (
-            <circle cx={p(v.hitchMm)} cy={GROUND_Y - 14} r={4} fill={WHEEL} />
+            <circle cx={p(v.hitchMm)} cy={GROUND_Y - 14} r={4} fill={TIRE} />
           )}
         </g>
 
-        {/* accessory dots */}
         {model.dots.map((d) => (
           <Dot key={d.id} d={d} p={p} />
         ))}
-
-        {/* axle gauges */}
         {model.axles.map((g) => (
           <Gauge key={g.id} g={g} p={p} />
         ))}
       </svg>
 
       {/* Legend + attribution — the screenshot artefact framing */}
-      <figcaption className="mt-1 flex items-end justify-between gap-3 px-1">
+      <figcaption className="border-tb-neutral-200 mt-2 flex items-end justify-between gap-3 border-t px-1 pt-2">
         <div className="min-w-0">
-          <p className="text-tb-primary truncate text-xs font-semibold">
+          <p className="text-tb-primary truncate text-sm font-semibold">
             {model.title}
           </p>
           {model.dots.length > 0 && (
@@ -383,7 +472,7 @@ export default function RigSchematic({ model, className }: RigSchematicProps) {
             </ul>
           )}
         </div>
-        <span className="shrink-0 text-[10px] font-medium text-gray-300">
+        <span className="text-tb-primary/40 shrink-0 text-[10px] font-semibold tracking-wide">
           TravellingBuddy
         </span>
       </figcaption>

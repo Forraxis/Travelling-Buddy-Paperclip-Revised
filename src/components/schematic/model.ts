@@ -22,8 +22,8 @@ import {
   resolveCaravanPositionMm,
 } from '@/lib/physics/position-map';
 
-export type VehicleBodyKind = 'ute' | 'wagon' | 'van';
-export type CaravanBodyKind = 'caravan' | 'poptop' | 'camper';
+export type VehicleBodyKind = 'ute' | 'wagon' | 'suv' | 'van';
+export type CaravanBodyKind = 'caravan' | 'poptop' | 'camper' | 'offroad';
 
 export interface SchematicVehicleGeometry {
   wheelbaseMm: number;
@@ -119,13 +119,15 @@ function vehicleBodyKind(bodyType?: string | null): VehicleBodyKind {
   const t = (bodyType ?? '').toUpperCase();
   if (t.includes('UTE')) return 'ute';
   if (t.includes('VAN') || t.includes('TROOP')) return 'van';
-  return 'wagon'; // WAGON, SUV, OTHER
+  if (t.includes('SUV')) return 'suv';
+  return 'wagon'; // WAGON, OTHER
 }
 
 function caravanBodyKind(bodyType?: string | null): CaravanBodyKind {
   const t = (bodyType ?? '').toUpperCase();
   if (t.includes('POP')) return 'poptop';
   if (t.includes('CAMPER') || t.includes('HYBRID')) return 'camper';
+  if (t.includes('OFF') || t.includes('ROAD')) return 'offroad';
   return 'caravan';
 }
 
