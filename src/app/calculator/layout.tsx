@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   title: 'Rig Weight & Compliance Calculator | TravellingBuddy',
   description:
     'Check your GVM, GCM, axle loads, and tow ball mass. The most comprehensive rig compliance calculator for Australian road travellers.',
+  // The calculator is the conversion destination, not a ranking target. SEO/
+  // share links deep-link with ?v/c/a/p/fuel state; canonicalise every
+  // parameterised variant to the bare page so Google never indexes the
+  // permutations as duplicate pages. (Content pages keep their own canonicals.)
+  alternates: { canonical: '/calculator/' },
 };
 
 export default function CalculatorLayout({

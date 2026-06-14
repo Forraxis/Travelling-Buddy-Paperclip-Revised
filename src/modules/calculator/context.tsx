@@ -78,9 +78,10 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
     const sp = inboundRef.current!;
     const v = sp.get('v');
     const c = sp.get('c');
+    const a = sp.get('a');
     const p = sp.get('p');
     const fuel = sp.get('fuel');
-    if (!v && !c && p == null && fuel == null) return;
+    if (!v && !c && !a && p == null && fuel == null) return;
     resolvedRef.current = true;
 
     // Journey params resolve synchronously.
@@ -91,11 +92,13 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
     if (!isNaN(fn)) patch.fuelPercent = Math.min(100, Math.max(0, fn));
     if (Object.keys(patch).length) dispatch({ type: 'SET_JOURNEY', patch });
 
-    // Vehicle/caravan slugs need an async lookup to their variant IDs.
-    if (v || c) {
+    // Vehicle/caravan slugs (and accessory slugs, resolved against the vehicle)
+    // need an async lookup to their variant IDs / fitments.
+    if (v || c || a) {
       const q = new URLSearchParams();
       if (v) q.set('v', v);
       if (c) q.set('c', c);
+      if (a) q.set('a', a);
       let active = true;
       fetch(`/api/calculator/resolve?${q.toString()}`)
         .then((r) => (r.ok ? r.json() : null))
@@ -105,6 +108,11 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
             dispatch({ type: 'SET_VEHICLE_VARIANT', id: res.vehicleVariantId });
           if (res.caravanVariantId)
             dispatch({ type: 'SET_CARAVAN_VARIANT', id: res.caravanVariantId });
+          if (Array.isArray(res.accessories)) {
+            for (const acc of res.accessories) {
+              dispatch({ type: 'ADD_ACCESSORY', accessory: acc });
+            }
+          }
         })
         .catch(() => {});
       return () => {
