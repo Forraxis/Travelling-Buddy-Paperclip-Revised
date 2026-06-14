@@ -79,6 +79,8 @@ export interface VehicleInput {
   wheelbaseMm: number;
   frontOverhangMm?: number | null;
   rearOverhangMm?: number | null;
+  /** Track width (centre-to-centre of the tyres), mm. Defaults if omitted. */
+  trackWidthMm?: number | null;
   fuelTankCapacityL: number;
   fuelType: FuelType;
 }
@@ -99,6 +101,8 @@ export interface AccessoryLoad {
   installedWeightKg: number;
   mountingLocation: MountingLocation;
   cogXMm?: number | null;
+  /** Lateral position from the centreline, mm. + = right (kerb side in AU). */
+  cogYMm?: number | null;
   fillPercent: number;
   quantity: number;
   tankCapacityL?: number | null;
@@ -141,6 +145,35 @@ export interface Recommendation {
   actions?: RecommendationAction[];
 }
 
+export type CornerKey = 'fl' | 'fr' | 'rl' | 'rr';
+
+/**
+ * Lateral (left/right) weight distribution. Same beam statics as the
+ * longitudinal split, applied across the track. Each tyre's "share" limit is the
+ * axle limit ÷ 2 (single rear wheel) — backed by the OE tyres being rated to
+ * carry the axle. ADVISORY: it does not change the legal verdict, because the
+ * per-accessory lateral position is often a template default until the user
+ * positions it. Assumes OE-equivalent tyres.
+ */
+export interface VehicleLateral {
+  /** Per-corner load, kg. */
+  corners: Record<CornerKey, number>;
+  /** Per-tyre share limit (axle limit ÷ 2), kg. */
+  frontCornerLimitKg: number;
+  rearCornerLimitKg: number;
+  leftKg: number;
+  rightKg: number;
+  /** right − left; positive = right-heavy. */
+  imbalanceKg: number;
+  /** |imbalance| as a % of total — handling indicator. */
+  imbalancePct: number;
+  /** Balance status from imbalancePct (ok < 5%, warn < 10%, else fail). */
+  status: MetricStatus;
+  /** The worst corner over its tyre share, or null. */
+  overShareCorner: CornerKey | null;
+  trackWidthMm: number;
+}
+
 export interface VehicleResult {
   totalWeightKg: number;
   effectiveKerbKg: number;
@@ -163,6 +196,8 @@ export interface VehicleResult {
   towBallDownloadStatus?: MetricStatus;
   towBallPctOfAtm?: number;
   towBallPctStatus?: MetricStatus;
+  /** Lateral (left/right) distribution — advisory. */
+  lateral?: VehicleLateral;
 }
 
 export interface CaravanAxleResult {

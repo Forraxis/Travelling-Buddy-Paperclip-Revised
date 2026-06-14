@@ -1,5 +1,22 @@
 import type { MountingLocation, VehicleInput, CaravanInput } from './types';
 
+/** Default track width (centre-to-centre of tyres), mm, when unknown. */
+export const DEFAULT_TRACK_WIDTH_MM = 1650;
+
+// Lateral (left/right) default position from the centreline, mm. + = right.
+// Most accessories sit on the centreline; side-specific mounts bias to their
+// side at roughly 38% of the track. A user-supplied cogY overrides this.
+export function resolveVehicleLateralMm(
+  location: MountingLocation,
+  vehicle: VehicleInput,
+): number {
+  const track = vehicle.trackWidthMm ?? DEFAULT_TRACK_WIDTH_MM;
+  const side = track * 0.38;
+  if (location.endsWith('_LEFT')) return -side;
+  if (location.endsWith('_RIGHT')) return side;
+  return 0;
+}
+
 // Vehicle: x=0 at rear axle, positive forward toward front axle.
 // Returns mm from rear axle.
 export function resolveVehiclePositionMm(

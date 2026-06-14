@@ -12,7 +12,10 @@ import type {
 import {
   resolveVehiclePositionMm,
   resolveCaravanPositionMm,
+  resolveVehicleLateralMm,
+  DEFAULT_TRACK_WIDTH_MM,
 } from './position-map';
+import type { VehicleLateral, CornerKey } from './types';
 import { getRegulations, weightStatus, tbmPctStatus } from './regulations';
 import { generateRecommendations } from './recommendations';
 
@@ -199,30 +202,93 @@ function computeVehicleAxles(
   cargoKg: number,
   towBallDownloadKg: number,
   totalVehicleWeightKg: number,
-): { frontAxleKg: number; rearAxleKg: number } {
+): { frontAxleKg: number; rearAxleKg: number; lateral: VehicleLateral } {
   const wb = vehicle.wheelbaseMm;
   const rearOverhang = vehicle.rearOverhangMm ?? 400;
+  const track = vehicle.trackWidthMm ?? DEFAULT_TRACK_WIDTH_MM;
 
-  let momentSum =
-    effectiveKerbKg * (wb * VEHICLE_KERB_COG_FRACTION) +
-    fuelMassKg * (wb * FUEL_COG_FRACTION) +
-    passengerMassKg * (wb * PASSENGER_COG_FRACTION) +
-    cargoKg * (wb * CARGO_COG_FRACTION) +
-    towBallDownloadKg * -rearOverhang;
-
+  // Every load as { weight, x (from rear axle, +forward), y (lateral, +right) }.
+  // Base loads sit on the centreline (y = 0); accessories carry a lateral
+  // position (explicit cogY, else a default for side-specific mounts).
+  const loads: Array<{ w: number; x: number; y: number }> = [
+    { w: effectiveKerbKg, x: wb * VEHICLE_KERB_COG_FRACTION, y: 0 },
+    { w: fuelMassKg, x: wb * FUEL_COG_FRACTION, y: 0 },
+    { w: passengerMassKg, x: wb * PASSENGER_COG_FRACTION, y: 0 },
+    { w: cargoKg, x: wb * CARGO_COG_FRACTION, y: 0 },
+    { w: towBallDownloadKg, x: -rearOverhang, y: 0 },
+  ];
   for (const acc of vehicleAccessories) {
     const weight = resolvedAccessoryWeight(acc);
-    const posX =
+    const x =
       acc.cogXMm != null
         ? acc.cogXMm
         : resolveVehiclePositionMm(acc.mountingLocation, vehicle);
-    momentSum += weight * posX;
+    const y =
+      acc.cogYMm != null
+        ? acc.cogYMm
+        : resolveVehicleLateralMm(acc.mountingLocation, vehicle);
+    loads.push({ w: weight, x, y });
+  }
+
+  // Longitudinal front/rear split (existing) + lateral left/right split (new),
+  // accumulated into 4 corners. Each load's front share = w·x/wheelbase; its
+  // right share = (track/2 + y)/track.
+  let momentSum = 0;
+  let fl = 0;
+  let fr = 0;
+  let rl = 0;
+  let rr = 0;
+  for (const { w, x, y } of loads) {
+    momentSum += w * x;
+    const frontContrib = (w * x) / wb;
+    const rearContrib = w - frontContrib;
+    const rightFrac = Math.min(1, Math.max(0, (track / 2 + y) / track));
+    const leftFrac = 1 - rightFrac;
+    fl += frontContrib * leftFrac;
+    fr += frontContrib * rightFrac;
+    rl += rearContrib * leftFrac;
+    rr += rearContrib * rightFrac;
   }
 
   const frontAxleKg = momentSum / wb;
   const rearAxleKg = totalVehicleWeightKg - frontAxleKg;
 
-  return { frontAxleKg, rearAxleKg };
+  const leftKg = fl + rl;
+  const rightKg = fr + rr;
+  const imbalanceKg = rightKg - leftKg;
+  const imbalancePct =
+    totalVehicleWeightKg > 0
+      ? (Math.abs(imbalanceKg) / totalVehicleWeightKg) * 100
+      : 0;
+  const balanceStatus: MetricStatus =
+    imbalancePct < 5 ? 'ok' : imbalancePct < 10 ? 'warn' : 'fail';
+
+  const frontCornerLimitKg = vehicle.frontAxleLimitKg / 2;
+  const rearCornerLimitKg = vehicle.rearAxleLimitKg / 2;
+  const cornerRatios: Array<{ k: CornerKey; ratio: number }> = [
+    { k: 'fl', ratio: fl / frontCornerLimitKg },
+    { k: 'fr', ratio: fr / frontCornerLimitKg },
+    { k: 'rl', ratio: rl / rearCornerLimitKg },
+    { k: 'rr', ratio: rr / rearCornerLimitKg },
+  ];
+  const overs = cornerRatios
+    .filter((o) => o.ratio > 1)
+    .sort((a, b) => b.ratio - a.ratio);
+
+  const lateral: VehicleLateral = {
+    corners: { fl, fr, rl, rr },
+    frontCornerLimitKg,
+    rearCornerLimitKg,
+    leftKg,
+    rightKg,
+    imbalanceKg,
+    imbalancePct,
+    status: balanceStatus,
+    overShareCorner: overs.length ? overs[0].k : null,
+    trackWidthMm: track,
+  };
+
+  return { frontAxleKg, rearAxleKg, lateral };
 }
 
 function worstStatus(...statuses: MetricStatus[]): OverallStatus {
@@ -311,7 +377,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     vehicleAccessoryMassKg +
     towBallDownloadKg;
 
-  const { frontAxleKg, rearAxleKg } = computeVehicleAxles(
+  const { frontAxleKg, rearAxleKg, lateral } = computeVehicleAxles(
     vehicle,
     vehicleAccessories,
     effectiveKerbKg,
@@ -371,6 +437,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     towBallDownloadStatus,
     towBallPctOfAtm,
     towBallPctStatus,
+    lateral,
   };
 
   // Collect all statuses to determine overall
