@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useReducer,
+  useRef,
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type {
@@ -58,6 +59,60 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
     initialParams ?? searchParams,
     paramsToState,
   );
+
+  // Capture the inbound URL once, synchronously, before the state→URL sync
+  // effect below can rewrite it. SEO page CTAs use the spec §9.5 contract
+  // (/calculator?v={vehicle-slug}&c={caravan-slug}&p={passengers}&fuel={pct}),
+  // which uses readable slugs rather than the internal variant IDs.
+  const inboundRef = useRef<URLSearchParams | null>(null);
+  if (inboundRef.current === null) {
+    inboundRef.current = new URLSearchParams(
+      (initialParams ?? searchParams).toString(),
+    );
+  }
+  const resolvedRef = useRef(false);
+
+  // Resolve the spec §9.5 inbound slug contract into calculator state (once).
+  useEffect(() => {
+    if (resolvedRef.current) return;
+    const sp = inboundRef.current!;
+    const v = sp.get('v');
+    const c = sp.get('c');
+    const p = sp.get('p');
+    const fuel = sp.get('fuel');
+    if (!v && !c && p == null && fuel == null) return;
+    resolvedRef.current = true;
+
+    // Journey params resolve synchronously.
+    const patch: Partial<JourneyAssumptions> = {};
+    const pn = p != null ? parseInt(p, 10) : NaN;
+    if (!isNaN(pn)) patch.passengers = Math.min(9, Math.max(1, pn));
+    const fn = fuel != null ? parseInt(fuel, 10) : NaN;
+    if (!isNaN(fn)) patch.fuelPercent = Math.min(100, Math.max(0, fn));
+    if (Object.keys(patch).length) dispatch({ type: 'SET_JOURNEY', patch });
+
+    // Vehicle/caravan slugs need an async lookup to their variant IDs.
+    if (v || c) {
+      const q = new URLSearchParams();
+      if (v) q.set('v', v);
+      if (c) q.set('c', c);
+      let active = true;
+      fetch(`/api/calculator/resolve?${q.toString()}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((res) => {
+          if (!active || !res) return;
+          if (res.vehicleVariantId)
+            dispatch({ type: 'SET_VEHICLE_VARIANT', id: res.vehicleVariantId });
+          if (res.caravanVariantId)
+            dispatch({ type: 'SET_CARAVAN_VARIANT', id: res.caravanVariantId });
+        })
+        .catch(() => {});
+      return () => {
+        active = false;
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const params = stateToParams(state);
