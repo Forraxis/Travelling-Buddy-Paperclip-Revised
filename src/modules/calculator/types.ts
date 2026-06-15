@@ -47,6 +47,12 @@ export type CalculatorAction =
       cogXMm: number;
       cogYMm: number;
     }
+  | {
+      type: 'SET_CARAVAN_ACCESSORY_POSITION';
+      accessoryId: string;
+      cogXMm: number;
+      cogYMm: number;
+    }
   | { type: 'ADD_CARAVAN_ACCESSORY'; accessory: AccessorySelection }
   | { type: 'REMOVE_CARAVAN_ACCESSORY'; accessoryId: string }
   | { type: 'RESET' };
@@ -121,6 +127,15 @@ export function calculatorReducer(
       return {
         ...state,
         accessories: state.accessories.map((a) =>
+          a.accessoryId === action.accessoryId
+            ? { ...a, cogXMm: action.cogXMm, cogYMm: action.cogYMm }
+            : a,
+        ),
+      };
+    case 'SET_CARAVAN_ACCESSORY_POSITION':
+      return {
+        ...state,
+        caravanAccessories: state.caravanAccessories.map((a) =>
           a.accessoryId === action.accessoryId
             ? { ...a, cogXMm: action.cogXMm, cogYMm: action.cogYMm }
             : a,

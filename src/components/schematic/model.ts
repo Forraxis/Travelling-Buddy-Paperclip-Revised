@@ -360,9 +360,12 @@ export function buildSchematicModel(
     });
 
     for (const acc of args.caravanAccessories) {
-      const xPhysics = resolveCaravanPositionMm(acc.mountingLocation, {
-        couplingToAxleMm: couplingToAxle,
-      } as never);
+      const xPhysics =
+        acc.cogXMm != null
+          ? acc.cogXMm
+          : resolveCaravanPositionMm(acc.mountingLocation, {
+              couplingToAxleMm: couplingToAxle,
+            } as never);
       const fp = accessoryFootprint(acc.mountingLocation, acc.weightKg);
       dots.push({
         id: acc.id,
