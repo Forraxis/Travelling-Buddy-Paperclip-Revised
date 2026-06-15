@@ -9,6 +9,7 @@ import { AccessoryPicker } from '@/components/calculator/accessory-picker';
 import type { AccessoryItem } from '@/components/calculator/accessory-picker';
 import type { CustomLoad } from '@/modules/calculator/types';
 import CoupledRigCanvas from '@/components/schematic/CoupledRigCanvas';
+import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
 
 type Side = 'vehicle' | 'caravan';
 
@@ -181,6 +182,8 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
           hasCaravan={!!state.caravanVariantId}
           onCreate={(load) => addCustomLoad(load)}
         />
+
+        <WeighbridgeCalibrationPanel />
 
         <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
           <div className="flex gap-2">

@@ -44,6 +44,8 @@ export interface CustomLoad {
   cogYMm?: number | null;
   footprintLengthMm?: number | null;
   footprintWidthMm?: number | null;
+  /** The weighbridge-calibration residual mass, rendered/labelled distinctly. */
+  isUnaccounted?: boolean;
 }
 
 /**

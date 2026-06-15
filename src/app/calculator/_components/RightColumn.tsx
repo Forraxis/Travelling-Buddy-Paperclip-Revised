@@ -4,6 +4,7 @@ import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import SchematicViewer from '@/components/schematic/SchematicViewer';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
+import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -487,6 +488,9 @@ function ResultsView({
       <PayloadCard result={result} />
       <TowBallCard result={result} />
       <AxleGrid result={result} />
+      <div className="mb-4">
+        <WeighbridgeCalibrationPanel />
+      </div>
       <RecommendationsPanel result={result} />
       <AdvancedPanel result={result} />
       <ActionBar />

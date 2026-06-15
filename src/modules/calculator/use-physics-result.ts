@@ -7,16 +7,11 @@ import type {
   PhysicsInput,
   MountingLocation,
 } from '@/lib/physics/types';
+import { buildPhysicsInput } from './build-physics-input';
 import {
   buildSchematicModel,
   type SchematicModel,
 } from '@/components/schematic/model';
-import {
-  vehicleProfile,
-  vehicleBodyKindFromType,
-  caravanProfile,
-  caravanBodyKindFromType,
-} from '@/components/schematic/vehicle-profiles';
 import { useCalculatorState } from './context';
 
 type AnyVariant = Record<string, unknown>;
@@ -29,6 +24,13 @@ export interface SnapshotOverrides {
 export interface PhysicsView {
   result: PhysicsResult;
   schematic: SchematicModel | null;
+  /** The live engine input (includes calibration). */
+  input: PhysicsInput;
+  /**
+   * The clean pre-calibration anchor C₀ (no offsets, no unaccounted load) —
+   * what the weighbridge panel re-solves a ticket against.
+   */
+  baselineInput: PhysicsInput;
 }
 
 function rigTitle(
@@ -102,137 +104,12 @@ export function usePhysicsView(
   return useMemo(() => {
     if (!effectiveVehicle) return null;
 
-    const freshWaterCapL = Number(effectiveCaravan?.freshWaterCapacityL ?? 0);
-    const greyWaterCapL = Number(effectiveCaravan?.greyWaterCapacityL ?? 0);
-    const freshWaterPercent =
-      freshWaterCapL > 0
-        ? Math.min(
-            100,
-            (state.caravanAssumptions.freshWaterL / freshWaterCapL) * 100,
-          )
-        : 0;
-    const greyWaterPercent =
-      greyWaterCapL > 0
-        ? Math.min(
-            100,
-            (state.caravanAssumptions.greyWaterL / greyWaterCapL) * 100,
-          )
-        : 0;
-
-    const input: PhysicsInput = {
-      vehicle: {
-        gvmKg: Number(effectiveVehicle.gvmKg),
-        gcmKg: Number(effectiveVehicle.gcmKg),
-        kerbWeightKg: Number(effectiveVehicle.kerbWeightKg),
-        maxTowingCapacityKg: Number(effectiveVehicle.maxTowingCapacityKg),
-        frontAxleLimitKg: Number(effectiveVehicle.frontAxleLimitKg),
-        rearAxleLimitKg: Number(effectiveVehicle.rearAxleLimitKg),
-        maxTowBallDownloadKg: Number(effectiveVehicle.maxTowBallDownloadKg),
-        wheelbaseMm: Number(effectiveVehicle.wheelbaseMm),
-        frontOverhangMm:
-          effectiveVehicle.frontOverhangMm != null
-            ? Number(effectiveVehicle.frontOverhangMm)
-            : null,
-        rearOverhangMm:
-          effectiveVehicle.rearOverhangMm != null
-            ? Number(effectiveVehicle.rearOverhangMm)
-            : null,
-        trackWidthMm: vehicleProfile(
-          vehicleBodyKindFromType(
-            ((effectiveVehicle.model ?? {}) as AnyVariant).bodyType as
-              | string
-              | undefined,
-          ),
-        ).trackWidthMm,
-        fuelTankCapacityL: Number(effectiveVehicle.fuelTankCapacityL),
-        fuelType: effectiveVehicle.fuelType as
-          | 'DIESEL'
-          | 'PETROL'
-          | 'HYBRID'
-          | 'ELECTRIC',
-      },
-      caravan: effectiveCaravan
-        ? {
-            atmKg: Number(effectiveCaravan.atmKg),
-            gtmKg: Number(effectiveCaravan.gtmKg),
-            tareKg: Number(effectiveCaravan.tareKg),
-            tbmKg: Number(effectiveCaravan.tbmKg),
-            axleConfiguration: effectiveCaravan.axleConfiguration as
-              | 'SINGLE_AXLE'
-              | 'DUAL_AXLE_CLOSE_COUPLED'
-              | 'DUAL_AXLE_SPREAD'
-              | 'TRIPLE_AXLE',
-            couplingToAxleMm: Number(effectiveCaravan.couplingToAxleMm),
-            axleSpacingMm:
-              effectiveCaravan.axleSpacingMm != null
-                ? Number(effectiveCaravan.axleSpacingMm)
-                : null,
-            freshWaterCapacityL: freshWaterCapL,
-            greyWaterCapacityL: greyWaterCapL,
-            trackWidthMm: caravanProfile(
-              caravanBodyKindFromType(
-                ((effectiveCaravan.model ?? {}) as AnyVariant).bodyType as
-                  | string
-                  | undefined,
-              ),
-            ).trackWidthMm,
-          }
-        : undefined,
-      vehicleAccessories: [
-        ...state.accessories.map((a) => ({
-          installedWeightKg: a.massKg,
-          mountingLocation: a.mountingLocation as MountingLocation,
-          cogXMm: a.cogXMm,
-          cogYMm: a.cogYMm,
-          fillPercent: 100,
-          quantity: 1,
-        })),
-        ...state.customLoads
-          .filter((l) => l.side === 'vehicle')
-          .map((l) => ({
-            installedWeightKg: l.massKg,
-            mountingLocation: 'CHASSIS_MID' as MountingLocation,
-            cogXMm: l.cogXMm,
-            cogYMm: l.cogYMm,
-            fillPercent: 100,
-            quantity: 1,
-          })),
-      ],
-      caravanAccessories: [
-        ...state.caravanAccessories.map((a) => ({
-          installedWeightKg: a.massKg,
-          mountingLocation: a.mountingLocation as MountingLocation,
-          cogXMm: a.cogXMm,
-          cogYMm: a.cogYMm,
-          fillPercent: 100,
-          quantity: 1,
-        })),
-        ...state.customLoads
-          .filter((l) => l.side === 'caravan')
-          .map((l) => ({
-            installedWeightKg: l.massKg,
-            mountingLocation: 'CARAVAN_CHASSIS_MID' as MountingLocation,
-            cogXMm: l.cogXMm,
-            cogYMm: l.cogYMm,
-            fillPercent: 100,
-            quantity: 1,
-          })),
-      ],
-      passengers: state.journey.passengers,
-      passengerAvgWeightKg: state.journey.passengerWeightKg,
-      cargoKg: state.journey.cargoKg,
-      fuelPercent: state.journey.fuelPercent,
-      freshWaterPercent,
-      greyWaterPercent,
-      calibrationOverrides: {
-        caravanTareKg: state.caravanAssumptions.gearKg,
-        // Weighbridge static mop-up offsets (the positioned unaccounted load is
-        // already among customLoads). See CALIBRATION_SIGNOFF.md §5.
-        vehicleStaticOffsets:
-          state.calibration?.vehicleStaticOffsets ?? undefined,
-      },
-      regulationSetCode: 'AU_ADR',
-    };
+    const input = buildPhysicsInput(
+      state,
+      effectiveVehicle,
+      effectiveCaravan,
+      'live',
+    );
 
     try {
       const result = calculate(input);
@@ -320,7 +197,13 @@ export function usePhysicsView(
         ],
         result,
       });
-      return { result, schematic };
+      const baselineInput = buildPhysicsInput(
+        state,
+        effectiveVehicle,
+        effectiveCaravan,
+        'baseline',
+      );
+      return { result, schematic, input, baselineInput };
     } catch {
       return null;
     }
