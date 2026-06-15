@@ -5,6 +5,7 @@ import type { SchematicModel } from '@/components/schematic/model';
 import SchematicViewer from '@/components/schematic/SchematicViewer';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
 import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
+import { SetupVersionsPanel } from '@/components/versions/SetupVersionsPanel';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -490,6 +491,9 @@ function ResultsView({
       <AxleGrid result={result} />
       <div className="mb-4">
         <WeighbridgeCalibrationPanel />
+      </div>
+      <div className="mb-4">
+        <SetupVersionsPanel />
       </div>
       <RecommendationsPanel result={result} />
       <AdvancedPanel result={result} />
