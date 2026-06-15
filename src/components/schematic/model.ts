@@ -23,6 +23,7 @@ import {
   resolveVehicleLateralMm,
 } from '@/lib/physics/position-map';
 import { vehicleProfile, caravanProfile } from './vehicle-profiles';
+import { accessoryFootprint } from './accessory-footprint';
 
 export type VehicleBodyKind = 'ute' | 'wagon' | 'suv' | 'van';
 export type CaravanBodyKind = 'caravan' | 'poptop' | 'camper' | 'offroad';
@@ -88,6 +89,18 @@ export interface AccessoryDot {
   side: 'vehicle' | 'caravan';
   /** Lateral position from centreline, mm (+ = right) — for the top-down view. */
   yMm: number;
+  /** Longitudinal extent (along X), mm — sized footprint for the top-down view. */
+  footprintLengthMm: number;
+  /** Lateral extent (along Y), mm — sized footprint for the top-down view. */
+  footprintWidthMm: number;
+}
+
+/** A labelled longitudinal mounting band, in global mm, for the top-down view. */
+export interface SchematicZone {
+  id: string;
+  label: string;
+  x0Mm: number;
+  x1Mm: number;
 }
 
 export interface VehicleShape {
@@ -127,6 +140,8 @@ export interface SchematicModel {
   caravan?: CaravanShape;
   axles: AxleGauge[];
   dots: AccessoryDot[];
+  /** Vehicle mounting zones (global mm) for the top-down view. */
+  zones: SchematicZone[];
   /** Lateral distribution for the top-down view (from the physics result). */
   lateral?: PhysicsResult['vehicle']['lateral'];
 }
@@ -219,6 +234,15 @@ export function buildSchematicModel(
     trackWidthMm: vProfile.trackWidthMm,
   } as never;
 
+  // Resolve the profile's fractional mounting zones into global mm.
+  const bodySpan = frontBumperMm - rearBumperMm;
+  const zones: SchematicZone[] = vProfile.zones.map((z) => ({
+    id: z.id,
+    label: z.label,
+    x0Mm: rearBumperMm + z.x0 * bodySpan,
+    x1Mm: rearBumperMm + z.x1 * bodySpan,
+  }));
+
   const axles: AxleGauge[] = [
     {
       id: 'front',
@@ -258,6 +282,7 @@ export function buildSchematicModel(
       acc.cogYMm != null
         ? acc.cogYMm
         : resolveVehicleLateralMm(acc.mountingLocation, lateralResolverVehicle);
+    const fp = accessoryFootprint(acc.mountingLocation, acc.weightKg);
     dots.push({
       id: acc.id,
       n: ++n,
@@ -267,6 +292,8 @@ export function buildSchematicModel(
       label: acc.label || locationLabel(acc.mountingLocation),
       side: 'vehicle',
       yMm,
+      footprintLengthMm: fp.lengthMm,
+      footprintWidthMm: fp.widthMm,
     });
   }
 
@@ -336,6 +363,7 @@ export function buildSchematicModel(
       const xPhysics = resolveCaravanPositionMm(acc.mountingLocation, {
         couplingToAxleMm: couplingToAxle,
       } as never);
+      const fp = accessoryFootprint(acc.mountingLocation, acc.weightKg);
       dots.push({
         id: acc.id,
         n: ++n,
@@ -345,6 +373,8 @@ export function buildSchematicModel(
         label: acc.label || locationLabel(acc.mountingLocation),
         side: 'caravan',
         yMm: acc.cogYMm ?? 0,
+        footprintLengthMm: fp.lengthMm,
+        footprintWidthMm: fp.widthMm,
       });
     }
   }
@@ -370,6 +400,7 @@ export function buildSchematicModel(
     caravan: caravanShape,
     axles,
     dots,
+    zones,
     lateral: result.vehicle.lateral,
   };
 }

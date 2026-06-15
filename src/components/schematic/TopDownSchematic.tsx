@@ -1,19 +1,22 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import type { SchematicModel } from './model';
+import type { SchematicModel, AccessoryDot } from './model';
 import type { MetricStatus } from '@/lib/physics/types';
 
 // Plan (top-down) view: the rig from above, so left/right distribution is
 // visible. Horizontal = longitudinal X (caravan trailing left, vehicle right);
 // vertical = lateral Y (top = left side, bottom = right). When onMovePosition is
-// supplied, vehicle accessory dots are draggable to set precise X/Y.
+// supplied, vehicle accessories are draggable sized footprints that snap to a
+// grid + mounting zones, and an auto-balance nudge offers a one-tap fix.
 
 const VB_W = 1000;
 const PAD = 48;
 const DRAW_W = VB_W - PAD * 2;
 const WHEEL_W = 10;
 const WHEEL_L = 22;
+const GRID_MM = 25; // drag snaps to this grid for clean numbers
+const ZONE_MAGNET_MM = 90; // ...and clicks into a zone centre when this close
 
 const STROKE = '#1b3a5c';
 const ACCENT = '#c2603f';
@@ -31,6 +34,10 @@ function cornerStatus(load: number, limit: number): MetricStatus {
   return r > 1 ? 'fail' : r > 0.9 ? 'warn' : 'ok';
 }
 
+function snap(mm: number): number {
+  return Math.round(mm / GRID_MM) * GRID_MM;
+}
+
 function WheelMark({ x, y }: { x: number; y: number }) {
   return (
     <rect
@@ -44,34 +51,72 @@ function WheelMark({ x, y }: { x: number; y: number }) {
   );
 }
 
-function DotMark({
+// A sized accessory footprint: a rounded box scaled to real dimensions, with an
+// index badge. Draggable (grab cursor + dashed halo) when editable.
+function FootprintMark({
   x,
   y,
+  w,
+  h,
   n,
-  weightKg,
+  side,
   draggable,
   dragging,
   onPointerDown,
 }: {
   x: number;
   y: number;
+  w: number;
+  h: number;
   n: number;
-  weightKg: number;
+  side: 'vehicle' | 'caravan';
   draggable?: boolean;
   dragging?: boolean;
   onPointerDown?: (e: React.PointerEvent) => void;
 }) {
-  const r = Math.max(8, Math.min(16, 6 + Math.sqrt(weightKg) * 0.9));
+  const fill = draggable ? ACCENT : side === 'caravan' ? '#7c8aa0' : STROKE;
+  const bw = Math.max(14, w);
+  const bh = Math.max(12, h);
+  const badge = Math.min(9, Math.max(6, Math.min(bw, bh) / 2.6));
   return (
     <g
       onPointerDown={onPointerDown}
       style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'default' }}
     >
       {draggable && (
-        <circle cx={x} cy={y} r={r + 4} fill="none" stroke={ACCENT} strokeWidth={1.5} strokeDasharray="3 2" opacity={dragging ? 1 : 0.5} />
+        <rect
+          x={x - bw / 2 - 3}
+          y={y - bh / 2 - 3}
+          width={bw + 6}
+          height={bh + 6}
+          rx={6}
+          fill="none"
+          stroke={ACCENT}
+          strokeWidth={1.5}
+          strokeDasharray="3 2"
+          opacity={dragging ? 1 : 0.5}
+        />
       )}
-      <circle cx={x} cy={y} r={r} fill={draggable ? ACCENT : STROKE} fillOpacity={0.9} stroke="#fff" strokeWidth={2} />
-      <text x={x} y={y + 3.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="#fff">
+      <rect
+        x={x - bw / 2}
+        y={y - bh / 2}
+        width={bw}
+        height={bh}
+        rx={4}
+        fill={fill}
+        fillOpacity={0.85}
+        stroke="#fff"
+        strokeWidth={1.5}
+      />
+      <circle cx={x} cy={y} r={badge} fill="#fff" fillOpacity={0.92} />
+      <text
+        x={x}
+        y={y + badge / 2.6}
+        textAnchor="middle"
+        fontSize={badge * 1.3}
+        fontWeight={800}
+        fill={fill}
+      >
         {n}
       </text>
     </g>
@@ -80,7 +125,7 @@ function DotMark({
 
 export interface TopDownSchematicProps {
   model: SchematicModel;
-  /** When provided, vehicle accessory dots become draggable. */
+  /** When provided, vehicle accessory footprints become draggable. */
   onMovePosition?: (id: string, cogXMm: number, cogYMm: number) => void;
 }
 
@@ -97,6 +142,7 @@ export default function TopDownSchematic({
   const span = Math.max(1, model.maxXMm - model.minXMm);
   const scale = DRAW_W / span;
   const px = (mm: number) => PAD + (mm - model.minXMm) * scale;
+  const sx = (mm: number) => mm * scale; // size (length) → px
 
   const maxHalfW =
     Math.max(v.widthMm, c?.widthMm ?? 0, v.trackWidthMm) / 2 + 200;
@@ -112,18 +158,32 @@ export default function TopDownSchematic({
   const cabStart = vRear + (vFront - vRear) * 0.42;
   const cabEnd = vRear + (vFront - vRear) * 0.66;
 
-  // Map a pointer event to clamped vehicle CoG (mm). x = longitudinal (rear axle
-  // origin, same frame as cogX), y = lateral (centreline origin, + = right).
+  // The zone (mounting band) a longitudinal position falls in — used both to
+  // highlight while dragging and to magnet-snap to the band centre.
+  function zoneAt(xMm: number) {
+    return model.zones.find((z) => xMm >= z.x0Mm && xMm < z.x1Mm) ?? null;
+  }
+  const dragDot = dragId ? model.dots.find((d) => d.id === dragId) : null;
+  const activeZoneId = dragDot ? (zoneAt(dragDot.xMm)?.id ?? null) : null;
+
+  // Map a pointer event to a clamped, snapped vehicle CoG (mm). x = longitudinal
+  // (rear-axle origin), y = lateral (centreline origin, + = right).
   function eventToMm(e: React.PointerEvent) {
     const rect = svgRef.current!.getBoundingClientRect();
     const svgX = ((e.clientX - rect.left) / rect.width) * VB_W;
     const svgY = ((e.clientY - rect.top) / rect.height) * VB_H;
-    let cogX = model.minXMm + (svgX - PAD) / scale;
-    let cogY = (svgY - centerY) / scale;
+    let cogX = snap(model.minXMm + (svgX - PAD) / scale);
+    let cogY = snap((svgY - centerY) / scale);
+    // Magnet to the nearest zone centre when very close (snap-to-zone).
+    const z = zoneAt(cogX);
+    if (z) {
+      const mid = Math.round((z.x0Mm + z.x1Mm) / 2);
+      if (Math.abs(cogX - mid) <= ZONE_MAGNET_MM) cogX = mid;
+    }
     cogX = Math.max(v.rearBumperMm, Math.min(v.frontBumperMm, cogX));
     const half = v.widthMm / 2;
     cogY = Math.max(-half, Math.min(half, cogY));
-    return { cogX: Math.round(cogX), cogY: Math.round(cogY) };
+    return { cogX, cogY };
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -143,6 +203,31 @@ export default function TopDownSchematic({
         { k: 'rr', x: px(v.rearAxleMm), y: centerY + vTrack, load: lat.corners.rr, limit: lat.rearCornerLimitKg },
       ] as const)
     : [];
+
+  // Auto-balance nudge: move the heaviest vehicle accessory laterally by the
+  // amount that neutralises the imbalance. imbalanceKg = right − left; shifting a
+  // load of w by Δy changes the imbalance by 2·w·Δy/track, so the fix is
+  // Δy = −imbalanceKg·track / (2·w), clamped to the body.
+  const nudge = (() => {
+    if (!onMovePosition || !lat) return null;
+    if (Math.abs(lat.imbalanceKg) < 8) return null;
+    const movable = model.dots
+      .filter((d) => d.side === 'vehicle' && d.weightKg > 0)
+      .sort((a, b) => b.weightKg - a.weightKg)[0];
+    if (!movable) return null;
+    const track = v.trackWidthMm;
+    const rawDelta = (-lat.imbalanceKg * track) / (2 * movable.weightKg);
+    const half = v.widthMm / 2;
+    const newY = Math.max(-half, Math.min(half, snap(movable.yMm + rawDelta)));
+    const applied = Math.round(newY - movable.yMm);
+    if (Math.abs(applied) < 10) return null;
+    return {
+      dot: movable,
+      newY,
+      applied,
+      dir: applied > 0 ? 'right' : 'left',
+    };
+  })();
 
   return (
     <figure
@@ -184,6 +269,41 @@ export default function TopDownSchematic({
           <WheelMark x={px(v.rearAxleMm)} y={centerY + vTrack} />
         </g>
 
+        {/* Mounting zones — labelled bands over the vehicle body. The band under
+            a dragged footprint highlights so placement reads "in the tub". */}
+        {model.zones.map((z, i) => {
+          const x0 = px(z.x0Mm);
+          const x1 = px(z.x1Mm);
+          const active = z.id === activeZoneId;
+          return (
+            <g key={z.id}>
+              <rect
+                x={x0}
+                y={centerY - vHalf}
+                width={x1 - x0}
+                height={vHalf * 2}
+                fill={active ? ACCENT : i % 2 === 0 ? STROKE : '#ffffff'}
+                fillOpacity={active ? 0.12 : 0.04}
+              />
+              {i > 0 && (
+                <line x1={x0} y1={centerY - vHalf} x2={x0} y2={centerY + vHalf} stroke={STROKE} strokeOpacity={0.15} strokeWidth={1} strokeDasharray="2 3" />
+              )}
+              {x1 - x0 > 34 && (
+                <text
+                  x={(x0 + x1) / 2}
+                  y={centerY - vHalf - 5}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fontWeight={active ? 700 : 500}
+                  fill={active ? ACCENT : '#94a3b8'}
+                >
+                  {z.label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+
         {corners.map((cn) => {
           const st = cornerStatus(cn.load, cn.limit);
           const below = cn.k === 'fr' || cn.k === 'rr';
@@ -197,16 +317,18 @@ export default function TopDownSchematic({
           );
         })}
 
-        {/* Accessory dots last so they sit on top + are grabbable */}
-        {model.dots.map((d) => {
+        {/* Accessory footprints last so they sit on top + are grabbable */}
+        {model.dots.map((d: AccessoryDot) => {
           const editable = !!onMovePosition && d.side === 'vehicle';
           return (
-            <DotMark
+            <FootprintMark
               key={d.id}
               x={px(d.xMm)}
               y={py(d.yMm)}
+              w={sx(d.footprintLengthMm)}
+              h={sx(d.footprintWidthMm)}
               n={d.n}
-              weightKg={d.weightKg}
+              side={d.side}
               draggable={editable}
               dragging={dragId === d.id}
               onPointerDown={
@@ -239,9 +361,25 @@ export default function TopDownSchematic({
             <div className="h-full bg-tb-primary-light/70" style={{ width: `${(lat.leftKg / (lat.leftKg + lat.rightKg)) * 100}%` }} />
             <div className="h-full bg-tb-primary/70" style={{ width: `${(lat.rightKg / (lat.leftKg + lat.rightKg)) * 100}%` }} />
           </div>
+
+          {nudge && (
+            <button
+              type="button"
+              onClick={() =>
+                onMovePosition?.(nudge.dot.id, nudge.dot.xMm, nudge.newY)
+              }
+              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-tb-primary/30 bg-tb-primary/5 px-2.5 py-1 text-[11px] font-semibold text-tb-primary transition-colors hover:bg-tb-primary/10"
+            >
+              ⚖︎ Auto-balance — move “{nudge.dot.label}” {Math.abs(nudge.applied)}
+              {' mm '}
+              {nudge.dir}
+            </button>
+          )}
+
           {onMovePosition && (
             <p className="mt-1.5 text-[11px] text-gray-400">
-              Drag a marked accessory to position it — the balance updates live.
+              Drag a footprint to reposition it — it snaps to the grid and
+              mounting zones, and the balance updates live.
             </p>
           )}
           {lat.overShareCorner && (

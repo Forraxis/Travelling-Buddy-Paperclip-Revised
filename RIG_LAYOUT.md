@@ -37,8 +37,20 @@ canonical. Engagement → data → accuracy → trust → shareable → traffic 
   POST/PATCH and read back in the shared-setup view. Anonymous setups already
   serialise full state, so they persist for free.
 - 3 url-params round-trip tests. Touch: `touch-none select-none` svg.
-- ⬜ Deferred niceties: snap-to-zone, "fix it" nudge, sized accessory footprints
-  (needs accessory width/length field).
+
+### Phase B niceties ✅ DONE
+- **Sized footprints** — accessories render as real-dimension boxes (length along
+  X, width along Y), not dots. Pure `accessoryFootprint(mount, kg)` helper
+  (per-mount base shape, mild mass scaling, capped); 5 unit tests. A future
+  catalogue footprint field would override the defaults.
+- **Snap-to-zone** — `VehicleProfile.zones` (rear→front bands per body kind:
+  ute/wagon/suv/van) resolved to global mm in the model and drawn as labelled
+  bands. Drags snap to a 25 mm grid and magnet to the nearest zone centre when
+  within 90 mm; the band under a dragged footprint highlights.
+- **"Fix it" nudge** — auto-balance button computes the lateral move that
+  neutralises the imbalance (`Δy = −imbalanceKg·track / 2w` on the heaviest
+  accessory, clamped) and applies it in one tap. Verified: 25 kg left-heavy →
+  "move Chassis Front 475 mm right" → Balanced.
 
 ## Phase C — community position pipeline ✅ DONE
 - `FitmentPositionSubmission` model (migration) — a focused pipeline separate
