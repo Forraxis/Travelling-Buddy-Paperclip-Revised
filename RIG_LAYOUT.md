@@ -73,6 +73,93 @@ canonical. Engagement → data → accuracy → trust → shareable → traffic 
   the next user. Verified end-to-end (contribute → promote → canonical 3600→2463
   → aggregate API → seeded on add).
 
+## Phase D — Standalone layout editor (PLANNED, design agreed with Tim)
+
+The dedicated "position your gear" tool. Decisions below are signed off by Tim
+(the user is the domain authority — Rule 11 sign-off is his).
+
+### Shape & routing
+- A **real route**, not a modal: `/layout/[vehicle-slug]` (+ a setup token for a
+  saved rig). Crawlable/indexable per vehicle (SEO: "HiLux load layout planner"),
+  ad/affiliate surface, shareable (saved layout = URL + OG image of the top-down).
+  Modal feel is explicitly NOT required — a separate page is fine.
+- Same data lives on the **setup**; the calculator shows the overall verdict, the
+  layout page is the editor. Edit → save → reflected on the calc page. The
+  positions/loads belong to **both** pages.
+
+### One coupled-rig canvas (replaces "3 top-downs")
+- A single top-down of the **whole coupled rig** — caravan (left) + vehicle
+  (right) joined at the tow-ball. Drag accessories on **either** side.
+- The **tow-ball is the live shared readout** between them. Dragging caravan gear
+  fore/aft of the van axle changes TBM, which flows to the vehicle's rear axle +
+  GCM. (Tim's example: a drawbar toolbox moved back a foot drops TBM — already
+  works in the engine.)
+- A **hitched/unhitched "compare strip"** under the canvas: two rows of axle bars
+  (front / rear / TBM) showing solo vs towing, so the user sees that coupling the
+  van lifts weight off the front axle onto the rear. "Solo" = same calc with TBM
+  zeroed — free to compute.
+- This unifies the three views into one editor + one compare strip.
+
+### Drag axes — full X *and* Y on BOTH sides
+- Vehicle gear: X (longitudinal) + Y (lateral) — done in Phase B.
+- Caravan gear: **also full X/Y**. X moves TBM (engine already honours
+  `acc.cogXMm` → `momentSum += weight*(axleX − posX)`); **Y needs a new caravan
+  lateral module** (van left/right wheel-load split) — currently only the vehicle
+  has `VehicleLateral`. Advisory like the vehicle side; **Tim to sign off the van
+  L/R model** (2-side split summed across axles; works for single/dual/triple).
+
+### Engine/state gaps to close (not new physics except van lateral)
+- Thread `cogXMm/cogYMm` through **caravan**-accessory state: `AccessorySelection`
+  already has the fields, but `use-physics-result` doesn't map them for caravan
+  gear, and `SET_ACCESSORY_POSITION` only touches `state.accessories`. Extend to
+  `caravanAccessories`.
+- Make caravan dots draggable in the (new) coupled canvas.
+- Add `CaravanLateral` to the physics result + `computeCaravanAxles` (NEW — Tim
+  sign-off).
+
+### Accessories: custom vs brand, and placement scope
+- **Fork at creation** (reuses the existing submission flow):
+  - **Personal/custom** load → `isShared:false` today = **DRAFT**, private to the
+    user, no review, place anywhere. Backed by the existing **`SetupCustomLoad`**
+    model (label, weightKg, mountingLocation, cogX, cogY) — extend with optional
+    footprint (length/width) + placement scope.
+  - **Named brand** product → `isShared:true` = **PENDING** → moderation, or
+    **auto-accept by trust tier** (the `NEW/BASIC/TRUSTED/EXPERT` system +
+    `promoteUserTrustTier` exists; the accessories submit route currently always
+    sets PENDING, so auto-accept is the small extension to wire). Becomes a
+    catalogue `Accessory` + `AccessoryFitment`.
+- **Placement scope** — new enum on the accessory/fitment: `VEHICLE | CARAVAN |
+  BOTH`. Controls where an item can be dropped/dragged. Catalogue items are
+  scoped (bull bar = VEHICLE, van toolbox = CARAVAN, fridge = BOTH); personal
+  custom loads default BOTH (anywhere).
+
+### Visuals: icons now, admin images later
+- Start with a tintable **top-down category icon set** (drawer, fridge, water
+  tank, jerry can, spare, rooftop tent, toolbox, bull bar…), auto-scaled to the
+  footprint mm (the mm→px scale already exists).
+- Later: an **admin screen** to assign a real **top-down image per
+  accessory/fitment** (optional `topDownImageUrl`, uploaded to R2 — already
+  wired) that overrides the icon. Icon is the fallback.
+
+### Monetization / SEO
+- Highest purchase-intent surface in the app — accessory search results are
+  affiliate links; "complete this build" suggestions; paid placement via the
+  existing **sponsorship** model. Per-vehicle indexable page + shareable layout
+  images = the traffic engine.
+
+## Sway indicator — PARKED until the layout editor lands (design noted)
+Agreed with Tim: build the **real "sway % vs speed" curve**, front-page home, but:
+- **The disclaimer is a gate, not fine print.** First view requires an explicit
+  "I understand this is indicative only" acknowledgement + a persistent caption on
+  the graph. Plain wording: *illustrative model, not a measurement, not
+  engineering advice, do not rely on it for safety decisions.* (Tim: a strong
+  legal disclaimer is a MUST.)
+- **Tim approves the model + constants** before ship. Honest basis: a
+  critical-speed-style curve driven by **tow-ball ratio (TBM % of ATM)** + a
+  **load-spread / yaw-inertia proxy** (heavy gear at the van's extremities → worse
+  sway). The layout editor already produces both inputs, so sway reacts live to
+  dragging — which is why it waits for the editor.
+
 ## Also worth adding (fantastic-makers)
 Shareable layout image (traffic), start-from-template layouts (seeds data),
 weighbridge calibration cross-check (data quality + Phase 2 hook).
@@ -84,3 +171,10 @@ weighbridge calibration cross-check (data quality + Phase 2 hook).
 ## Open data gaps (collect via the pipeline)
 Track width + body width per *variant* (currently estimated per body type);
 accessory footprint dimensions; lateral positions (the whole point of Phase B/C).
+
+## New schema/fields Phase D introduces (for planning)
+- `Accessory`/`AccessoryFitment`: `placementScope` enum (`VEHICLE|CARAVAN|BOTH`),
+  optional `topDownImageUrl`, optional footprint `lengthMm`/`widthMm`.
+- `SetupCustomLoad`: optional footprint + `placementScope` (default BOTH).
+- Physics result: `CaravanLateral` (van L/R) — NEW, Tim sign-off.
+- Auto-accept-by-trust-tier on the accessory submit route (infra exists).
