@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { SchematicModel } from './model';
 import RigSchematic from './RigSchematic';
 import TopDownSchematic from './TopDownSchematic';
+import ContributeLayoutButton from './ContributeLayoutButton';
 import { useCalculatorState } from '@/modules/calculator/context';
 
 /** Side-profile + top-down (plan) views of the rig with a small toggle. */
@@ -32,7 +33,13 @@ export default function SchematicViewer({ model }: { model: SchematicModel }) {
       {view === 'side' ? (
         <RigSchematic model={model} />
       ) : (
-        <TopDownSchematic model={model} onMovePosition={setAccessoryPosition} />
+        <>
+          <TopDownSchematic
+            model={model}
+            onMovePosition={setAccessoryPosition}
+          />
+          <ContributeLayoutButton />
+        </>
       )}
     </div>
   );

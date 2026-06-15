@@ -25,6 +25,8 @@ export async function GET(request: Request) {
         accessoryId: string;
         massKg: number;
         mountingLocation: string;
+        cogXMm?: number | null;
+        cogYMm?: number | null;
       }[];
     } = {};
 
@@ -67,6 +69,8 @@ export async function GET(request: Request) {
             accessoryId: true,
             installedWeightKg: true,
             mountingLocation: true,
+            cogXMm: true,
+            cogYMm: true,
           },
         });
         const accIdBySlug = new Map(accs.map((a) => [a.slug, a.id]));
@@ -80,6 +84,8 @@ export async function GET(request: Request) {
             accessoryId: fit.id,
             massKg: Number(fit.installedWeightKg),
             mountingLocation: fit.mountingLocation,
+            cogXMm: fit.cogXMm,
+            cogYMm: fit.cogYMm,
           });
         }
         if (resolved.length) out.accessories = resolved;

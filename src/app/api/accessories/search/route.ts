@@ -41,6 +41,8 @@ export async function GET(request: Request) {
             id: true,
             installedWeightKg: true,
             mountingLocation: true,
+            cogXMm: true,
+            cogYMm: true,
           },
           take: 5,
         },
@@ -60,6 +62,8 @@ export async function GET(request: Request) {
         categoryName: acc.category.name,
         mountingLocation: f.mountingLocation,
         installedWeightKg: Number(f.installedWeightKg),
+        cogXMm: f.cogXMm,
+        cogYMm: f.cogYMm,
       })),
     );
 

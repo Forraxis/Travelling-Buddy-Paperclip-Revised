@@ -26,20 +26,40 @@ canonical. Engagement → data → accuracy → trust → shareable → traffic 
   `vehicle-profiles.ts` registry (track + body width per body kind); physics uses
   the profile's track. Schematic model carries lateral Y + widths.
 
-## Phase B — interactive drag-to-position ⬜ NEXT
-- Drag accessories on the top-down (and side) to set precise X/Y; live balance
-  update as you drag. Persist to `SetupAccessory.cogXMm/cogYMm` (fields exist).
-- Snap-to-zone using the profile's positionable zones (to add to VehicleProfile).
-- Touch-friendly (campsite use). "Fix it" nudge ("move X 180 mm right").
-- Sized accessory footprints (render gear as real-dimension boxes) — needs an
-  accessory width/length field (add to Accessory + submission).
+## Phase B — interactive drag-to-position ✅ DONE
+- Drag accessories on the top-down to set precise X/Y; **live balance updates as
+  you drag** (verified: verdict flips Balanced → "38 kg left-heavy"). Pointer
+  events invert the px→mm map, clamped to the body. `SET_ACCESSORY_POSITION`
+  reducer + `setAccessoryPosition` context handler → physics + balance recompute.
+- **Persistence, end to end**: URL accessory param now encodes `id~cogX~cogY`
+  (RFC-3986 `~`), so a refresh or shared link keeps positions; new
+  `SetupAccessory.cogXMmOverride/cogYMmOverride` columns (migration) written on
+  POST/PATCH and read back in the shared-setup view. Anonymous setups already
+  serialise full state, so they persist for free.
+- 3 url-params round-trip tests. Touch: `touch-none select-none` svg.
+- ⬜ Deferred niceties: snap-to-zone, "fix it" nudge, sized accessory footprints
+  (needs accessory width/length field).
 
-## Phase C — community position pipeline ⬜ AFTER B
-- "Contribute your layout" → submission → moderation → promote precise positions
-  to canonical `AccessoryFitment.cogXMm/cogYMm`. (Submission + moderation flow
-  already exists; this adds position capture + the promote step.)
-- Aggregate community positions → improve template defaults; "most people mount
-  this here" heat-map (social proof + better defaults).
+## Phase C — community position pipeline ✅ DONE
+- `FitmentPositionSubmission` model (migration) — a focused pipeline separate
+  from the heavy accessory-submission flow. Auth-optional contributions land
+  PENDING.
+- **Contribute**: `ContributeLayoutButton` in the top-down view (shows when ≥1
+  accessory is positioned) → `POST /api/fitments/positions` (validates fitments
+  belong to the variant; rejects bogus IDs 422).
+- **Aggregate**: `GET /api/fitments/positions?vehicleVariantId=` returns the
+  **median** of APPROVED contributions (outlier-robust) + the current canonical,
+  per fitment. Pure `aggregatePositions`/`median` in `src/lib/fitment-positions.ts`
+  (8 unit tests).
+- **Moderate → promote**: `/admin/moderation/positions` queue grouped by
+  fitment+variant; "Promote consensus" writes the median onto
+  `AccessoryFitment.cogXMm/cogYMm` (confidence COMMUNITY, source USER_SUBMITTED),
+  approves the group, audits. Nav entry added.
+- **Consume (loop closed)**: accessory search / brand-items / `?a=` resolve now
+  return `fitment.cogXMm/cogYMm`; adding an accessory seeds the drag start from
+  the canonical (community/OEM) placement — so a promoted consensus shows up for
+  the next user. Verified end-to-end (contribute → promote → canonical 3600→2463
+  → aggregate API → seeded on add).
 
 ## Also worth adding (fantastic-makers)
 Shareable layout image (traffic), start-from-template layouts (seeds data),

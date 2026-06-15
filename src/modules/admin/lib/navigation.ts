@@ -44,6 +44,11 @@ export const adminNavSections: NavSection[] = [
     items: [
       { label: 'Moderation Queue', href: '/admin/moderation', icon: 'pending' },
       {
+        label: 'Position Queue',
+        href: '/admin/moderation/positions',
+        icon: 'pending',
+      },
+      {
         label: 'Approved',
         href: '/admin/submissions/approved',
         icon: 'approved',

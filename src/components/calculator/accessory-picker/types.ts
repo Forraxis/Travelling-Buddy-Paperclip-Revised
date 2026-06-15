@@ -9,6 +9,9 @@ export interface AccessoryItem {
   categoryName: string;
   mountingLocation: string;
   installedWeightKg: number;
+  /** Canonical placement (mm) — community/OEM sourced. Seeds the drag start. */
+  cogXMm?: number | null;
+  cogYMm?: number | null;
 }
 
 export interface AccessoryCategory {

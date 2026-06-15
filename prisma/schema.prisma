@@ -134,6 +134,7 @@ model VehicleVariant {
   setups                Setup[]
   vehicleSubmissions    VehicleSubmission[]
   accessorySubmissions  AccessorySubmission[]
+  positionSubmissions   FitmentPositionSubmission[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -201,6 +202,7 @@ model CaravanVariant {
   setups                Setup[]
   caravanSubmissions    CaravanSubmission[]
   accessorySubmissions  AccessorySubmission[]
+  positionSubmissions   FitmentPositionSubmission[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -328,6 +330,8 @@ model User {
   moderationActions             ModerationAction[]
   regulationSetVersions         RegulationSetVersion[]
   adminConfigUpdates            AdminConfig[]
+  positionSubmissions           FitmentPositionSubmission[] @relation("PositionSubmissions")
+  positionSubmissionDecisions   FitmentPositionSubmission[] @relation("PositionSubmissionDecisions")
 }
 
 model Account {
@@ -478,10 +482,43 @@ model AccessoryFitment {
   setupAccessories        SetupAccessory[]
   setupCaravanAccessories SetupCaravanAccessory[]
   accessorySubmissions    AccessorySubmission[]
+  positionSubmissions     FitmentPositionSubmission[]
 
   @@index([vehicleVariantId, mountingLocation])
   @@index([caravanVariantId, mountingLocation])
   @@index([accessoryId])
+}
+
+// Community position pipeline: a user who has dragged an accessory into place
+// on their rig (the top-down view) can contribute that placement. Submissions
+// are PENDING until a moderator promotes the value onto the canonical
+// AccessoryFitment.cogXMm/cogYMm, after which every future calculator that adds
+// the accessory inherits the community-sourced default. This is the data moat.
+model FitmentPositionSubmission {
+  id                String           @id @default(cuid())
+  submitterId       String?
+  fitmentId         String
+  vehicleVariantId  String?
+  caravanVariantId  String?
+  cogXMm            Int
+  cogYMm            Int
+  status            SubmissionStatus @default(PENDING)
+  source            String?
+  decidedById       String?
+  decidedAt         DateTime?
+  decisionNotes     String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  submitter         User?            @relation("PositionSubmissions", fields: [submitterId], references: [id], onDelete: SetNull)
+  decidedBy         User?            @relation("PositionSubmissionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  fitment           AccessoryFitment @relation(fields: [fitmentId], references: [id], onDelete: Cascade)
+  vehicleVariant    VehicleVariant?  @relation(fields: [vehicleVariantId], references: [id], onDelete: SetNull)
+  caravanVariant    CaravanVariant?  @relation(fields: [caravanVariantId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([fitmentId, status])
+  @@index([vehicleVariantId])
+  @@index([submitterId])
 }
 
 enum RegulationSetCode {

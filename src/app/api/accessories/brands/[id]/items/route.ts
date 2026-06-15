@@ -57,6 +57,8 @@ export async function GET(
       categoryName: f.accessory.category.name,
       mountingLocation: f.mountingLocation,
       installedWeightKg: Number(f.installedWeightKg),
+      cogXMm: f.cogXMm,
+      cogYMm: f.cogYMm,
     }));
 
     const allLocations = [

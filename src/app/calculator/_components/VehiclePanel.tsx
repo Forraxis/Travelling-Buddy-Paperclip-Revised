@@ -222,6 +222,10 @@ export function VehiclePanel() {
         accessoryId: item.fitmentId,
         massKg: item.installedWeightKg,
         mountingLocation: item.mountingLocation,
+        // Seed the drag start from the canonical (community/OEM) placement when
+        // one exists, so promoted consensus positions show up immediately.
+        cogXMm: item.cogXMm,
+        cogYMm: item.cogYMm,
       });
     },
     [addAccessory],
