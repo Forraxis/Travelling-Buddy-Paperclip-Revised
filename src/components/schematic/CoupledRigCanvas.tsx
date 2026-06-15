@@ -41,15 +41,17 @@ function WheelMark({ x, y }: { x: number; y: number }) {
 }
 
 function Footprint({
-  x, y, w, h, n, side, icon, imageUrl, editable, active, dragging, onPointerDown, onClick,
+  x, y, w, h, n, side, icon, imageUrl, editable, active, dragging, isUnaccounted, onPointerDown, onClick,
 }: {
   x: number; y: number; w: number; h: number; n: number; side: Side;
   icon: IconId; imageUrl?: string | null;
-  editable: boolean; active: boolean; dragging: boolean;
+  editable: boolean; active: boolean; dragging: boolean; isUnaccounted?: boolean;
   onPointerDown?: (e: React.PointerEvent) => void;
   onClick?: () => void;
 }) {
-  const fill = side === 'caravan' ? '#5b7da8' : ACCENT;
+  // The weighbridge "unaccounted" residual is tinted violet + dashed so it reads
+  // as distinct from real gear — the user knows it's the mass to drag into place.
+  const fill = isUnaccounted ? '#7c3aed' : side === 'caravan' ? '#5b7da8' : ACCENT;
   const bw = Math.max(18, w);
   const bh = Math.max(16, h);
   const badge = 7.5;
@@ -65,7 +67,8 @@ function Footprint({
           fill="none" stroke={fill} strokeWidth={2} strokeDasharray="4 2" />
       )}
       <rect x={x - bw / 2} y={y - bh / 2} width={bw} height={bh} rx={4}
-        fill="#fff" fillOpacity={0.92} stroke={fill} strokeWidth={1.6} />
+        fill={isUnaccounted ? '#f5f3ff' : '#fff'} fillOpacity={0.92} stroke={fill} strokeWidth={1.6}
+        strokeDasharray={isUnaccounted ? '5 3' : undefined} />
       {imageUrl ? (
         <>
           <clipPath id={clipId}>
@@ -288,6 +291,7 @@ export default function CoupledRigCanvas({ model, result, onMove, onRemove }: Co
             side={d.side}
             icon={d.iconId}
             imageUrl={d.topDownImageUrl}
+            isUnaccounted={d.isUnaccounted}
             editable
             active={selected?.id === d.id}
             dragging={drag?.id === d.id}

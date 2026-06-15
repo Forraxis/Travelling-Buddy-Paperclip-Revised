@@ -170,6 +170,7 @@ export function usePhysicsView(
               label: l.label,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,
+              isUnaccounted: l.isUnaccounted,
             })),
         ],
         caravanAccessories: [
@@ -193,6 +194,7 @@ export function usePhysicsView(
               label: l.label,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,
+              isUnaccounted: l.isUnaccounted,
             })),
         ],
         result,

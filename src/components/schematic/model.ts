@@ -59,6 +59,8 @@ export interface SchematicAccessory {
   footprintWidthMm?: number | null;
   /** Real top-down image URL — overrides the category icon. */
   topDownImageUrl?: string | null;
+  /** Weighbridge "unaccounted" residual — rendered distinctly on the top-down. */
+  isUnaccounted?: boolean;
 }
 
 export interface BuildSchematicArgs {
@@ -103,6 +105,8 @@ export interface AccessoryDot {
   iconId: IconId;
   /** Real top-down image URL — overrides the glyph when set. */
   topDownImageUrl?: string | null;
+  /** Weighbridge "unaccounted" residual — rendered distinctly (tint/dash). */
+  isUnaccounted?: boolean;
 }
 
 /** A labelled longitudinal mounting band, in global mm, for the top-down view. */
@@ -311,6 +315,7 @@ export function buildSchematicModel(
       footprintWidthMm: fp.widthMm,
       iconId: iconForMount(acc.mountingLocation, acc.label),
       topDownImageUrl: acc.topDownImageUrl,
+      isUnaccounted: acc.isUnaccounted,
     });
   }
 
@@ -400,6 +405,7 @@ export function buildSchematicModel(
         footprintWidthMm: fp.widthMm,
         iconId: iconForMount(acc.mountingLocation, acc.label),
         topDownImageUrl: acc.topDownImageUrl,
+        isUnaccounted: acc.isUnaccounted,
       });
     }
   }
