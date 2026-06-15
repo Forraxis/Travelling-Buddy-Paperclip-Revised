@@ -17,8 +17,9 @@ import type {
   AccessorySelection,
   CustomLoad,
 } from './types';
-import { calculatorReducer, INITIAL_STATE } from './types';
+import { calculatorReducer } from './types';
 import { paramsToState, stateToParams } from './url-params';
+import { setupToCalculatorState } from './setup-to-state';
 
 interface CalculatorContextValue {
   state: CalculatorState;
@@ -133,6 +134,28 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         active = false;
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Hydrate a saved DB setup into full state (incl. custom loads + calibration,
+  // which the URL round-trip drops). Runs once when `?setupId=` is present.
+  const setupLoadedRef = useRef(false);
+  useEffect(() => {
+    if (setupLoadedRef.current) return;
+    const setupId = (initialParams ?? searchParams).get('setupId');
+    if (!setupId) return;
+    setupLoadedRef.current = true;
+    let active = true;
+    fetch(`/api/setups/${setupId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((setup) => {
+        if (!active || !setup) return;
+        dispatch({ type: 'LOAD_STATE', state: setupToCalculatorState(setup) });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -106,6 +106,7 @@ export type CalculatorAction =
     }
   | { type: 'SET_CALIBRATION'; calibration: CalibrationState }
   | { type: 'CLEAR_CALIBRATION' }
+  | { type: 'LOAD_STATE'; state: CalculatorState }
   | { type: 'RESET' };
 
 export const DEFAULT_JOURNEY: JourneyAssumptions = {
@@ -242,6 +243,11 @@ export function calculatorReducer(
           : state.customLoads,
       };
     }
+    case 'LOAD_STATE':
+      // Full-state hydration from a saved DB setup (carries customLoads +
+      // calibration, which the URL round-trip drops). Spread over the defaults
+      // so any missing field is well-formed. Reused by P2 version revert.
+      return { ...INITIAL_STATE, ...action.state };
     case 'RESET':
       return INITIAL_STATE;
     default:
