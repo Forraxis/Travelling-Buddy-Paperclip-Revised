@@ -81,10 +81,9 @@ sides, live tow-ball, hitched/unhitched compare strip, mobile nudge, SEO content
 (4) placementScope enum + mounting-location backfill; (5) custom-load creator +
 brand-submission fork (reuses AccessorySubmission); (6) tintable category icon set
 + admin top-down-image override (`/admin/catalogue/top-down-images`). Saves +
-contributes via the Phase B/C pipeline. Design notes below.
+contributes via the Phase B/C pipeline.
 
-
-
+### Design notes (as built)
 The dedicated "position your gear" tool. Decisions below are signed off by Tim
 (the user is the domain authority — Rule 11 sign-off is his).
 
@@ -170,9 +169,78 @@ Agreed with Tim: build the **real "sway % vs speed" curve**, front-page home, bu
   sway). The layout editor already produces both inputs, so sway reacts live to
   dragging — which is why it waits for the editor.
 
+## Phase E — Weighbridge calibration + setup versioning (PLANNED, agreed with Tim)
+
+The trust + accuracy unlock, and a serious data moat. The model is mediocre at
+**absolutes** (exact kerb CoG, tools/dirt aboard) but excellent at **deltas**
+(move a known weight a known distance). So: **weigh once → anchor to reality →
+let the model predict only the changes.** `PHYSICS_NOTES.md` already flags that
+the vehicle side has no published axle weights to calibrate against — this is
+that anchor. Builds on the existing `CalibrationOverrides` hook
+(`caravanTareKg` today) and `SetupCustomLoad`.
+
+### Calibration math (Tim signs off)
+1. Snapshot the config **C₀** (all loads + positions) and the **measured** weights
+   **M₀** at calibration time.
+2. Compute the model prediction **P₀** for C₀. Residual **R = M₀ − P₀** = the
+   unexplained mass (tools, water, model bias).
+3. For any new config **C₁**: calibrated output = **M₀ + (P(C₁) − P(C₀))** —
+   measured baseline plus the *modelled change*. Known weights moving known
+   distances; the engine is accurate there.
+
+### Decisions (agreed with Tim)
+1. **Residual handling — BOTH.** Default to a **positioned "unaccounted load"**:
+   turn R into a draggable load ("we found 118 kg we can't account for — drag it
+   to where it sits, e.g. tools in the tub"), so it's fully modelled and moves
+   correctly. Reuses **`SetupCustomLoad`** (a special "unaccounted" flavour).
+   Fall back to a **static per-axle/corner offset** when the user doesn't know
+   where the mass is. Offer both; default to the positioned load with a
+   best-guess starting spot.
+2. **Input levels — ALL, progressive.** Fidelity matches what the weighbridge
+   ticket shows: **total** → calibrates GVM/total; **per-axle** (steer/drive/
+   trailer) → front/rear (longitudinal); **per-wheel** (corner scales) → both
+   longitudinal + lateral; **tow-ball** (ball scale) → the coupling. We already
+   compute all targets: vehicle 4 corners (`VehicleLateral.corners`), 2 axles,
+   tow-ball (`towBallMassKg`), van per-axle (`CaravanAxleResult`), van L/R
+   (`CaravanLateral`). Entry panel asks "what did your ticket show?" and
+   calibrates against whatever they have. Be honest about what each level unlocks.
+3. **Versioning — full named snapshots with dates + notes.** New `SetupVersion`
+   model: a JSON snapshot of the full calculator state + computed results +
+   optional weighbridge measurement, with a label, note, and createdAt. The
+   "**as weighed**" version is flagged as the calibration baseline. **Revert** =
+   load a snapshot back into state; **compare** = diff two versions side-by-side
+   (great UX + shareable). Builds on existing `Setup` + duplicate + share tokens.
+4. **Contribute calibration data — opt-in, ON by default.** Measured-vs-calculated
+   pairs (anonymised) feed a per-model regression that **improves the base CoG
+   estimates for everyone** ("2018 HiLux real kerb CoG sits ~4% further back").
+   Ties straight into the Phase C community pipeline; the per-model correction
+   lands on the catalogue (or a calibration table the engine reads via
+   `CalibrationOverrides`). The accuracy flywheel + the moat.
+
+### Phasing (each independently shippable)
+- **P1** — weighbridge-entry panel (all input levels) + delta-calibrated output on
+  a single setup; residual as positioned unaccounted-load (+ static-offset
+  fallback). Calibration math + residual attribution = Tim sign-off.
+- **P2** — `SetupVersion` snapshots: save named/dated/noted versions, revert,
+  compare two side-by-side.
+- **P3** — contribute calibration (opt-in default-on) → per-model base-estimate
+  improvement regression; surfaced via `CalibrationOverrides`.
+
+### Trust / legal
+Calibrating to a weighbridge ticket *raises* credibility ("calibrated to your
+figures") while staying a planning tool, not certification — disclaimer stays.
+
+### New schema/fields Phase E introduces (for planning)
+- `WeighbridgeMeasurement` (or fields on `SetupVersion`): granularity
+  (TOTAL/AXLE/CORNER/TOWBALL) + the measured values + date.
+- `SetupVersion`: setupId, label, note, createdAt, `stateSnapshot` (Json),
+  `resultSnapshot` (Json), `isWeighedBaseline` (bool), optional measurement.
+- `SetupCustomLoad`: an "unaccounted" flag/kind (residual load).
+- `CalibrationOverrides`: extend beyond `caravanTareKg` to carry the measured
+  baseline + per-axle/corner residuals (and, P3, per-model corrections).
+
 ## Also worth adding (fantastic-makers)
-Shareable layout image (traffic), start-from-template layouts (seeds data),
-weighbridge calibration cross-check (data quality + Phase 2 hook).
+Shareable layout image (traffic), start-from-template layouts (seeds data).
 
 ## Rollback tags
 - `rollback/pre-rig-layout` — before the epic.
