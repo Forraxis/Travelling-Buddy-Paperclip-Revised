@@ -85,20 +85,51 @@ export function stateToParams(state: CalculatorState): URLSearchParams {
   }
 
   if (state.accessories.length > 0) {
-    params.set(
-      PARAM.accessories,
-      state.accessories.map((a) => a.accessoryId).join(','),
-    );
+    params.set(PARAM.accessories, state.accessories.map(encodeAccessory).join(','));
   }
 
   if (state.caravanAccessories.length > 0) {
     params.set(
       PARAM.caravanAccessories,
-      state.caravanAccessories.map((a) => a.accessoryId).join(','),
+      state.caravanAccessories.map(encodeAccessory).join(','),
     );
   }
 
   return params;
+}
+
+// Per-accessory token: `id` or, when the user has dragged it, `id~cogX~cogY`
+// (mm, rounded). `~` is RFC-3986 unreserved so it survives URL encoding clean.
+function encodeAccessory(a: {
+  accessoryId: string;
+  cogXMm?: number | null;
+  cogYMm?: number | null;
+}): string {
+  if (a.cogXMm != null && a.cogYMm != null) {
+    return `${a.accessoryId}~${Math.round(a.cogXMm)}~${Math.round(a.cogYMm)}`;
+  }
+  return a.accessoryId;
+}
+
+function decodeAccessory(token: string): {
+  accessoryId: string;
+  massKg: number;
+  mountingLocation: string;
+  cogXMm?: number | null;
+  cogYMm?: number | null;
+} | null {
+  const parts = token.split('~');
+  const accessoryId = parts[0]?.trim();
+  if (!accessoryId) return null;
+  const base = { accessoryId, massKg: 0, mountingLocation: '' };
+  if (parts.length >= 3) {
+    const x = parseInt(parts[1], 10);
+    const y = parseInt(parts[2], 10);
+    if (!isNaN(x) && !isNaN(y)) {
+      return { ...base, cogXMm: x, cogYMm: y };
+    }
+  }
+  return base;
 }
 
 export function paramsToState(params: URLSearchParams): CalculatorState {
@@ -162,30 +193,16 @@ export function paramsToState(params: URLSearchParams): CalculatorState {
     ),
   };
 
+  const notNull = <T>(x: T | null): x is T => x !== null;
+
   const accessoriesRaw = params.get(PARAM.accessories);
   const accessories = accessoriesRaw
-    ? accessoriesRaw
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean)
-        .map((accessoryId) => ({
-          accessoryId,
-          massKg: 0,
-          mountingLocation: '',
-        }))
+    ? accessoriesRaw.split(',').map(decodeAccessory).filter(notNull)
     : [];
 
   const caravanAccessoriesRaw = params.get(PARAM.caravanAccessories);
   const caravanAccessories = caravanAccessoriesRaw
-    ? caravanAccessoriesRaw
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean)
-        .map((accessoryId) => ({
-          accessoryId,
-          massKg: 0,
-          mountingLocation: '',
-        }))
+    ? caravanAccessoriesRaw.split(',').map(decodeAccessory).filter(notNull)
     : [];
 
   return {

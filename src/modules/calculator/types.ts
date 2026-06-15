@@ -19,6 +19,10 @@ export interface AccessorySelection {
   variantId?: string;
   massKg: number;
   mountingLocation: string;
+  /** User-positioned longitudinal CoG (mm from rear axle). Overrides template. */
+  cogXMm?: number | null;
+  /** User-positioned lateral CoG (mm from centreline, + = right). */
+  cogYMm?: number | null;
 }
 
 export interface CalculatorState {
@@ -37,6 +41,12 @@ export type CalculatorAction =
   | { type: 'SET_CARAVAN_ASSUMPTIONS'; patch: Partial<CaravanAssumptions> }
   | { type: 'ADD_ACCESSORY'; accessory: AccessorySelection }
   | { type: 'REMOVE_ACCESSORY'; accessoryId: string }
+  | {
+      type: 'SET_ACCESSORY_POSITION';
+      accessoryId: string;
+      cogXMm: number;
+      cogYMm: number;
+    }
   | { type: 'ADD_CARAVAN_ACCESSORY'; accessory: AccessorySelection }
   | { type: 'REMOVE_CARAVAN_ACCESSORY'; accessoryId: string }
   | { type: 'RESET' };
@@ -105,6 +115,15 @@ export function calculatorReducer(
         ...state,
         accessories: state.accessories.filter(
           (a) => a.accessoryId !== action.accessoryId,
+        ),
+      };
+    case 'SET_ACCESSORY_POSITION':
+      return {
+        ...state,
+        accessories: state.accessories.map((a) =>
+          a.accessoryId === action.accessoryId
+            ? { ...a, cogXMm: action.cogXMm, cogYMm: action.cogYMm }
+            : a,
         ),
       };
     case 'ADD_CARAVAN_ACCESSORY':

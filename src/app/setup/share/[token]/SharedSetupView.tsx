@@ -30,6 +30,8 @@ interface SharedSetup {
       weightKg?: number | string;
     };
     quantityOverride: number;
+    cogXMmOverride?: number | null;
+    cogYMmOverride?: number | null;
   }>;
   caravanAccessories: Array<{
     fitment: {
@@ -38,6 +40,8 @@ interface SharedSetup {
       weightKg?: number | string;
     };
     quantityOverride: number;
+    cogXMmOverride?: number | null;
+    cogYMmOverride?: number | null;
   }>;
 }
 
@@ -46,6 +50,8 @@ function setupToInitialParams(setup: SharedSetup): URLSearchParams {
     accessoryId: a.fitment.accessory.id,
     massKg: Number(a.fitment.weightKg ?? 0),
     mountingLocation: '',
+    cogXMm: a.cogXMmOverride,
+    cogYMm: a.cogYMmOverride,
   }));
 
   const caravanAccessories: AccessorySelection[] = setup.caravanAccessories.map(
@@ -53,6 +59,8 @@ function setupToInitialParams(setup: SharedSetup): URLSearchParams {
       accessoryId: a.fitment.accessory.id,
       massKg: Number(a.fitment.weightKg ?? 0),
       mountingLocation: '',
+      cogXMm: a.cogXMmOverride,
+      cogYMm: a.cogYMmOverride,
     }),
   );
 

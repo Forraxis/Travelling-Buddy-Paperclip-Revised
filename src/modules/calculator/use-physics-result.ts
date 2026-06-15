@@ -172,6 +172,8 @@ export function usePhysicsView(
       vehicleAccessories: state.accessories.map((a) => ({
         installedWeightKg: a.massKg,
         mountingLocation: a.mountingLocation as MountingLocation,
+        cogXMm: a.cogXMm,
+        cogYMm: a.cogYMm,
         fillPercent: 100,
         quantity: 1,
       })),
@@ -235,6 +237,8 @@ export function usePhysicsView(
           id: a.accessoryId,
           weightKg: a.massKg,
           mountingLocation: a.mountingLocation as MountingLocation,
+          cogXMm: a.cogXMm,
+          cogYMm: a.cogYMm,
         })),
         caravanAccessories: state.caravanAccessories.map((a) => ({
           id: a.accessoryId,

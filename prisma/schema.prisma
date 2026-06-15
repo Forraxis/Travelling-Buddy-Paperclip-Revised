@@ -534,6 +534,8 @@ model SetupAccessory {
   parentId          String?
   quantityOverride  Int             @default(1)
   fillPercent       Int             @default(100)
+  cogXMmOverride    Int?
+  cogYMmOverride    Int?
   notes             String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
@@ -554,6 +556,8 @@ model SetupCaravanAccessory {
   parentId          String?
   quantityOverride  Int             @default(1)
   fillPercent       Int             @default(100)
+  cogXMmOverride    Int?
+  cogYMmOverride    Int?
   notes             String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt

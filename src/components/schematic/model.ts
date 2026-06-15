@@ -47,6 +47,8 @@ export interface SchematicAccessory {
   id: string;
   weightKg: number;
   mountingLocation: MountingLocation;
+  /** Longitudinal position from rear axle, mm. Overrides the template. */
+  cogXMm?: number | null;
   /** Lateral position from centreline, mm (+ = right). Defaults per mount. */
   cogYMm?: number | null;
   label?: string | null;
@@ -244,11 +246,14 @@ export function buildSchematicModel(
   const dots: AccessoryDot[] = [];
   let n = 0;
   for (const acc of args.vehicleAccessories) {
-    const xPhysics = resolveVehiclePositionMm(acc.mountingLocation, {
-      wheelbaseMm: wb,
-      frontOverhangMm: frontOverhang,
-      rearOverhangMm: rearOverhang,
-    } as never);
+    const xPhysics =
+      acc.cogXMm != null
+        ? acc.cogXMm
+        : resolveVehiclePositionMm(acc.mountingLocation, {
+            wheelbaseMm: wb,
+            frontOverhangMm: frontOverhang,
+            rearOverhangMm: rearOverhang,
+          } as never);
     const yMm =
       acc.cogYMm != null
         ? acc.cogYMm

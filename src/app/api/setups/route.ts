@@ -25,6 +25,8 @@ const accessoryEntrySchema = z.object({
   parentId: z.string().optional(),
   quantityOverride: z.number().int().min(1).default(1),
   fillPercent: z.number().int().min(0).max(100).default(100),
+  cogXMm: z.number().int().optional(),
+  cogYMm: z.number().int().optional(),
   notes: z.string().max(500).optional(),
 });
 
@@ -126,6 +128,8 @@ export async function POST(request: Request) {
             parentId: a.parentId,
             quantityOverride: a.quantityOverride,
             fillPercent: a.fillPercent,
+            cogXMmOverride: a.cogXMm,
+            cogYMmOverride: a.cogYMm,
             notes: a.notes,
           })),
         },
@@ -135,6 +139,8 @@ export async function POST(request: Request) {
             parentId: a.parentId,
             quantityOverride: a.quantityOverride,
             fillPercent: a.fillPercent,
+            cogXMmOverride: a.cogXMm,
+            cogYMmOverride: a.cogYMm,
             notes: a.notes,
           })),
         },

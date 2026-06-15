@@ -189,6 +189,51 @@ describe('paramsToState', () => {
     expect(stateToParams(INITIAL_STATE).has('caravanAccessories')).toBe(false);
   });
 
+  it('encodes a dragged accessory position as id~x~y', () => {
+    const state: CalculatorState = {
+      ...INITIAL_STATE,
+      accessories: [
+        { accessoryId: 'acc-1', massKg: 5, mountingLocation: 'roof' },
+        {
+          accessoryId: 'acc-2',
+          massKg: 10,
+          mountingLocation: 'tow-bar',
+          cogXMm: -1234,
+          cogYMm: 250,
+        },
+      ],
+    };
+    expect(stateToParams(state).get('accessories')).toBe(
+      'acc-1,acc-2~-1234~250',
+    );
+  });
+
+  it('round-trips a dragged position through params', () => {
+    const state: CalculatorState = {
+      ...INITIAL_STATE,
+      accessories: [
+        {
+          accessoryId: 'acc-2',
+          massKg: 0,
+          mountingLocation: '',
+          cogXMm: -1234,
+          cogYMm: 250,
+        },
+      ],
+    };
+    const restored = paramsToState(stateToParams(state));
+    expect(restored.accessories[0].cogXMm).toBe(-1234);
+    expect(restored.accessories[0].cogYMm).toBe(250);
+  });
+
+  it('leaves cogX/Y undefined for un-positioned accessories', () => {
+    const restored = paramsToState(
+      new URLSearchParams('accessories=acc-1,acc-2'),
+    );
+    expect(restored.accessories[0].cogXMm).toBeUndefined();
+    expect(restored.accessories[1].cogYMm).toBeUndefined();
+  });
+
   it('restores caravanAccessory IDs from comma-separated param', () => {
     const params = new URLSearchParams('caravanAccessories=cv-1,cv-2,cv-3');
     const state = paramsToState(params);

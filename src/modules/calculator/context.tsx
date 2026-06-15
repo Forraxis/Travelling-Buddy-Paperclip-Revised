@@ -27,6 +27,11 @@ interface CalculatorContextValue {
   setCaravanAssumptions: (patch: Partial<CaravanAssumptions>) => void;
   addAccessory: (accessory: AccessorySelection) => void;
   removeAccessory: (accessoryId: string) => void;
+  setAccessoryPosition: (
+    accessoryId: string,
+    cogXMm: number,
+    cogYMm: number,
+  ) => void;
   addCaravanAccessory: (accessory: AccessorySelection) => void;
   removeCaravanAccessory: (accessoryId: string) => void;
   reset: () => void;
@@ -162,6 +167,11 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
       dispatch({ type: 'REMOVE_ACCESSORY', accessoryId }),
     [],
   );
+  const setAccessoryPosition = useCallback(
+    (accessoryId: string, cogXMm: number, cogYMm: number) =>
+      dispatch({ type: 'SET_ACCESSORY_POSITION', accessoryId, cogXMm, cogYMm }),
+    [],
+  );
   const addCaravanAccessory = useCallback(
     (accessory: AccessorySelection) =>
       dispatch({ type: 'ADD_CARAVAN_ACCESSORY', accessory }),
@@ -184,6 +194,7 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         setCaravanAssumptions,
         addAccessory,
         removeAccessory,
+        setAccessoryPosition,
         addCaravanAccessory,
         removeCaravanAccessory,
         reset,
