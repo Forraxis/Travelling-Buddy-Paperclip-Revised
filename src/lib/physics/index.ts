@@ -1,4 +1,17 @@
 export { calculate } from './engine';
+export {
+  solveVehicleCalibration,
+  MIN_POSITIONED_MASS_KG,
+} from './calibration';
+export type {
+  CalibrationGranularity,
+  WeighbridgeMeasurement,
+  PredictedVehicle,
+  VehicleGeometry,
+  UnaccountedLoad,
+  CalibrationStaticOffsets as CalibrationStaticOffsetsType,
+  CalibrationResult,
+} from './calibration';
 export type {
   PhysicsInput,
   PhysicsResult,

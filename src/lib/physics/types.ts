@@ -111,9 +111,25 @@ export interface AccessoryLoad {
   tankContentsKgPerL?: number | null;
 }
 
+/**
+ * Static per-metric weighbridge offsets (kg) added to the raw vehicle output
+ * after computation. The "mop-up" half of weighbridge calibration: it carries
+ * what a single positioned unaccounted load can't represent (diagonal twist,
+ * clamp overflow) and the negative-residual bias correction. See
+ * {@link CalibrationStaticOffsets} in `calibration.ts` and CALIBRATION_SIGNOFF.md §5.
+ */
+export interface CalibrationStaticOffsets {
+  gvmKg?: number;
+  frontAxleKg?: number;
+  rearAxleKg?: number;
+  corners?: Partial<Record<CornerKey, number>>;
+}
+
 export interface CalibrationOverrides {
   vehicleKerbKg?: number;
   caravanTareKg?: number;
+  /** Weighbridge static offsets applied to the vehicle metrics (see above). */
+  vehicleStaticOffsets?: CalibrationStaticOffsets;
 }
 
 export interface PhysicsInput {

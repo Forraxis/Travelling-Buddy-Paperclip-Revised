@@ -358,6 +358,58 @@ function computeVehicleAxles(
   return { frontAxleKg, rearAxleKg, lateral };
 }
 
+// Apply weighbridge static offsets (the "mop-up" half of calibration) to the
+// raw vehicle axle/total/corner figures and recompute the dependent lateral
+// aggregates. The positioned "unaccounted load" is added upstream as a normal
+// load; this only carries the part a point load can't represent. The offsets
+// are internally consistent (corners sum to axles sum to GVM), so total stays
+// equal to front+rear. See CALIBRATION_SIGNOFF.md §5.
+function applyVehicleStaticOffsets(
+  base: { frontAxleKg: number; rearAxleKg: number; totalKg: number; lateral: VehicleLateral },
+  offsets: NonNullable<PhysicsInput['calibrationOverrides']>['vehicleStaticOffsets'],
+): { frontAxleKg: number; rearAxleKg: number; totalKg: number; lateral: VehicleLateral } {
+  if (!offsets) return base;
+  const frontAxleKg = base.frontAxleKg + (offsets.frontAxleKg ?? 0);
+  const rearAxleKg = base.rearAxleKg + (offsets.rearAxleKg ?? 0);
+  const totalKg = base.totalKg + (offsets.gvmKg ?? 0);
+
+  let lateral = base.lateral;
+  if (offsets.corners) {
+    const c = base.lateral.corners;
+    const corners: Record<CornerKey, number> = {
+      fl: c.fl + (offsets.corners.fl ?? 0),
+      fr: c.fr + (offsets.corners.fr ?? 0),
+      rl: c.rl + (offsets.corners.rl ?? 0),
+      rr: c.rr + (offsets.corners.rr ?? 0),
+    };
+    const leftKg = corners.fl + corners.rl;
+    const rightKg = corners.fr + corners.rr;
+    const imbalanceKg = rightKg - leftKg;
+    const imbalancePct =
+      totalKg > 0 ? (Math.abs(imbalanceKg) / totalKg) * 100 : 0;
+    const status: MetricStatus =
+      imbalancePct < 5 ? 'ok' : imbalancePct < 10 ? 'warn' : 'fail';
+    const ratios: Array<{ k: CornerKey; ratio: number }> = [
+      { k: 'fl', ratio: corners.fl / base.lateral.frontCornerLimitKg },
+      { k: 'fr', ratio: corners.fr / base.lateral.frontCornerLimitKg },
+      { k: 'rl', ratio: corners.rl / base.lateral.rearCornerLimitKg },
+      { k: 'rr', ratio: corners.rr / base.lateral.rearCornerLimitKg },
+    ];
+    const overs = ratios.filter((o) => o.ratio > 1).sort((a, b) => b.ratio - a.ratio);
+    lateral = {
+      ...base.lateral,
+      corners,
+      leftKg,
+      rightKg,
+      imbalanceKg,
+      imbalancePct,
+      status,
+      overShareCorner: overs.length ? overs[0].k : null,
+    };
+  }
+  return { frontAxleKg, rearAxleKg, totalKg, lateral };
+}
+
 function worstStatus(...statuses: MetricStatus[]): OverallStatus {
   if (statuses.includes('fail')) return 'fail';
   if (statuses.includes('warn')) return 'warn';
@@ -437,7 +489,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     (s, a) => s + resolvedAccessoryWeight(a),
     0,
   );
-  const totalVehicleWeightKg =
+  let totalVehicleWeightKg =
     effectiveKerbKg +
     fuelMassKg +
     passengerMassKg +
@@ -445,7 +497,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     vehicleAccessoryMassKg +
     towBallDownloadKg;
 
-  const { frontAxleKg, rearAxleKg, lateral } = computeVehicleAxles(
+  const rawAxles = computeVehicleAxles(
     vehicle,
     vehicleAccessories,
     effectiveKerbKg,
@@ -455,6 +507,22 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     towBallDownloadKg,
     totalVehicleWeightKg,
   );
+
+  // Weighbridge static-offset mop-up (the positioned unaccounted load is already
+  // among vehicleAccessories). Recomputes the lateral aggregates it touches.
+  const adjusted = applyVehicleStaticOffsets(
+    {
+      frontAxleKg: rawAxles.frontAxleKg,
+      rearAxleKg: rawAxles.rearAxleKg,
+      totalKg: totalVehicleWeightKg,
+      lateral: rawAxles.lateral,
+    },
+    calibration.vehicleStaticOffsets,
+  );
+  const frontAxleKg = adjusted.frontAxleKg;
+  const rearAxleKg = adjusted.rearAxleKg;
+  const lateral = adjusted.lateral;
+  totalVehicleWeightKg = adjusted.totalKg;
 
   const gvmStatus = weightStatus(totalVehicleWeightKg, vehicle.gvmKg);
   const frontAxleStatus = weightStatus(frontAxleKg, vehicle.frontAxleLimitKg);
