@@ -149,6 +149,10 @@ export function CaravanPanel() {
         accessoryId: item.fitmentId,
         massKg: item.installedWeightKg,
         mountingLocation: item.mountingLocation,
+        label: item.name,
+        cogXMm: item.cogXMm,
+        cogYMm: item.cogYMm,
+        topDownImageUrl: item.topDownImageUrl,
       });
     },
     [addCaravanAccessory],

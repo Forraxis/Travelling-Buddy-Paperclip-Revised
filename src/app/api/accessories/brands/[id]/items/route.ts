@@ -60,6 +60,7 @@ export async function GET(
       cogXMm: f.cogXMm,
       cogYMm: f.cogYMm,
       placementScope: f.accessory.placementScope,
+      topDownImageUrl: f.accessory.topDownImageUrl,
     }));
 
     const allLocations = [

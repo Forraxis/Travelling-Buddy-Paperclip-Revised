@@ -14,6 +14,8 @@ export interface AccessoryItem {
   cogYMm?: number | null;
   /** Where this item may be mounted: VEHICLE | CARAVAN | BOTH. */
   placementScope?: 'VEHICLE' | 'CARAVAN' | 'BOTH';
+  /** Real top-down image (R2) — overrides the category icon. */
+  topDownImageUrl?: string | null;
 }
 
 export interface AccessoryCategory {

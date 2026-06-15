@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import type { SchematicModel, AccessoryDot } from './model';
 import type { MetricStatus, PhysicsResult } from '@/lib/physics/types';
+import { AccessoryGlyph, type IconId } from './accessory-icons';
 
 // The layout-editor canvas: the whole coupled rig from above (caravan left,
 // vehicle right, joined at the tow-ball). Drag accessories on EITHER side; the
@@ -40,17 +41,19 @@ function WheelMark({ x, y }: { x: number; y: number }) {
 }
 
 function Footprint({
-  x, y, w, h, n, side, editable, active, dragging, onPointerDown, onClick,
+  x, y, w, h, n, side, icon, imageUrl, editable, active, dragging, onPointerDown, onClick,
 }: {
   x: number; y: number; w: number; h: number; n: number; side: Side;
+  icon: IconId; imageUrl?: string | null;
   editable: boolean; active: boolean; dragging: boolean;
   onPointerDown?: (e: React.PointerEvent) => void;
   onClick?: () => void;
 }) {
   const fill = side === 'caravan' ? '#5b7da8' : ACCENT;
-  const bw = Math.max(16, w);
-  const bh = Math.max(14, h);
-  const badge = Math.min(10, Math.max(7, Math.min(bw, bh) / 2.6));
+  const bw = Math.max(18, w);
+  const bh = Math.max(16, h);
+  const badge = 7.5;
+  const clipId = `fp-${side}-${n}-${Math.round(x)}`;
   return (
     <g
       onPointerDown={onPointerDown}
@@ -62,9 +65,20 @@ function Footprint({
           fill="none" stroke={fill} strokeWidth={2} strokeDasharray="4 2" />
       )}
       <rect x={x - bw / 2} y={y - bh / 2} width={bw} height={bh} rx={4}
-        fill={fill} fillOpacity={0.85} stroke="#fff" strokeWidth={1.5} />
-      <circle cx={x} cy={y} r={badge} fill="#fff" fillOpacity={0.92} />
-      <text x={x} y={y + badge / 2.6} textAnchor="middle" fontSize={badge * 1.3} fontWeight={800} fill={fill}>
+        fill="#fff" fillOpacity={0.92} stroke={fill} strokeWidth={1.6} />
+      {imageUrl ? (
+        <>
+          <clipPath id={clipId}>
+            <rect x={x - bw / 2} y={y - bh / 2} width={bw} height={bh} rx={4} />
+          </clipPath>
+          <image href={imageUrl} x={x - bw / 2} y={y - bh / 2} width={bw} height={bh}
+            preserveAspectRatio="xMidYMid slice" clipPath={`url(#${clipId})`} />
+        </>
+      ) : (
+        <AccessoryGlyph icon={icon} cx={x} cy={y} w={bw * 0.66} h={bh * 0.66} color={fill} />
+      )}
+      <circle cx={x - bw / 2 + badge} cy={y - bh / 2 + badge} r={badge} fill={fill} stroke="#fff" strokeWidth={1} />
+      <text x={x - bw / 2 + badge} y={y - bh / 2 + badge + 2.8} textAnchor="middle" fontSize={9} fontWeight={800} fill="#fff">
         {n}
       </text>
     </g>
@@ -272,6 +286,8 @@ export default function CoupledRigCanvas({ model, result, onMove, onRemove }: Co
             h={sx(d.footprintWidthMm)}
             n={d.n}
             side={d.side}
+            icon={d.iconId}
+            imageUrl={d.topDownImageUrl}
             editable
             active={selected?.id === d.id}
             dragging={drag?.id === d.id}

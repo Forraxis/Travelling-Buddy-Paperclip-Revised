@@ -275,6 +275,8 @@ export function usePhysicsView(
             mountingLocation: a.mountingLocation as MountingLocation,
             cogXMm: a.cogXMm,
             cogYMm: a.cogYMm,
+            label: a.label,
+            topDownImageUrl: a.topDownImageUrl,
           })),
           ...state.customLoads
             .filter((l) => l.side === 'vehicle')
@@ -296,6 +298,8 @@ export function usePhysicsView(
             mountingLocation: a.mountingLocation as MountingLocation,
             cogXMm: a.cogXMm,
             cogYMm: a.cogYMm,
+            label: a.label,
+            topDownImageUrl: a.topDownImageUrl,
           })),
           ...state.customLoads
             .filter((l) => l.side === 'caravan')

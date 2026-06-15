@@ -24,6 +24,7 @@ import {
 } from '@/lib/physics/position-map';
 import { vehicleProfile, caravanProfile } from './vehicle-profiles';
 import { accessoryFootprint } from './accessory-footprint';
+import { iconForMount, type IconId } from './accessory-icons';
 
 export type VehicleBodyKind = 'ute' | 'wagon' | 'suv' | 'van';
 export type CaravanBodyKind = 'caravan' | 'poptop' | 'camper' | 'offroad';
@@ -56,6 +57,8 @@ export interface SchematicAccessory {
   /** Explicit footprint (mm) — overrides the per-mount default (custom loads). */
   footprintLengthMm?: number | null;
   footprintWidthMm?: number | null;
+  /** Real top-down image URL — overrides the category icon. */
+  topDownImageUrl?: string | null;
 }
 
 export interface BuildSchematicArgs {
@@ -96,6 +99,10 @@ export interface AccessoryDot {
   footprintLengthMm: number;
   /** Lateral extent (along Y), mm — sized footprint for the top-down view. */
   footprintWidthMm: number;
+  /** Category glyph id for the top-down marker. */
+  iconId: IconId;
+  /** Real top-down image URL — overrides the glyph when set. */
+  topDownImageUrl?: string | null;
 }
 
 /** A labelled longitudinal mounting band, in global mm, for the top-down view. */
@@ -302,6 +309,8 @@ export function buildSchematicModel(
       yMm,
       footprintLengthMm: fp.lengthMm,
       footprintWidthMm: fp.widthMm,
+      iconId: iconForMount(acc.mountingLocation, acc.label),
+      topDownImageUrl: acc.topDownImageUrl,
     });
   }
 
@@ -389,6 +398,8 @@ export function buildSchematicModel(
         yMm: acc.cogYMm ?? 0,
         footprintLengthMm: fp.lengthMm,
         footprintWidthMm: fp.widthMm,
+        iconId: iconForMount(acc.mountingLocation, acc.label),
+        topDownImageUrl: acc.topDownImageUrl,
       });
     }
   }

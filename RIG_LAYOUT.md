@@ -73,7 +73,17 @@ canonical. Engagement → data → accuracy → trust → shareable → traffic 
   the next user. Verified end-to-end (contribute → promote → canonical 3600→2463
   → aggregate API → seeded on add).
 
-## Phase D — Standalone layout editor (PLANNED, design agreed with Tim)
+## Phase D — Standalone layout editor ✅ BUILT (items 1–6)
+
+Implemented: (1) caravan position plumbing → tow-ball cross-over; (2) CaravanLateral
+van L/R physics; (3) `/layout/[vehicle]` route + coupled-rig canvas (drag both
+sides, live tow-ball, hitched/unhitched compare strip, mobile nudge, SEO content);
+(4) placementScope enum + mounting-location backfill; (5) custom-load creator +
+brand-submission fork (reuses AccessorySubmission); (6) tintable category icon set
++ admin top-down-image override (`/admin/catalogue/top-down-images`). Saves +
+contributes via the Phase B/C pipeline. Design notes below.
+
+
 
 The dedicated "position your gear" tool. Decisions below are signed off by Tim
 (the user is the domain authority — Rule 11 sign-off is his).

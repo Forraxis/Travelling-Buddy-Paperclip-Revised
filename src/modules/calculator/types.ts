@@ -19,10 +19,14 @@ export interface AccessorySelection {
   variantId?: string;
   massKg: number;
   mountingLocation: string;
+  /** Display name (for the schematic label + icon matching). */
+  label?: string;
   /** User-positioned longitudinal CoG (mm from rear axle). Overrides template. */
   cogXMm?: number | null;
   /** User-positioned lateral CoG (mm from centreline, + = right). */
   cogYMm?: number | null;
+  /** Real top-down image (R2) — overrides the category icon. */
+  topDownImageUrl?: string | null;
 }
 
 /** A user-made load (not a catalogue accessory) placed in the layout editor. */

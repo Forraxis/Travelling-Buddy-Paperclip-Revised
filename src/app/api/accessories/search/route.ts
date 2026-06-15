@@ -65,6 +65,7 @@ export async function GET(request: Request) {
         cogXMm: f.cogXMm,
         cogYMm: f.cogYMm,
         placementScope: acc.placementScope,
+        topDownImageUrl: acc.topDownImageUrl,
       })),
     );
 
