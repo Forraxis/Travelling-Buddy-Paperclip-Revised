@@ -144,6 +144,8 @@ export interface SchematicModel {
   zones: SchematicZone[];
   /** Lateral distribution for the top-down view (from the physics result). */
   lateral?: PhysicsResult['vehicle']['lateral'];
+  /** Caravan lateral (left/right) distribution — for the coupled-rig editor. */
+  caravanLateral?: NonNullable<PhysicsResult['caravan']>['lateral'];
 }
 
 function vehicleBodyKind(bodyType?: string | null): VehicleBodyKind {
@@ -405,5 +407,6 @@ export function buildSchematicModel(
     dots,
     zones,
     lateral: result.vehicle.lateral,
+    caravanLateral: result.caravan?.lateral,
   };
 }

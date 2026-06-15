@@ -14,6 +14,8 @@ import {
 import {
   vehicleProfile,
   vehicleBodyKindFromType,
+  caravanProfile,
+  caravanBodyKindFromType,
 } from '@/components/schematic/vehicle-profiles';
 import { useCalculatorState } from './context';
 
@@ -167,6 +169,13 @@ export function usePhysicsView(
                 : null,
             freshWaterCapacityL: freshWaterCapL,
             greyWaterCapacityL: greyWaterCapL,
+            trackWidthMm: caravanProfile(
+              caravanBodyKindFromType(
+                ((effectiveCaravan.model ?? {}) as AnyVariant).bodyType as
+                  | string
+                  | undefined,
+              ),
+            ).trackWidthMm,
           }
         : undefined,
       vehicleAccessories: state.accessories.map((a) => ({

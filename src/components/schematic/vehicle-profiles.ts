@@ -62,13 +62,15 @@ export function vehicleProfile(kind: VehicleBodyKind): VehicleProfile {
 
 export interface CaravanProfile {
   bodyWidthMm: number;
+  /** Track width (tyre centres), mm — feeds the van lateral physics. */
+  trackWidthMm: number;
 }
 
 const CARAVAN_PROFILES: Record<CaravanBodyKind, CaravanProfile> = {
-  caravan: { bodyWidthMm: 2300 },
-  offroad: { bodyWidthMm: 2250 },
-  poptop: { bodyWidthMm: 2200 },
-  camper: { bodyWidthMm: 2000 },
+  caravan: { bodyWidthMm: 2300, trackWidthMm: 1720 },
+  offroad: { bodyWidthMm: 2250, trackWidthMm: 1800 },
+  poptop: { bodyWidthMm: 2200, trackWidthMm: 1700 },
+  camper: { bodyWidthMm: 2000, trackWidthMm: 1650 },
 };
 
 export function caravanProfile(kind: CaravanBodyKind): CaravanProfile {
@@ -84,4 +86,15 @@ export function vehicleBodyKindFromType(
   if (t.includes('VAN') || t.includes('TROOP')) return 'van';
   if (t.includes('SUV')) return 'suv';
   return 'wagon';
+}
+
+/** Map a DB caravan body-type enum to the profile caravan kind. */
+export function caravanBodyKindFromType(
+  bodyType?: string | null,
+): CaravanBodyKind {
+  const t = (bodyType ?? '').toUpperCase();
+  if (t.includes('POP')) return 'poptop';
+  if (t.includes('CAMPER') || t.includes('HYBRID')) return 'camper';
+  if (t.includes('OFF') || t.includes('ROAD')) return 'offroad';
+  return 'caravan';
 }

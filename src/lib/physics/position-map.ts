@@ -3,6 +3,22 @@ import type { MountingLocation, VehicleInput, CaravanInput } from './types';
 /** Default track width (centre-to-centre of tyres), mm, when unknown. */
 export const DEFAULT_TRACK_WIDTH_MM = 1650;
 
+/** Default caravan track width (tyre centres), mm, when unknown. */
+export const DEFAULT_CARAVAN_TRACK_WIDTH_MM = 1750;
+
+// Caravan lateral (left/right) default from the centreline, mm. + = right. Most
+// van loads sit central; wall-left/right mounts bias to their side. A
+// user-supplied cogY (set in the layout editor) overrides this.
+export function resolveCaravanLateralMm(
+  location: MountingLocation,
+  trackWidthMm: number,
+): number {
+  const side = trackWidthMm * 0.38;
+  if (location.endsWith('_LEFT')) return -side;
+  if (location.endsWith('_RIGHT')) return side;
+  return 0;
+}
+
 // Lateral (left/right) default position from the centreline, mm. + = right.
 // Most accessories sit on the centreline; side-specific mounts bias to their
 // side at roughly 38% of the track. A user-supplied cogY overrides this.

@@ -641,3 +641,76 @@ describe('Performance: calculate() under 1ms for 20-accessory setup', () => {
     expect(elapsed).toBeLessThan(3);
   });
 });
+
+// --- Caravan lateral (left/right) split ---
+describe('Caravan lateral: van left/right balance', () => {
+  it('is balanced (centreline) with no off-centre gear', () => {
+    const r = calculate(baseInput({ caravan: midSizeVan }));
+    const lat = r.caravan!.lateral!;
+    expect(lat.imbalanceKg).toBeCloseTo(0, 1);
+    expect(lat.status).toBe('ok');
+    // Left + right reconstruct the GTM (axle-borne weight).
+    expect(lat.leftKg + lat.rightKg).toBeCloseTo(r.caravan!.gtmKg, 1);
+  });
+
+  it('a right-side load tips the balance right', () => {
+    const r = calculate(
+      baseInput({
+        caravan: midSizeVan,
+        caravanAccessories: [
+          {
+            installedWeightKg: 120,
+            mountingLocation: 'CARAVAN_CHASSIS_MID',
+            cogYMm: 700, // +y = right
+            fillPercent: 100,
+            quantity: 1,
+          },
+        ],
+      }),
+    );
+    const lat = r.caravan!.lateral!;
+    expect(lat.imbalanceKg).toBeGreaterThan(0);
+    expect(lat.rightKg).toBeGreaterThan(lat.leftKg);
+  });
+
+  it('flags an over-share tyre when grossly one-sided', () => {
+    const r = calculate(
+      baseInput({
+        caravan: midSizeVan,
+        caravanAccessories: [
+          {
+            installedWeightKg: 700,
+            mountingLocation: 'CARAVAN_WALL_RIGHT',
+            cogYMm: 850,
+            fillPercent: 100,
+            quantity: 1,
+          },
+        ],
+      }),
+    );
+    const lat = r.caravan!.lateral!;
+    expect(lat.overShareSide).toBe('right');
+    expect(lat.heavierSidePerTyreKg).toBeGreaterThan(lat.perTyreShareLimitKg);
+  });
+
+  it('mirrors left and right (sign symmetry)', () => {
+    const mk = (y: number) =>
+      calculate(
+        baseInput({
+          caravan: midSizeVan,
+          caravanAccessories: [
+            {
+              installedWeightKg: 150,
+              mountingLocation: 'CARAVAN_CHASSIS_MID',
+              cogYMm: y,
+              fillPercent: 100,
+              quantity: 1,
+            },
+          ],
+        }),
+      ).caravan!.lateral!;
+    const right = mk(600);
+    const left = mk(-600);
+    expect(right.imbalanceKg).toBeCloseTo(-left.imbalanceKg, 1);
+  });
+});

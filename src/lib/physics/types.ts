@@ -95,6 +95,8 @@ export interface CaravanInput {
   axleSpacingMm?: number | null;
   freshWaterCapacityL: number;
   greyWaterCapacityL: number;
+  /** Track width (tyre centres), mm — feeds the lateral (left/right) split. */
+  trackWidthMm?: number | null;
 }
 
 export interface AccessoryLoad {
@@ -174,6 +176,29 @@ export interface VehicleLateral {
   trackWidthMm: number;
 }
 
+/**
+ * Caravan lateral (left/right) distribution — the van version of
+ * {@link VehicleLateral}. Splits the GTM (axle-borne weight; the tow ball is
+ * laterally central) left/right by the load's lateral CoG. Per-tyre share limit
+ * = GTM limit ÷ wheel count. ADVISORY (same caveats as the vehicle side):
+ * off-centre gear shifts it, lateral position is a default until positioned.
+ */
+export interface CaravanLateral {
+  leftKg: number;
+  rightKg: number;
+  /** right − left; positive = right-heavy. */
+  imbalanceKg: number;
+  imbalancePct: number;
+  status: MetricStatus;
+  /** Per-tyre share limit (GTM limit ÷ wheel count), kg. */
+  perTyreShareLimitKg: number;
+  /** Per-wheel load on the heavier side (the one that could exceed share). */
+  heavierSidePerTyreKg: number;
+  overShareSide: 'left' | 'right' | null;
+  trackWidthMm: number;
+  axleCount: number;
+}
+
 export interface VehicleResult {
   totalWeightKg: number;
   effectiveKerbKg: number;
@@ -230,6 +255,8 @@ export interface CaravanResult {
   axles: CaravanAxleResult[];
   payloadRemainingKg: number;
   payloadStatus: MetricStatus;
+  /** Lateral (left/right) distribution — advisory. */
+  lateral?: CaravanLateral;
 }
 
 export interface PhysicsResult {

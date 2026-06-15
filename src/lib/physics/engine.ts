@@ -13,9 +13,11 @@ import {
   resolveVehiclePositionMm,
   resolveCaravanPositionMm,
   resolveVehicleLateralMm,
+  resolveCaravanLateralMm,
   DEFAULT_TRACK_WIDTH_MM,
+  DEFAULT_CARAVAN_TRACK_WIDTH_MM,
 } from './position-map';
-import type { VehicleLateral, CornerKey } from './types';
+import type { VehicleLateral, CaravanLateral, CornerKey } from './types';
 import { getRegulations, weightStatus, tbmPctStatus } from './regulations';
 import { generateRecommendations } from './recommendations';
 
@@ -67,7 +69,8 @@ function computeCaravan(
   towBallMassKg: number;
   gtmKg: number;
   loadCogFromCouplingMm: number;
-  accessoryLoads: Array<{ weight: number; posXMm: number }>;
+  accessoryLoads: Array<{ weight: number; posXMm: number; posYMm: number }>;
+  lateral: CaravanLateral;
 } {
   const effectiveTareKg = caravan.tareKg + caravanTareOffset;
   const freshWaterMassKg =
@@ -75,12 +78,17 @@ function computeCaravan(
   const greyWaterMassKg =
     (greyWaterPercent / 100) * caravan.greyWaterCapacityL * 1.0;
 
+  const track = caravan.trackWidthMm ?? DEFAULT_CARAVAN_TRACK_WIDTH_MM;
   const accessoryLoads = caravanAccessories.map((acc) => ({
     weight: resolvedAccessoryWeight(acc),
     posXMm:
       acc.cogXMm != null
         ? acc.cogXMm
         : resolveCaravanPositionMm(acc.mountingLocation, caravan),
+    posYMm:
+      acc.cogYMm != null
+        ? acc.cogYMm
+        : resolveCaravanLateralMm(acc.mountingLocation, track),
   }));
 
   const accessoryMassKg = accessoryLoads.reduce((s, a) => s + a.weight, 0);
@@ -130,6 +138,52 @@ function computeCaravan(
   const loadCogFromCouplingMm =
     totalWeightKg > 0 ? loadMomentFromCoupling / totalWeightKg : axleX;
 
+  // Lateral (left/right) split. Base loads (tare, water) are central (y = 0);
+  // only off-centre accessories tilt the balance. We split the GTM — the
+  // axle-borne weight — because the tow ball carries TBM and is laterally
+  // central. Per-load lateral fractions give the left/right *ratio*, scaled to
+  // GTM so the wheels carry the right total.
+  let lAcc = 0;
+  let rAcc = 0;
+  const addLat = (w: number, y: number) => {
+    const rf = Math.min(1, Math.max(0, (track / 2 + y) / track));
+    rAcc += w * rf;
+    lAcc += w * (1 - rf);
+  };
+  addLat(effectiveTareKg, 0);
+  addLat(freshWaterMassKg, 0);
+  addLat(greyWaterMassKg, 0);
+  for (const { weight, posYMm } of accessoryLoads) addLat(weight, posYMm);
+
+  const latSum = lAcc + rAcc;
+  const leftKg = latSum > 0 ? gtmKg * (lAcc / latSum) : gtmKg / 2;
+  const rightKg = gtmKg - leftKg;
+  const imbalanceKg = rightKg - leftKg;
+  const imbalancePct = gtmKg > 0 ? (Math.abs(imbalanceKg) / gtmKg) * 100 : 0;
+  const balanceStatus: MetricStatus =
+    imbalancePct < 5 ? 'ok' : imbalancePct < 10 ? 'warn' : 'fail';
+  const axleCount = axleCountOf(caravan.axleConfiguration);
+  const perTyreShareLimitKg = gtmLimitOf(caravan) / (axleCount * 2);
+  const heavierSidePerTyreKg = Math.max(leftKg, rightKg) / axleCount;
+  const overShareSide: 'left' | 'right' | null =
+    heavierSidePerTyreKg > perTyreShareLimitKg
+      ? rightKg >= leftKg
+        ? 'right'
+        : 'left'
+      : null;
+  const lateral: CaravanLateral = {
+    leftKg,
+    rightKg,
+    imbalanceKg,
+    imbalancePct,
+    status: balanceStatus,
+    perTyreShareLimitKg,
+    heavierSidePerTyreKg,
+    overShareSide,
+    trackWidthMm: track,
+    axleCount,
+  };
+
   return {
     totalWeightKg,
     effectiveTareKg,
@@ -140,7 +194,20 @@ function computeCaravan(
     gtmKg,
     loadCogFromCouplingMm,
     accessoryLoads,
+    lateral,
   };
+}
+
+function axleCountOf(config: CaravanInput['axleConfiguration']): number {
+  if (config === 'TRIPLE_AXLE') return 3;
+  if (config.startsWith('DUAL')) return 2;
+  return 1;
+}
+
+// Per-tyre share uses the GTM rating as the axle-group limit (the catalogue has
+// no separate per-axle/tyre rating yet — see PHYSICS_NOTES.md).
+function gtmLimitOf(caravan: CaravanInput): number {
+  return caravan.gtmKg;
 }
 
 // Split the caravan's GTM across its physical axles.
@@ -354,6 +421,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
       axles,
       payloadRemainingKg,
       payloadStatus,
+      lateral: cv.lateral,
     };
   }
 
