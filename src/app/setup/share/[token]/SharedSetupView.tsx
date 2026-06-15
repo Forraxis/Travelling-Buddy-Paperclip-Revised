@@ -83,6 +83,7 @@ function setupToInitialParams(setup: SharedSetup): URLSearchParams {
     },
     accessories,
     caravanAccessories,
+    customLoads: [],
   };
 
   return stateToParams(state);

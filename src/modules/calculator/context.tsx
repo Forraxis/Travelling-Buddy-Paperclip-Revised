@@ -15,6 +15,7 @@ import type {
   JourneyAssumptions,
   CaravanAssumptions,
   AccessorySelection,
+  CustomLoad,
 } from './types';
 import { calculatorReducer, INITIAL_STATE } from './types';
 import { paramsToState, stateToParams } from './url-params';
@@ -39,6 +40,9 @@ interface CalculatorContextValue {
   ) => void;
   addCaravanAccessory: (accessory: AccessorySelection) => void;
   removeCaravanAccessory: (accessoryId: string) => void;
+  addCustomLoad: (load: CustomLoad) => void;
+  removeCustomLoad: (id: string) => void;
+  setCustomLoadPosition: (id: string, cogXMm: number, cogYMm: number) => void;
   reset: () => void;
   dispatch: (action: CalculatorAction) => void;
 }
@@ -197,6 +201,19 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
       dispatch({ type: 'REMOVE_CARAVAN_ACCESSORY', accessoryId }),
     [],
   );
+  const addCustomLoad = useCallback(
+    (load: CustomLoad) => dispatch({ type: 'ADD_CUSTOM_LOAD', load }),
+    [],
+  );
+  const removeCustomLoad = useCallback(
+    (id: string) => dispatch({ type: 'REMOVE_CUSTOM_LOAD', id }),
+    [],
+  );
+  const setCustomLoadPosition = useCallback(
+    (id: string, cogXMm: number, cogYMm: number) =>
+      dispatch({ type: 'SET_CUSTOM_LOAD_POSITION', id, cogXMm, cogYMm }),
+    [],
+  );
   const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
   return (
@@ -213,6 +230,9 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         setCaravanAccessoryPosition,
         addCaravanAccessory,
         removeCaravanAccessory,
+        addCustomLoad,
+        removeCustomLoad,
+        setCustomLoadPosition,
         reset,
         dispatch,
       }}

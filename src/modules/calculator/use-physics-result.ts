@@ -178,22 +178,46 @@ export function usePhysicsView(
             ).trackWidthMm,
           }
         : undefined,
-      vehicleAccessories: state.accessories.map((a) => ({
-        installedWeightKg: a.massKg,
-        mountingLocation: a.mountingLocation as MountingLocation,
-        cogXMm: a.cogXMm,
-        cogYMm: a.cogYMm,
-        fillPercent: 100,
-        quantity: 1,
-      })),
-      caravanAccessories: state.caravanAccessories.map((a) => ({
-        installedWeightKg: a.massKg,
-        mountingLocation: a.mountingLocation as MountingLocation,
-        cogXMm: a.cogXMm,
-        cogYMm: a.cogYMm,
-        fillPercent: 100,
-        quantity: 1,
-      })),
+      vehicleAccessories: [
+        ...state.accessories.map((a) => ({
+          installedWeightKg: a.massKg,
+          mountingLocation: a.mountingLocation as MountingLocation,
+          cogXMm: a.cogXMm,
+          cogYMm: a.cogYMm,
+          fillPercent: 100,
+          quantity: 1,
+        })),
+        ...state.customLoads
+          .filter((l) => l.side === 'vehicle')
+          .map((l) => ({
+            installedWeightKg: l.massKg,
+            mountingLocation: 'CHASSIS_MID' as MountingLocation,
+            cogXMm: l.cogXMm,
+            cogYMm: l.cogYMm,
+            fillPercent: 100,
+            quantity: 1,
+          })),
+      ],
+      caravanAccessories: [
+        ...state.caravanAccessories.map((a) => ({
+          installedWeightKg: a.massKg,
+          mountingLocation: a.mountingLocation as MountingLocation,
+          cogXMm: a.cogXMm,
+          cogYMm: a.cogYMm,
+          fillPercent: 100,
+          quantity: 1,
+        })),
+        ...state.customLoads
+          .filter((l) => l.side === 'caravan')
+          .map((l) => ({
+            installedWeightKg: l.massKg,
+            mountingLocation: 'CARAVAN_CHASSIS_MID' as MountingLocation,
+            cogXMm: l.cogXMm,
+            cogYMm: l.cogYMm,
+            fillPercent: 100,
+            quantity: 1,
+          })),
+      ],
       passengers: state.journey.passengers,
       passengerAvgWeightKg: state.journey.passengerWeightKg,
       cargoKg: state.journey.cargoKg,
@@ -244,20 +268,48 @@ export function usePhysicsView(
                 .bodyType as string | undefined,
             }
           : null,
-        vehicleAccessories: state.accessories.map((a) => ({
-          id: a.accessoryId,
-          weightKg: a.massKg,
-          mountingLocation: a.mountingLocation as MountingLocation,
-          cogXMm: a.cogXMm,
-          cogYMm: a.cogYMm,
-        })),
-        caravanAccessories: state.caravanAccessories.map((a) => ({
-          id: a.accessoryId,
-          weightKg: a.massKg,
-          mountingLocation: a.mountingLocation as MountingLocation,
-          cogXMm: a.cogXMm,
-          cogYMm: a.cogYMm,
-        })),
+        vehicleAccessories: [
+          ...state.accessories.map((a) => ({
+            id: a.accessoryId,
+            weightKg: a.massKg,
+            mountingLocation: a.mountingLocation as MountingLocation,
+            cogXMm: a.cogXMm,
+            cogYMm: a.cogYMm,
+          })),
+          ...state.customLoads
+            .filter((l) => l.side === 'vehicle')
+            .map((l) => ({
+              id: l.id,
+              weightKg: l.massKg,
+              mountingLocation: 'CHASSIS_MID' as MountingLocation,
+              cogXMm: l.cogXMm,
+              cogYMm: l.cogYMm,
+              label: l.label,
+              footprintLengthMm: l.footprintLengthMm,
+              footprintWidthMm: l.footprintWidthMm,
+            })),
+        ],
+        caravanAccessories: [
+          ...state.caravanAccessories.map((a) => ({
+            id: a.accessoryId,
+            weightKg: a.massKg,
+            mountingLocation: a.mountingLocation as MountingLocation,
+            cogXMm: a.cogXMm,
+            cogYMm: a.cogYMm,
+          })),
+          ...state.customLoads
+            .filter((l) => l.side === 'caravan')
+            .map((l) => ({
+              id: l.id,
+              weightKg: l.massKg,
+              mountingLocation: 'CARAVAN_CHASSIS_MID' as MountingLocation,
+              cogXMm: l.cogXMm,
+              cogYMm: l.cogYMm,
+              label: l.label,
+              footprintLengthMm: l.footprintLengthMm,
+              footprintWidthMm: l.footprintWidthMm,
+            })),
+        ],
         result,
       });
       return { result, schematic };

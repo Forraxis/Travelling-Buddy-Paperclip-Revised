@@ -197,6 +197,7 @@ describe('calculatorReducer', () => {
       caravanAccessories: [
         { accessoryId: 'cv-acc-1', massKg: 3, mountingLocation: 'front' },
       ],
+      customLoads: [],
     };
     const next = calculatorReducer(dirty, { type: 'RESET' });
     expect(next).toEqual(INITIAL_STATE);

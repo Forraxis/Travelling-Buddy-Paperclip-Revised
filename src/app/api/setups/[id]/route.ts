@@ -138,6 +138,9 @@ const updateSchema = z.object({
         mountingLocation: z.nativeEnum(MountingLocation),
         cogXMm: z.number().int().optional(),
         cogYMm: z.number().int().optional(),
+        side: z.enum(['VEHICLE', 'CARAVAN', 'BOTH']).optional(),
+        footprintLengthMm: z.number().int().min(0).max(10000).optional(),
+        footprintWidthMm: z.number().int().min(0).max(5000).optional(),
         notes: z.string().max(500).optional(),
       }),
     )
@@ -298,6 +301,9 @@ export async function PATCH(
               mountingLocation: l.mountingLocation,
               cogXMm: l.cogXMm,
               cogYMm: l.cogYMm,
+              side: l.side,
+              footprintLengthMm: l.footprintLengthMm,
+              footprintWidthMm: l.footprintWidthMm,
               notes: l.notes,
             })),
           });

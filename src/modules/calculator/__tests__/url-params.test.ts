@@ -160,6 +160,7 @@ describe('paramsToState', () => {
       caravanAccessories: [
         { accessoryId: 'cv-acc-1', massKg: 3, mountingLocation: 'front' },
       ],
+      customLoads: [],
     };
     const restored = paramsToState(stateToParams(original));
     expect(restored.vehicleVariantId).toBe('vv-abc');

@@ -7,6 +7,7 @@ import { usePhysicsView } from '@/modules/calculator/use-physics-result';
 import { useSetupSave } from '@/components/calculator/hooks/useSetupSave';
 import { AccessoryPicker } from '@/components/calculator/accessory-picker';
 import type { AccessoryItem } from '@/components/calculator/accessory-picker';
+import type { CustomLoad } from '@/modules/calculator/types';
 import CoupledRigCanvas from '@/components/schematic/CoupledRigCanvas';
 
 type Side = 'vehicle' | 'caravan';
@@ -20,6 +21,9 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
     removeCaravanAccessory,
     setAccessoryPosition,
     setCaravanAccessoryPosition,
+    addCustomLoad,
+    removeCustomLoad,
+    setCustomLoadPosition,
   } = useCalculatorState();
   const view = usePhysicsView();
   const { save, saving } = useSetupSave(null, {
@@ -51,17 +55,25 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
     [addCaravanAccessory],
   );
 
+  const isCustom = useCallback(
+    (id: string) => state.customLoads.some((l) => l.id === id),
+    [state.customLoads],
+  );
   const onMove = useCallback(
-    (side: Side, id: string, x: number, y: number) =>
-      side === 'vehicle'
-        ? setAccessoryPosition(id, x, y)
-        : setCaravanAccessoryPosition(id, x, y),
-    [setAccessoryPosition, setCaravanAccessoryPosition],
+    (side: Side, id: string, x: number, y: number) => {
+      if (isCustom(id)) setCustomLoadPosition(id, x, y);
+      else if (side === 'vehicle') setAccessoryPosition(id, x, y);
+      else setCaravanAccessoryPosition(id, x, y);
+    },
+    [isCustom, setCustomLoadPosition, setAccessoryPosition, setCaravanAccessoryPosition],
   );
   const onRemove = useCallback(
-    (side: Side, id: string) =>
-      side === 'vehicle' ? removeAccessory(id) : removeCaravanAccessory(id),
-    [removeAccessory, removeCaravanAccessory],
+    (side: Side, id: string) => {
+      if (isCustom(id)) removeCustomLoad(id);
+      else if (side === 'vehicle') removeAccessory(id);
+      else removeCaravanAccessory(id);
+    },
+    [isCustom, removeCustomLoad, removeAccessory, removeCaravanAccessory],
   );
 
   async function handleSave() {
@@ -161,6 +173,11 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
           </div>
         )}
 
+        <CustomLoadForm
+          hasCaravan={!!state.caravanVariantId}
+          onCreate={(load) => addCustomLoad(load)}
+        />
+
         <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
           <div className="flex gap-2">
             <button type="button" onClick={handleSave} disabled={saving}
@@ -176,6 +193,123 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
           {contribMsg && <p className="mt-2 text-xs text-gray-500">{contribMsg}</p>}
         </div>
       </aside>
+    </div>
+  );
+}
+
+function CustomLoadForm({
+  hasCaravan,
+  onCreate,
+}: {
+  hasCaravan: boolean;
+  onCreate: (load: CustomLoad) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [label, setLabel] = useState('');
+  const [weight, setWeight] = useState('');
+  const [side, setSide] = useState<'vehicle' | 'caravan'>('vehicle');
+  const [len, setLen] = useState('');
+  const [wid, setWid] = useState('');
+
+  function submit() {
+    const massKg = parseFloat(weight);
+    if (!label.trim() || isNaN(massKg) || massKg <= 0) return;
+    onCreate({
+      id: `custom:${crypto.randomUUID()}`,
+      label: label.trim(),
+      massKg,
+      side: hasCaravan ? side : 'vehicle',
+      cogXMm: null,
+      cogYMm: null,
+      footprintLengthMm: len ? Math.round(parseFloat(len)) : null,
+      footprintWidthMm: wid ? Math.round(parseFloat(wid)) : null,
+    });
+    setLabel('');
+    setWeight('');
+    setLen('');
+    setWid('');
+    setOpen(false);
+  }
+
+  if (!open) {
+    return (
+      <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
+        <h2 className="text-sm font-semibold text-tb-ink">Custom load</h2>
+        <p className="mb-2 text-xs text-gray-500">
+          Add anything not in the catalogue — a fridge, water, firewood — just for
+          your rig. Branded product? Use “+ Add accessory” to submit it for review.
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full rounded-lg border border-dashed border-tb-neutral-300 px-3 py-2 text-sm font-medium text-tb-primary hover:bg-tb-neutral-50"
+        >
+          + Create custom item
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-tb-primary/30 bg-white p-4">
+      <h2 className="text-sm font-semibold text-tb-ink">New custom item</h2>
+      <input
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        placeholder="Name (e.g. 40L fridge)"
+        className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm"
+      />
+      <div className="flex gap-2">
+        <input
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          inputMode="decimal"
+          placeholder="Weight (kg)"
+          className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm"
+        />
+        {hasCaravan && (
+          <select
+            value={side}
+            onChange={(e) => setSide(e.target.value as 'vehicle' | 'caravan')}
+            className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+          >
+            <option value="vehicle">Vehicle</option>
+            <option value="caravan">Caravan</option>
+          </select>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={len}
+          onChange={(e) => setLen(e.target.value)}
+          inputMode="numeric"
+          placeholder="Length mm (opt)"
+          className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs"
+        />
+        <input
+          value={wid}
+          onChange={(e) => setWid(e.target.value)}
+          inputMode="numeric"
+          placeholder="Width mm (opt)"
+          className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs"
+        />
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={submit}
+          className="flex-1 rounded-lg bg-tb-primary px-3 py-1.5 text-sm font-semibold text-white hover:bg-tb-primary/90"
+        >
+          Add to rig
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }

@@ -53,6 +53,9 @@ export interface SchematicAccessory {
   /** Lateral position from centreline, mm (+ = right). Defaults per mount. */
   cogYMm?: number | null;
   label?: string | null;
+  /** Explicit footprint (mm) — overrides the per-mount default (custom loads). */
+  footprintLengthMm?: number | null;
+  footprintWidthMm?: number | null;
 }
 
 export interface BuildSchematicArgs {
@@ -284,7 +287,10 @@ export function buildSchematicModel(
       acc.cogYMm != null
         ? acc.cogYMm
         : resolveVehicleLateralMm(acc.mountingLocation, lateralResolverVehicle);
-    const fp = accessoryFootprint(acc.mountingLocation, acc.weightKg);
+    const fp =
+      acc.footprintLengthMm != null && acc.footprintWidthMm != null
+        ? { lengthMm: acc.footprintLengthMm, widthMm: acc.footprintWidthMm }
+        : accessoryFootprint(acc.mountingLocation, acc.weightKg);
     dots.push({
       id: acc.id,
       n: ++n,
@@ -368,7 +374,10 @@ export function buildSchematicModel(
           : resolveCaravanPositionMm(acc.mountingLocation, {
               couplingToAxleMm: couplingToAxle,
             } as never);
-      const fp = accessoryFootprint(acc.mountingLocation, acc.weightKg);
+      const fp =
+        acc.footprintLengthMm != null && acc.footprintWidthMm != null
+          ? { lengthMm: acc.footprintLengthMm, widthMm: acc.footprintWidthMm }
+          : accessoryFootprint(acc.mountingLocation, acc.weightKg);
       dots.push({
         id: acc.id,
         n: ++n,

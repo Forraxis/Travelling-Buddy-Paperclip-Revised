@@ -25,6 +25,18 @@ export interface AccessorySelection {
   cogYMm?: number | null;
 }
 
+/** A user-made load (not a catalogue accessory) placed in the layout editor. */
+export interface CustomLoad {
+  id: string;
+  label: string;
+  massKg: number;
+  side: 'vehicle' | 'caravan';
+  cogXMm?: number | null;
+  cogYMm?: number | null;
+  footprintLengthMm?: number | null;
+  footprintWidthMm?: number | null;
+}
+
 export interface CalculatorState {
   vehicleVariantId: string | null;
   caravanVariantId: string | null;
@@ -32,6 +44,7 @@ export interface CalculatorState {
   caravanAssumptions: CaravanAssumptions;
   accessories: AccessorySelection[];
   caravanAccessories: AccessorySelection[];
+  customLoads: CustomLoad[];
 }
 
 export type CalculatorAction =
@@ -55,6 +68,14 @@ export type CalculatorAction =
     }
   | { type: 'ADD_CARAVAN_ACCESSORY'; accessory: AccessorySelection }
   | { type: 'REMOVE_CARAVAN_ACCESSORY'; accessoryId: string }
+  | { type: 'ADD_CUSTOM_LOAD'; load: CustomLoad }
+  | { type: 'REMOVE_CUSTOM_LOAD'; id: string }
+  | {
+      type: 'SET_CUSTOM_LOAD_POSITION';
+      id: string;
+      cogXMm: number;
+      cogYMm: number;
+    }
   | { type: 'RESET' };
 
 export const DEFAULT_JOURNEY: JourneyAssumptions = {
@@ -80,6 +101,7 @@ export const INITIAL_STATE: CalculatorState = {
   caravanAssumptions: DEFAULT_CARAVAN_ASSUMPTIONS,
   accessories: [],
   caravanAccessories: [],
+  customLoads: [],
 };
 
 export function calculatorReducer(
@@ -158,6 +180,22 @@ export function calculatorReducer(
         ...state,
         caravanAccessories: state.caravanAccessories.filter(
           (a) => a.accessoryId !== action.accessoryId,
+        ),
+      };
+    case 'ADD_CUSTOM_LOAD':
+      return { ...state, customLoads: [...state.customLoads, action.load] };
+    case 'REMOVE_CUSTOM_LOAD':
+      return {
+        ...state,
+        customLoads: state.customLoads.filter((l) => l.id !== action.id),
+      };
+    case 'SET_CUSTOM_LOAD_POSITION':
+      return {
+        ...state,
+        customLoads: state.customLoads.map((l) =>
+          l.id === action.id
+            ? { ...l, cogXMm: action.cogXMm, cogYMm: action.cogYMm }
+            : l,
         ),
       };
     case 'RESET':

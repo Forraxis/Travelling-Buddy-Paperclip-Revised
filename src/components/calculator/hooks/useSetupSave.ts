@@ -49,6 +49,21 @@ export function useSetupSave(
         ...(a.cogXMm != null ? { cogXMm: a.cogXMm } : {}),
         ...(a.cogYMm != null ? { cogYMm: a.cogYMm } : {}),
       })),
+      customLoads: state.customLoads.map((l) => ({
+        label: l.label,
+        weightKg: l.massKg,
+        mountingLocation:
+          l.side === 'caravan' ? 'CARAVAN_CHASSIS_MID' : 'CHASSIS_MID',
+        side: l.side === 'caravan' ? 'CARAVAN' : 'VEHICLE',
+        ...(l.cogXMm != null ? { cogXMm: l.cogXMm } : {}),
+        ...(l.cogYMm != null ? { cogYMm: l.cogYMm } : {}),
+        ...(l.footprintLengthMm != null
+          ? { footprintLengthMm: l.footprintLengthMm }
+          : {}),
+        ...(l.footprintWidthMm != null
+          ? { footprintWidthMm: l.footprintWidthMm }
+          : {}),
+      })),
     }),
     [state],
   );
