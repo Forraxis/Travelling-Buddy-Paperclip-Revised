@@ -567,6 +567,7 @@ model Setup {
   caravanAccessories    SetupCaravanAccessory[]
   customLoads           SetupCustomLoad[]
   weighbridgeMeasurements WeighbridgeMeasurement[]
+  versions              SetupVersion[]
 
   @@index([userId])
   @@index([vehicleVariantId])
@@ -686,6 +687,30 @@ model WeighbridgeMeasurement {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   setup           Setup                  @relation(fields: [setupId], references: [id], onDelete: Cascade)
+
+  @@index([setupId])
+}
+
+/**
+ * A named, dated snapshot of a setup's full calculator state (+ a compact result
+ * summary), for versioning: save "as weighed" / "loaded for the trip" baselines,
+ * revert to any of them, and compare two side-by-side. `stateSnapshot` is the
+ * serialized CalculatorState (which carries weighbridge calibration), so a revert
+ * restores everything via the LOAD_STATE loader. See RIG_LAYOUT.md "Phase E / P2".
+ */
+model SetupVersion {
+  id                String   @id @default(cuid())
+  setupId           String
+  label             String
+  note              String?
+  /** Serialized CalculatorState — the full editable state at snapshot time. */
+  stateSnapshot     Json
+  /** Compact computed metrics (GVM/axles/tow-ball/status) for list + compare. */
+  resultSummary     Json?
+  /** True when this snapshot is the weighbridge calibration baseline ("as weighed"). */
+  isWeighedBaseline Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  setup             Setup    @relation(fields: [setupId], references: [id], onDelete: Cascade)
 
   @@index([setupId])
 }
