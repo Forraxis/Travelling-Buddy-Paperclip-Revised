@@ -64,6 +64,12 @@ enum BrandStatus {
   INACTIVE
 }
 
+enum PlacementScope {
+  VEHICLE
+  CARAVAN
+  BOTH
+}
+
 enum AccessoryStatus {
   ACTIVE
   DISCONTINUED
@@ -260,6 +266,8 @@ model Accessory {
   affiliateUrl String?
   status       AccessoryStatus @default(ACTIVE)
   market       Market          @default(AU)
+  /** Where this item may be mounted in the layout editor. */
+  placementScope PlacementScope @default(BOTH)
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   brand        AccessoryBrand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
@@ -616,6 +624,11 @@ model SetupCustomLoad {
   mountingLocation  MountingLocation
   cogXMm            Int?
   cogYMm            Int?
+  /** Which side this load sits on (a user-made item may be placed anywhere). */
+  placementScope    PlacementScope  @default(BOTH)
+  side              PlacementScope? // resolved side it was actually placed on
+  footprintLengthMm Int?
+  footprintWidthMm  Int?
   notes             String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt

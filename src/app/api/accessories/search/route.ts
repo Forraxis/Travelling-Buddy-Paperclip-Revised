@@ -64,6 +64,7 @@ export async function GET(request: Request) {
         installedWeightKg: Number(f.installedWeightKg),
         cogXMm: f.cogXMm,
         cogYMm: f.cogYMm,
+        placementScope: acc.placementScope,
       })),
     );
 

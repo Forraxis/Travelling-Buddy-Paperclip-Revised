@@ -12,6 +12,8 @@ export interface AccessoryItem {
   /** Canonical placement (mm) — community/OEM sourced. Seeds the drag start. */
   cogXMm?: number | null;
   cogYMm?: number | null;
+  /** Where this item may be mounted: VEHICLE | CARAVAN | BOTH. */
+  placementScope?: 'VEHICLE' | 'CARAVAN' | 'BOTH';
 }
 
 export interface AccessoryCategory {

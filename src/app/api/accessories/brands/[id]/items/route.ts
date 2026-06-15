@@ -59,6 +59,7 @@ export async function GET(
       installedWeightKg: Number(f.installedWeightKg),
       cogXMm: f.cogXMm,
       cogYMm: f.cogYMm,
+      placementScope: f.accessory.placementScope,
     }));
 
     const allLocations = [
