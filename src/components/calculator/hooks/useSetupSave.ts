@@ -63,7 +63,16 @@ export function useSetupSave(
         ...(l.footprintWidthMm != null
           ? { footprintWidthMm: l.footprintWidthMm }
           : {}),
+        ...(l.isUnaccounted ? { isUnaccounted: true } : {}),
       })),
+      // Weighbridge calibration baseline, stored in the setup's
+      // calibrationOverrides JSON under `weighbridge`. The positioned unaccounted
+      // load round-trips via the isUnaccounted flag on customLoads; on reload the
+      // calibration is re-derived into state.calibration (pending the DB→state
+      // loader — see persistence note).
+      calibrationOverrides: state.calibration
+        ? { weighbridge: state.calibration }
+        : {},
     }),
     [state],
   );

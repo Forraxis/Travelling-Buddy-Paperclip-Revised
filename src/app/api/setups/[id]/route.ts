@@ -141,6 +141,7 @@ const updateSchema = z.object({
         side: z.enum(['VEHICLE', 'CARAVAN', 'BOTH']).optional(),
         footprintLengthMm: z.number().int().min(0).max(10000).optional(),
         footprintWidthMm: z.number().int().min(0).max(5000).optional(),
+        isUnaccounted: z.boolean().optional(),
         notes: z.string().max(500).optional(),
       }),
     )
@@ -304,6 +305,7 @@ export async function PATCH(
               side: l.side,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,
+              isUnaccounted: l.isUnaccounted ?? false,
               notes: l.notes,
             })),
           });
