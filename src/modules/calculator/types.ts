@@ -1,3 +1,8 @@
+import type {
+  WeighbridgeMeasurement,
+  CalibrationStaticOffsets,
+} from '@/lib/physics/calibration';
+
 export interface JourneyAssumptions {
   passengers: number;
   passengerWeightKg: number;
@@ -41,6 +46,21 @@ export interface CustomLoad {
   footprintWidthMm?: number | null;
 }
 
+/**
+ * Weighbridge calibration anchored to this setup. The positioned "unaccounted
+ * load" lives in {@link CalculatorState.customLoads} (linked by
+ * `unaccountedLoadId`); this slice carries the measured ticket + the solved
+ * static mop-up offsets the engine applies. Produced by `calibrateToWeighbridge`.
+ * See CALIBRATION_SIGNOFF.md.
+ */
+export interface CalibrationState {
+  measurement: WeighbridgeMeasurement;
+  vehicleStaticOffsets: CalibrationStaticOffsets;
+  /** id of the SetupCustomLoad / CustomLoad that is the unaccounted residual. */
+  unaccountedLoadId: string | null;
+  notes: string[];
+}
+
 export interface CalculatorState {
   vehicleVariantId: string | null;
   caravanVariantId: string | null;
@@ -49,6 +69,8 @@ export interface CalculatorState {
   accessories: AccessorySelection[];
   caravanAccessories: AccessorySelection[];
   customLoads: CustomLoad[];
+  /** Weighbridge calibration baseline, if the user has weighed this rig. */
+  calibration?: CalibrationState | null;
 }
 
 export type CalculatorAction =
@@ -80,6 +102,8 @@ export type CalculatorAction =
       cogXMm: number;
       cogYMm: number;
     }
+  | { type: 'SET_CALIBRATION'; calibration: CalibrationState }
+  | { type: 'CLEAR_CALIBRATION' }
   | { type: 'RESET' };
 
 export const DEFAULT_JOURNEY: JourneyAssumptions = {
@@ -106,6 +130,7 @@ export const INITIAL_STATE: CalculatorState = {
   accessories: [],
   caravanAccessories: [],
   customLoads: [],
+  calibration: null,
 };
 
 export function calculatorReducer(
@@ -202,6 +227,19 @@ export function calculatorReducer(
             : l,
         ),
       };
+    case 'SET_CALIBRATION':
+      return { ...state, calibration: action.calibration };
+    case 'CLEAR_CALIBRATION': {
+      const unaccountedId = state.calibration?.unaccountedLoadId;
+      return {
+        ...state,
+        calibration: null,
+        // also drop the positioned unaccounted load it created
+        customLoads: unaccountedId
+          ? state.customLoads.filter((l) => l.id !== unaccountedId)
+          : state.customLoads,
+      };
+    }
     case 'RESET':
       return INITIAL_STATE;
     default:

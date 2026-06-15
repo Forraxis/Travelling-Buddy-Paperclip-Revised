@@ -185,6 +185,39 @@ describe('calculatorReducer', () => {
     expect(next.caravanVariantId).toBeNull();
   });
 
+  it('SET_CALIBRATION stores the calibration slice', () => {
+    const calibration = {
+      measurement: { granularity: 'AXLE' as const, frontAxleKg: 1210, rearAxleKg: 1690 },
+      vehicleStaticOffsets: { frontAxleKg: 0, rearAxleKg: 0 },
+      unaccountedLoadId: 'load-1',
+      notes: ['axle ticket reproduced'],
+    };
+    const next = calculatorReducer(INITIAL_STATE, {
+      type: 'SET_CALIBRATION',
+      calibration,
+    });
+    expect(next.calibration).toEqual(calibration);
+  });
+
+  it('CLEAR_CALIBRATION removes the slice and its unaccounted load', () => {
+    const withCal: CalculatorState = {
+      ...INITIAL_STATE,
+      customLoads: [
+        { id: 'load-1', label: 'Unaccounted', massKg: 120, side: 'vehicle' },
+        { id: 'keep', label: 'Drawer', massKg: 40, side: 'vehicle' },
+      ],
+      calibration: {
+        measurement: { granularity: 'AXLE', frontAxleKg: 1210, rearAxleKg: 1690 },
+        vehicleStaticOffsets: {},
+        unaccountedLoadId: 'load-1',
+        notes: [],
+      },
+    };
+    const next = calculatorReducer(withCal, { type: 'CLEAR_CALIBRATION' });
+    expect(next.calibration).toBeNull();
+    expect(next.customLoads.map((l) => l.id)).toEqual(['keep']);
+  });
+
   it('RESET returns INITIAL_STATE', () => {
     const dirty: CalculatorState = {
       vehicleVariantId: 'vv-1',

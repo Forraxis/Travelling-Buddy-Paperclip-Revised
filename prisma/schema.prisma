@@ -566,6 +566,7 @@ model Setup {
   accessories           SetupAccessory[]
   caravanAccessories    SetupCaravanAccessory[]
   customLoads           SetupCustomLoad[]
+  weighbridgeMeasurements WeighbridgeMeasurement[]
 
   @@index([userId])
   @@index([vehicleVariantId])
@@ -631,10 +632,60 @@ model SetupCustomLoad {
   side              PlacementScope? // resolved side it was actually placed on
   footprintLengthMm Int?
   footprintWidthMm  Int?
+  /**
+   * True when this load is the weighbridge-calibration "unaccounted mass" — the
+   * residual M₀−P₀ realised as a positioned, draggable load (CALIBRATION_SIGNOFF.md
+   * §4). Rendered/labelled distinctly; the user can drag it to where the mass sits.
+   */
+  isUnaccounted     Boolean         @default(false)
   notes             String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   setup             Setup           @relation(fields: [setupId], references: [id], onDelete: Cascade)
+
+  @@index([setupId])
+}
+
+/** What fidelity the weighbridge ticket reported (CALIBRATION_SIGNOFF.md §4). */
+enum WeighbridgeGranularity {
+  TOTAL
+  AXLE
+  CORNER
+  TOWBALL
+}
+
+/**
+ * A weighbridge calibration baseline for a setup: the measured ticket M₀ at a
+ * given fidelity, plus the solved static mop-up offsets the engine applies. The
+ * positioned "unaccounted load" lives as a SetupCustomLoad (isUnaccounted). The
+ * "as weighed" config snapshot is captured for the delta math and (P2) versioning.
+ * See CALIBRATION_SIGNOFF.md.
+ */
+model WeighbridgeMeasurement {
+  id              String                 @id @default(cuid())
+  setupId         String
+  granularity     WeighbridgeGranularity
+  /** Measured values (kg). Only the fields for the granularity are populated. */
+  totalKg         Decimal?               @db.Decimal(8, 2)
+  frontAxleKg     Decimal?               @db.Decimal(8, 2)
+  rearAxleKg      Decimal?               @db.Decimal(8, 2)
+  cornerFlKg      Decimal?               @db.Decimal(8, 2)
+  cornerFrKg      Decimal?               @db.Decimal(8, 2)
+  cornerRlKg      Decimal?               @db.Decimal(8, 2)
+  cornerRrKg      Decimal?               @db.Decimal(8, 2)
+  towBallKg       Decimal?               @db.Decimal(8, 2)
+  /** User chose "I don't know where the mass is" → fully static, no positioned load. */
+  preferStaticOnly Boolean               @default(false)
+  /** Solved CalibrationStaticOffsets (the engine's vehicleStaticOffsets), JSON. */
+  staticOffsets   Json                   @default("{}")
+  /** Config snapshot the rig was weighed at (C₀) — the delta-math anchor. */
+  weighedSnapshot Json?
+  /** Free-text trace of what the solve reproduced (entry-panel display). */
+  notes           String?
+  measuredAt      DateTime               @default(now())
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  setup           Setup                  @relation(fields: [setupId], references: [id], onDelete: Cascade)
 
   @@index([setupId])
 }

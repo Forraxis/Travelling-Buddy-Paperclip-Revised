@@ -226,6 +226,10 @@ export function usePhysicsView(
       greyWaterPercent,
       calibrationOverrides: {
         caravanTareKg: state.caravanAssumptions.gearKg,
+        // Weighbridge static mop-up offsets (the positioned unaccounted load is
+        // already among customLoads). See CALIBRATION_SIGNOFF.md §5.
+        vehicleStaticOffsets:
+          state.calibration?.vehicleStaticOffsets ?? undefined,
       },
       regulationSetCode: 'AU_ADR',
     };
