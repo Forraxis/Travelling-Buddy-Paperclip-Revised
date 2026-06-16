@@ -1,4 +1,12 @@
-import type { PhysicsInput, MountingLocation } from '@/lib/physics/types';
+import type {
+  PhysicsInput,
+  MountingLocation,
+  CalibrationOverrides,
+} from '@/lib/physics/types';
+import {
+  mergeModelCorrection,
+  type ModelCorrection,
+} from '@/lib/physics/calibration-contribution';
 import {
   vehicleProfile,
   vehicleBodyKindFromType,
@@ -47,6 +55,26 @@ export function buildPhysicsInput(
     mode === 'baseline'
       ? state.customLoads.filter((l) => !l.isUnaccounted)
       : state.customLoads;
+
+  // P3 per-model correction (kerb-mass / kerb-CoG). Applied ONLY in live mode,
+  // and ONLY when the user hasn't anchored to their own weighbridge ticket —
+  // their measured reality always beats the crowd estimate. NEVER in baseline,
+  // so a contribution's P₀ is computed against the raw model and corrections
+  // can't feed back on their own predictions. See CALIBRATION_SIGNOFF.md §9.
+  const baseOverrides: CalibrationOverrides = {
+    caravanTareKg: state.caravanAssumptions.gearKg,
+    vehicleStaticOffsets:
+      mode === 'live'
+        ? (state.calibration?.vehicleStaticOffsets ?? undefined)
+        : undefined,
+  };
+  const modelCorrection: ModelCorrection | null =
+    mode === 'live' && !state.calibration
+      ? ((vehicle.calibrationCorrection as ModelCorrection | null | undefined) ??
+        null)
+      : null;
+  const calibrationOverrides =
+    mergeModelCorrection(baseOverrides, modelCorrection) ?? baseOverrides;
 
   return {
     vehicle: {
@@ -139,13 +167,7 @@ export function buildPhysicsInput(
     fuelPercent: state.journey.fuelPercent,
     freshWaterPercent,
     greyWaterPercent,
-    calibrationOverrides: {
-      caravanTareKg: state.caravanAssumptions.gearKg,
-      vehicleStaticOffsets:
-        mode === 'live'
-          ? (state.calibration?.vehicleStaticOffsets ?? undefined)
-          : undefined,
-    },
+    calibrationOverrides,
     regulationSetCode: 'AU_ADR',
   };
 }

@@ -63,6 +63,17 @@ export interface VehicleVariantDto {
 
 export interface VehicleVariantWithModel extends VehicleVariantDto {
   model: VehicleModelWithMake;
+  /**
+   * Published P3 community calibration correction for this variant, if any.
+   * Folded into the live physics input via `mergeModelCorrection`. See
+   * CALIBRATION_SIGNOFF.md §9.
+   */
+  calibrationCorrection?: {
+    kerbMassDeltaKg: number | null;
+    kerbMassApplied: boolean;
+    cogFractionDelta: number | null;
+    cogApplied: boolean;
+  } | null;
 }
 
 // --- Input types ---

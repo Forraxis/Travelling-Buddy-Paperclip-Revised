@@ -80,3 +80,59 @@ describe('buildPhysicsInput — calibration modes', () => {
     ).toBe(75);
   });
 });
+
+describe('buildPhysicsInput — P3 per-model correction', () => {
+  const corrected = {
+    ...vehicle,
+    calibrationCorrection: {
+      kerbMassDeltaKg: 45,
+      kerbMassApplied: true,
+      cogFractionDelta: 0.03,
+      cogApplied: true,
+    },
+  };
+  const noUserCalibration: CalculatorState = { ...INITIAL_STATE };
+
+  it('folds a published correction into the live input when the user has not weighed', () => {
+    const input = buildPhysicsInput(noUserCalibration, corrected, null, 'live');
+    expect(input.calibrationOverrides?.vehicleKerbKg).toBe(45);
+    expect(input.calibrationOverrides?.vehicleKerbCogFraction).toBeCloseTo(
+      0.48,
+      6,
+    );
+  });
+
+  it('never applies the correction in baseline mode (no feedback onto P0)', () => {
+    const input = buildPhysicsInput(
+      noUserCalibration,
+      corrected,
+      null,
+      'baseline',
+    );
+    expect(input.calibrationOverrides?.vehicleKerbKg).toBeUndefined();
+    expect(input.calibrationOverrides?.vehicleKerbCogFraction).toBeUndefined();
+  });
+
+  it('the user’s own weighbridge calibration beats the crowd correction', () => {
+    const input = buildPhysicsInput(stateWithCalibration, corrected, null, 'live');
+    expect(input.calibrationOverrides?.vehicleKerbKg).toBeUndefined();
+    expect(input.calibrationOverrides?.vehicleKerbCogFraction).toBeUndefined();
+    // their own static offsets still apply
+    expect(input.calibrationOverrides?.vehicleStaticOffsets).toBeDefined();
+  });
+
+  it('respects the CoG gate (kerbMass applies, CoG held back)', () => {
+    const gated = {
+      ...vehicle,
+      calibrationCorrection: {
+        kerbMassDeltaKg: 45,
+        kerbMassApplied: true,
+        cogFractionDelta: 0.03,
+        cogApplied: false,
+      },
+    };
+    const input = buildPhysicsInput(noUserCalibration, gated, null, 'live');
+    expect(input.calibrationOverrides?.vehicleKerbKg).toBe(45);
+    expect(input.calibrationOverrides?.vehicleKerbCogFraction).toBeUndefined();
+  });
+});

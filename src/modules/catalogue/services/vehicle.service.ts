@@ -163,7 +163,18 @@ export function createVehicleService(prisma: PrismaClient) {
   ): Promise<VehicleVariantWithModel | null> {
     return prisma.vehicleVariant.findUnique({
       where: { id },
-      include: { model: { include: { make: true } } },
+      include: {
+        model: { include: { make: true } },
+        // P3: the published per-model correction the live calc folds in.
+        calibrationCorrection: {
+          select: {
+            kerbMassDeltaKg: true,
+            kerbMassApplied: true,
+            cogFractionDelta: true,
+            cogApplied: true,
+          },
+        },
+      },
     });
   }
 
