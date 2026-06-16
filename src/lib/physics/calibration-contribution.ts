@@ -93,7 +93,9 @@ export function deriveContribution(
 
   const p0 = calculate(input).vehicle;
   const predicted = p0.totalWeightKg;
-  if (predicted <= 0) return null;
+  // Reject a non-finite prediction (a malformed/incomplete snapshot) rather than
+  // poisoning the pool with NaN — the aggregator filters NaN, but never store it.
+  if (!Number.isFinite(predicted) || predicted <= 0) return null;
 
   // Drop implausible tickets (extra digit, wrong vehicle, units mistake).
   const ratio = measured / predicted;

@@ -118,6 +118,19 @@ describe('deriveContribution', () => {
       }),
     ).toBeNull();
   });
+
+  it('rejects an incomplete snapshot whose prediction is non-finite (no NaN rows)', () => {
+    // Vehicle stripped to kerb + wheelbase (what a non-loose zod object yields)
+    // but the arrays/scalars intact — the engine then reads NaN from the missing
+    // gvm/limits. The derivation must drop it, not store a NaN row.
+    const stripped = {
+      ...baseInput,
+      vehicle: { kerbWeightKg: 2160, wheelbaseMm: 3085 },
+    } as unknown as PhysicsInput;
+    expect(
+      deriveContribution(stripped, { granularity: 'TOTAL', totalKg: 2200 }),
+    ).toBeNull();
+  });
 });
 
 describe('weightedMedian', () => {

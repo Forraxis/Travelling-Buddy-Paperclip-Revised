@@ -25,11 +25,15 @@ const measurementSchema = z.object({
 });
 
 // The weighed config C₀. Validated only enough to run the engine safely; the
-// full PhysicsInput is stored verbatim ("store raw, derive later").
-const vehicleSchema = z.object({
-  kerbWeightKg: z.number().positive().max(20_000),
-  wheelbaseMm: z.number().positive().max(10_000),
-});
+// full PhysicsInput is stored verbatim ("store raw, derive later"). Both this and
+// the snapshot are `.loose()` so the engine receives EVERY vehicle field — a
+// strict object would strip gvm/limits/fuelType and the engine would read NaN.
+const vehicleSchema = z
+  .object({
+    kerbWeightKg: z.number().positive().max(20_000),
+    wheelbaseMm: z.number().positive().max(10_000),
+  })
+  .loose();
 
 const snapshotSchema = z
   .object({ vehicle: vehicleSchema })
