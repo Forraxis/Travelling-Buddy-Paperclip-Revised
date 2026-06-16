@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCalculatorState } from '@/modules/calculator/context';
 import { usePhysicsView } from '@/modules/calculator/use-physics-result';
 import { useSetupSave } from '@/components/calculator/hooks/useSetupSave';
@@ -10,10 +11,17 @@ import type { AccessoryItem } from '@/components/calculator/accessory-picker';
 import type { CustomLoad } from '@/modules/calculator/types';
 import CoupledRigCanvas from '@/components/schematic/CoupledRigCanvas';
 import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
+import { SetupVersionsPanel } from '@/components/versions/SetupVersionsPanel';
 
 type Side = 'vehicle' | 'caravan';
 
-export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
+export function LayoutEditorInner({
+  vehicleName,
+  setupId: setupIdProp,
+}: {
+  vehicleName: string;
+  setupId: string | null;
+}) {
   const {
     state,
     addAccessory,
@@ -27,7 +35,12 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
     setCustomLoadPosition,
   } = useCalculatorState();
   const view = usePhysicsView();
-  const { save, saving } = useSetupSave(null, {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // The live setupId: the prop seeds it; after a fresh save we promote the new
+  // id into the URL so subsequent saves PATCH and the versions panel activates.
+  const setupId = searchParams.get('setupId') ?? setupIdProp;
+  const { save, saving } = useSetupSave(setupId, {
     vehicleName: { name: vehicleName, model: { name: vehicleName } },
   });
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
@@ -84,7 +97,26 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
   async function handleSave() {
     setSavedMsg(null);
     const res = await save();
-    setSavedMsg(res.ok ? 'Saved — open it from the calculator any time.' : 'Save failed.');
+    if (!res.ok) {
+      setSavedMsg('Save failed.');
+      return;
+    }
+    if (res.isAnonymous) {
+      setSavedMsg('Saved on this device — sign in to sync and keep versions.');
+      return;
+    }
+    if (setupId) {
+      setSavedMsg('Setup updated.');
+      return;
+    }
+    // First save of a new setup: promote its id into the URL so later saves
+    // update it (PATCH) and the versions panel activates — same as the calculator.
+    if (res.id) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('setupId', res.id);
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+    setSavedMsg('Saved — versions are now available below.');
   }
 
   async function handleContribute() {
@@ -199,6 +231,12 @@ export function LayoutEditorInner({ vehicleName }: { vehicleName: string }) {
           {savedMsg && <p className="mt-2 text-xs text-tb-success">{savedMsg}</p>}
           {contribMsg && <p className="mt-2 text-xs text-gray-500">{contribMsg}</p>}
         </div>
+
+        {setupId && (
+          <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
+            <SetupVersionsPanel />
+          </div>
+        )}
       </aside>
     </div>
   );

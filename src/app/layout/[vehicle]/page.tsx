@@ -6,7 +6,7 @@ import { LayoutEditor } from './LayoutEditor';
 
 interface PageProps {
   params: Promise<{ vehicle: string }>;
-  searchParams: Promise<{ c?: string; setup?: string }>;
+  searchParams: Promise<{ c?: string; setupId?: string }>;
 }
 
 async function resolveVehicle(slug: string) {
@@ -54,7 +54,7 @@ export default async function LayoutPlannerPage({
   searchParams,
 }: PageProps) {
   const { vehicle } = await params;
-  const { c } = await searchParams;
+  const { c, setupId } = await searchParams;
   const v = await resolveVehicle(vehicle);
   if (!v) notFound();
 
@@ -115,6 +115,7 @@ export default async function LayoutPlannerPage({
           vehicleVariantId={v.id}
           vehicleName={name}
           caravanVariantId={caravanVariantId}
+          setupId={setupId ?? null}
         />
 
         <section className="mt-10 grid gap-8 md:grid-cols-2">

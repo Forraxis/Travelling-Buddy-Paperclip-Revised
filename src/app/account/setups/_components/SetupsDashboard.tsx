@@ -12,6 +12,7 @@ export interface SetupItem {
   vehicleVariant: {
     id: string;
     name: string;
+    slug: string;
     model: string;
     make: string;
   } | null;
@@ -155,6 +156,7 @@ export function SetupsDashboard({
               ? {
                   id: data.vehicleVariant.id,
                   name: data.vehicleVariant.name,
+                  slug: data.vehicleVariant.slug,
                   model: data.vehicleVariant.model.name,
                   make: data.vehicleVariant.model.make.name,
                 }
@@ -396,6 +398,14 @@ export function SetupsDashboard({
                 >
                   Open
                 </Link>
+                {setup.vehicleVariant && (
+                  <Link
+                    href={`/layout/${setup.vehicleVariant.slug}/?setupId=${setup.id}`}
+                    className="border-tb-neutral-200 rounded-md border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Layout
+                  </Link>
+                )}
                 <button
                   onClick={() => handleDuplicate(setup)}
                   className="border-tb-neutral-200 rounded-md border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"

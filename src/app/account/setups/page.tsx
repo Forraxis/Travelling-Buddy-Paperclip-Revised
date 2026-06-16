@@ -33,6 +33,7 @@ export default async function SetupsPage() {
       ? {
           id: s.vehicleVariant.id,
           name: s.vehicleVariant.name,
+          slug: s.vehicleVariant.slug,
           model: s.vehicleVariant.model.name,
           make: s.vehicleVariant.model.make.name,
         }

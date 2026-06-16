@@ -83,6 +83,15 @@ brand-submission fork (reuses AccessorySubmission); (6) tintable category icon s
 + admin top-down-image override (`/admin/catalogue/top-down-images`). Saves +
 contributes via the Phase B/C pipeline.
 
+**Setup/version parity (2026-06-16):** `/layout/[vehicle]?setupId=` now hydrates a
+saved setup (custom loads **and** the owner's weighbridge calibration via the
+shared provider setup-loader); save PATCHes the existing setup instead of forking,
+and promotes a new id into the URL after a first save; `SetupVersionsPanel` is
+mounted so P2 versions/revert/compare work in the editor too. An "Open in layout
+planner" ("Layout") link was added to the setups dashboard. The per-model P3
+correction already applied here (shared `buildPhysicsInput`), so the editor now has
+full calibration + version parity with the calculator.
+
 ### Design notes (as built)
 The dedicated "position your gear" tool. Decisions below are signed off by Tim
 (the user is the domain authority — Rule 11 sign-off is his).
