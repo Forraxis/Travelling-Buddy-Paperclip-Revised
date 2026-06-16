@@ -516,8 +516,8 @@ function StabilityCard({ result }: { result: PhysicsResult }) {
       </div>
       <p className="mt-2 text-[11px] text-gray-400">
         Static Stability Factor = half-track ÷ centre-of-gravity height; higher
-        is more rollover-resistant. Provisional estimate from load heights — it
-        does not change the pass/fail verdict (pending physics sign-off).
+        is more rollover-resistant. Advisory estimate from load heights — it
+        does not change the pass/fail verdict.
       </p>
     </div>
   );

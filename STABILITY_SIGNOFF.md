@@ -1,10 +1,15 @@
 # Vertical CoG height + static stability — physics sign-off (Rule 11)
 
-**Status: BUILT, ADVISORY-ONLY, awaiting Tim's red pen.** The metric is computed
-and shown, clearly labelled *Advisory / provisional*, and **never contributes to
-the pass/fail verdict**. Nothing public changes on the strength of these numbers
-until §6 below is initialled — same gate discipline as the P3 CoG work in
+**Status: BUILT, ADVISORY-ONLY. Assumptions PROVISIONALLY ACCEPTED by Tim
+(2026-06-16) as the working default — to be VALIDATED and revisited before
+go-live (see §6).** The metric is computed and shown, clearly labelled *Advisory*,
+and **never contributes to the pass/fail verdict**. It stays advisory until the
+pre-launch validation below is done — same gate discipline as the P3 CoG work in
 `CALIBRATION_SIGNOFF.md §9`.
+
+> ⛔ **PRE-LAUNCH GATE:** do not promote this metric from "advisory" to a
+> verdict-affecting / headline figure until §6 is validated and ticked. This is
+> on the launch checklist ([[next-steps-pre-launch-checklist]]).
 
 Code: `src/lib/physics/position-map.ts` (`resolveVehicleHeightMm`),
 `src/lib/physics/engine.ts` (height constants + `computeVehicleAxles` stability
@@ -63,7 +68,13 @@ for a loaded touring rig, and is "fail" the right word for an advisory metric
 SSF, status dot) badged **Advisory**, with the caveat that it doesn't change the
 verdict. `stability.provisional` is `true`; flip messaging when signed off.
 
-## 6. Sign-off checklist (please initial / red-pen)
+## 6. Sign-off checklist
+
+**Decision (Tim, 2026-06-16):** use these assumptions as the working default for
+now; **validate and revisit before going live.** So the boxes below are the
+*pre-launch validation* list, not a final blessing — the metric stays advisory
+until they're confirmed.
+
 - [ ] §1 SSF = halfTrack / combined-CoG-height is the right rollover proxy.
 - [ ] §2 base-load heights (esp. kerb = 700 mm) are acceptable / or specify a better source.
 - [ ] §2 per-mounting-location height table.
