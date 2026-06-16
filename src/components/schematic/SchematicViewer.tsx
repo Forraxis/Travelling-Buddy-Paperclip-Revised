@@ -8,11 +8,12 @@ import RigSchematic from './RigSchematic';
 import TopDownSchematic from './TopDownSchematic';
 import ContributeLayoutButton from './ContributeLayoutButton';
 import { useCalculatorState } from '@/modules/calculator/context';
+import { stashLayoutHandoff } from '@/lib/layout-handoff';
 
 /** Side-profile + top-down (plan) views of the rig with a small toggle. */
 export default function SchematicViewer({ model }: { model: SchematicModel }) {
   const [view, setView] = useState<'side' | 'top'>('side');
-  const { setAccessoryPosition } = useCalculatorState();
+  const { state, setAccessoryPosition } = useCalculatorState();
   const searchParams = useSearchParams();
 
   // Deep-link to the full-screen layout planner for this rig. Carry the saved
@@ -50,6 +51,7 @@ export default function SchematicViewer({ model }: { model: SchematicModel }) {
         {plannerHref && (
           <Link
             href={plannerHref}
+            onClick={() => stashLayoutHandoff(state)}
             className="text-tb-primary hover:text-tb-primary-light inline-flex items-center gap-1 text-xs font-semibold"
           >
             Customise layout

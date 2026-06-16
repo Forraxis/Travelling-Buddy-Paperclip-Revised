@@ -10,6 +10,7 @@ import { AccessoryPicker } from '@/components/calculator/accessory-picker';
 import type { AccessoryItem } from '@/components/calculator/accessory-picker';
 import type { CustomLoad } from '@/modules/calculator/types';
 import CoupledRigCanvas from '@/components/schematic/CoupledRigCanvas';
+import RigSchematic from '@/components/schematic/RigSchematic';
 import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
 import { SetupVersionsPanel } from '@/components/versions/SetupVersionsPanel';
 
@@ -45,6 +46,9 @@ export function LayoutEditorInner({
   });
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [contribMsg, setContribMsg] = useState<string | null>(null);
+  // Top-down is the editing surface; Side shows the vertical placement (by
+  // mounting location) so roof/chassis/underbody gear reads sensibly.
+  const [canvasView, setCanvasView] = useState<'top' | 'side'>('top');
 
   const addVehicle = useCallback(
     (item: AccessoryItem) =>
@@ -186,13 +190,41 @@ export function LayoutEditorInner({
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
       <div className="order-2 lg:order-1">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="border-tb-neutral-200 inline-flex rounded-lg border bg-white p-0.5 text-xs font-semibold">
+            {(['top', 'side'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setCanvasView(m)}
+                className={`rounded-md px-3 py-1 transition-colors ${
+                  canvasView === m
+                    ? 'bg-tb-primary text-white'
+                    : 'hover:text-tb-primary text-gray-500'
+                }`}
+                aria-pressed={canvasView === m}
+              >
+                {m === 'top' ? 'Top-down' : 'Side'}
+              </button>
+            ))}
+          </div>
+          {canvasView === 'side' && (
+            <span className="text-[11px] text-gray-400">
+              Vertical placement follows each item&rsquo;s mounting location.
+            </span>
+          )}
+        </div>
         {view ? (
-          <CoupledRigCanvas
-            model={view.schematic!}
-            result={view.result}
-            onMove={onMove}
-            onRemove={onRemove}
-          />
+          canvasView === 'top' ? (
+            <CoupledRigCanvas
+              model={view.schematic!}
+              result={view.result}
+              onMove={onMove}
+              onRemove={onRemove}
+            />
+          ) : (
+            <RigSchematic model={view.schematic!} />
+          )
         ) : (
           <div className="border-tb-neutral-200 flex h-64 items-center justify-center rounded-2xl border border-dashed text-sm text-gray-400">
             Loading your rig…

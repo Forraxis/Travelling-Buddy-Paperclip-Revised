@@ -20,6 +20,7 @@ import type {
 import { calculatorReducer } from './types';
 import { paramsToState, stateToParams } from './url-params';
 import { setupToCalculatorState } from './setup-to-state';
+import { popLayoutHandoff } from '@/lib/layout-handoff';
 
 interface CalculatorContextValue {
   state: CalculatorState;
@@ -136,14 +137,25 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
     }
   }, []);
 
-  // Hydrate a saved DB setup into full state (incl. custom loads + calibration,
-  // which the URL round-trip drops). Runs once when `?setupId=` is present.
+  // Hydrate full state on mount (custom loads + calibration + drag positions,
+  // which the URL round-trip drops). Runs once. A sessionStorage hand-off (the
+  // live rig carried from the calculator's "Customise layout") takes precedence
+  // over the saved-setup fetch — it IS the latest state, including unsaved edits.
+  // `?setupId=` stays in the URL either way, so save-back/versions still target
+  // the right setup.
   const setupLoadedRef = useRef(false);
   useEffect(() => {
     if (setupLoadedRef.current) return;
+    setupLoadedRef.current = true;
+
+    const handoff = popLayoutHandoff();
+    if (handoff) {
+      dispatch({ type: 'LOAD_STATE', state: handoff });
+      return;
+    }
+
     const setupId = (initialParams ?? searchParams).get('setupId');
     if (!setupId) return;
-    setupLoadedRef.current = true;
     let active = true;
     fetch(`/api/setups/${setupId}`)
       .then((r) => (r.ok ? r.json() : null))
