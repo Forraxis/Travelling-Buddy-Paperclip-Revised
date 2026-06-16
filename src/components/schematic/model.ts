@@ -65,6 +65,10 @@ export interface SchematicAccessory {
   /** Explicit footprint (mm) — overrides the per-mount default (custom loads). */
   footprintLengthMm?: number | null;
   footprintWidthMm?: number | null;
+  /** Object height (mm) — for the side-view 3D box (custom loads). */
+  footprintHeightMm?: number | null;
+  /** Basic preset silhouette (custom loads): box | cylinder | drawer | toolbox | lshape. */
+  shape?: string | null;
   /** Real top-down image URL — overrides the category icon. */
   topDownImageUrl?: string | null;
   /** Weighbridge "unaccounted" residual — rendered distinctly on the top-down. */
@@ -123,6 +127,10 @@ export interface AccessoryDot {
   isUnaccounted?: boolean;
   /** Effective vertical CoG height (mm above ground) — drives the side view + drag. */
   cogZMm: number;
+  /** Object height (mm), if known — sizes the side-view box for custom loads. */
+  footprintHeightMm?: number | null;
+  /** Basic preset silhouette (custom loads). */
+  shape?: string | null;
   /** Position is editable (custom load, or unlocked catalogue accessory). */
   editable: boolean;
   /** A user-made custom load (vs a catalogue accessory). */
@@ -345,6 +353,8 @@ export function buildSchematicModel(
       iconId: iconForMount(acc.mountingLocation, acc.label),
       topDownImageUrl: acc.topDownImageUrl,
       isUnaccounted: acc.isUnaccounted,
+      footprintHeightMm: acc.footprintHeightMm,
+      shape: acc.shape,
       editable: acc.editable ?? false,
       isCustom: acc.isCustom ?? false,
     });
@@ -439,6 +449,8 @@ export function buildSchematicModel(
         iconId: iconForMount(acc.mountingLocation, acc.label),
         topDownImageUrl: acc.topDownImageUrl,
         isUnaccounted: acc.isUnaccounted,
+        footprintHeightMm: acc.footprintHeightMm,
+        shape: acc.shape,
         editable: acc.editable ?? false,
         isCustom: acc.isCustom ?? false,
       });

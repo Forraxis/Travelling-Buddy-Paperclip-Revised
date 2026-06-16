@@ -387,34 +387,80 @@ function Dot({
   const r = Math.max(8, Math.min(16, 6 + Math.sqrt(d.weightKg) * 0.95));
   // Catalogue accessories carry a lock toggle; custom loads are always free.
   const showLock = !d.isCustom && !!onToggleLock;
+  // Custom loads with a known height draw as a sized box (length × height,
+  // centred on the CoG). Everything else stays a weight-sized dot.
+  const vScale = (BODY_BASE_Y - BODY_TOP_Y) / SCHEMATIC_MAX_HEIGHT_MM;
+  const asBox = !!(
+    d.isCustom &&
+    d.footprintHeightMm &&
+    d.footprintHeightMm > 0
+  );
+  const boxW = asBox
+    ? Math.max(16, (d.footprintLengthMm ?? 600) * (p(1) - p(0)))
+    : 0;
+  const boxH = asBox ? Math.max(12, (d.footprintHeightMm ?? 0) * vScale) : 0;
+  const rx = d.shape === 'cylinder' ? Math.min(boxW, boxH) / 2 : 4;
+  const hx = asBox ? boxW / 2 : r; // half-extents for glyph/halo placement
+  const hy = asBox ? boxH / 2 : r;
+  const cursorStyle = {
+    cursor: d.editable ? (dragging ? 'grabbing' : 'grab') : 'default',
+    touchAction: 'none' as const,
+  };
   return (
     <g>
-      {d.editable && (
+      {d.editable &&
+        (asBox ? (
+          <rect
+            x={x - boxW / 2 - 4}
+            y={y - boxH / 2 - 4}
+            width={boxW + 8}
+            height={boxH + 8}
+            rx={rx + 3}
+            fill="none"
+            stroke="#e07a3f"
+            strokeWidth={1.5}
+            strokeDasharray="3 2"
+            opacity={dragging ? 1 : 0.6}
+          />
+        ) : (
+          <circle
+            cx={x}
+            cy={y}
+            r={r + 5}
+            fill="none"
+            stroke="#e07a3f"
+            strokeWidth={1.5}
+            strokeDasharray="3 2"
+            opacity={dragging ? 1 : 0.6}
+          />
+        ))}
+      {asBox ? (
+        <rect
+          x={x - boxW / 2}
+          y={y - boxH / 2}
+          width={boxW}
+          height={boxH}
+          rx={rx}
+          fill={STROKE}
+          fillOpacity={0.9}
+          stroke="#fff"
+          strokeWidth={2}
+          onPointerDown={d.editable ? onPointerDown : undefined}
+          style={cursorStyle}
+        />
+      ) : (
         <circle
           cx={x}
           cy={y}
-          r={r + 5}
-          fill="none"
-          stroke="#e07a3f"
-          strokeWidth={1.5}
-          strokeDasharray="3 2"
-          opacity={dragging ? 1 : 0.6}
+          r={r}
+          fill={STROKE}
+          fillOpacity={0.9}
+          stroke="#fff"
+          strokeWidth={2}
+          onPointerDown={d.editable ? onPointerDown : undefined}
+          style={cursorStyle}
         />
       )}
-      <circle
-        cx={x}
-        cy={y}
-        r={r}
-        fill={STROKE}
-        fillOpacity={0.9}
-        stroke="#fff"
-        strokeWidth={2}
-        onPointerDown={d.editable ? onPointerDown : undefined}
-        style={{
-          cursor: d.editable ? (dragging ? 'grabbing' : 'grab') : 'default',
-          touchAction: 'none',
-        }}
-      />
       <text
         x={x}
         y={y + 3.5}
@@ -437,16 +483,16 @@ function Dot({
               : 'Position locked to the known mounting. Click to unlock + reposition.'}
           </title>
           <circle
-            cx={x + r + 7}
-            cy={y - r - 3}
+            cx={x + hx + 7}
+            cy={y - hy - 3}
             r={7}
             fill="#fff"
             stroke={d.editable ? '#e07a3f' : '#94a3b8'}
             strokeWidth={1.25}
           />
           <text
-            x={x + r + 7}
-            y={y - r}
+            x={x + hx + 7}
+            y={y - hy}
             textAnchor="middle"
             fontSize={8}
             pointerEvents="none"

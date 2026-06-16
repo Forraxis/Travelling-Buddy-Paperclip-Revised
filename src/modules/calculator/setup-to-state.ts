@@ -31,6 +31,8 @@ interface SetupCustomLoadDTO {
   cogXMm?: number | null;
   cogYMm?: number | null;
   cogZMm?: number | null;
+  footprintHeightMm?: number | null;
+  shape?: string | null;
   side?: 'VEHICLE' | 'CARAVAN' | 'BOTH' | null;
   footprintLengthMm?: number | null;
   footprintWidthMm?: number | null;
@@ -76,6 +78,8 @@ function mapCustomLoad(l: SetupCustomLoadDTO): CustomLoad {
     cogXMm: l.cogXMm ?? null,
     cogYMm: l.cogYMm ?? null,
     cogZMm: l.cogZMm ?? null,
+    footprintHeightMm: l.footprintHeightMm ?? null,
+    shape: (l.shape as CustomLoad['shape']) ?? null,
     footprintLengthMm: l.footprintLengthMm ?? null,
     footprintWidthMm: l.footprintWidthMm ?? null,
     isUnaccounted: l.isUnaccounted ?? false,

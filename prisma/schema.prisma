@@ -650,6 +650,10 @@ model SetupCustomLoad {
   side              PlacementScope? // resolved side it was actually placed on
   footprintLengthMm Int?
   footprintWidthMm  Int?
+  /** Object height (mm) — the 3rd dimension for the side view. */
+  footprintHeightMm Int?
+  /** Basic preset silhouette: box | cylinder | drawer | toolbox | lshape. */
+  shape             String?
   /**
    * True when this load is the weighbridge-calibration "unaccounted mass" — the
    * residual M₀−P₀ realised as a positioned, draggable load (CALIBRATION_SIGNOFF.md

@@ -56,6 +56,7 @@ function Footprint({
   side,
   icon,
   imageUrl,
+  shape,
   editable,
   active,
   dragging,
@@ -71,6 +72,7 @@ function Footprint({
   side: Side;
   icon: IconId;
   imageUrl?: string | null;
+  shape?: string | null;
   editable: boolean;
   active: boolean;
   dragging: boolean;
@@ -110,18 +112,40 @@ function Footprint({
           strokeDasharray="4 2"
         />
       )}
-      <rect
-        x={x - bw / 2}
-        y={y - bh / 2}
-        width={bw}
-        height={bh}
-        rx={4}
-        fill={isUnaccounted ? '#f5f3ff' : '#fff'}
-        fillOpacity={0.92}
-        stroke={fill}
-        strokeWidth={1.6}
-        strokeDasharray={isUnaccounted ? '5 3' : undefined}
-      />
+      {shape === 'cylinder' ? (
+        <ellipse
+          cx={x}
+          cy={y}
+          rx={bw / 2}
+          ry={bh / 2}
+          fill={isUnaccounted ? '#f5f3ff' : '#fff'}
+          fillOpacity={0.92}
+          stroke={fill}
+          strokeWidth={1.6}
+        />
+      ) : shape === 'lshape' ? (
+        <path
+          d={`M ${x - bw / 2} ${y - bh / 2} h ${bw} v ${bh * 0.45} h ${-bw * 0.5} v ${bh * 0.55} h ${-bw * 0.5} Z`}
+          fill={isUnaccounted ? '#f5f3ff' : '#fff'}
+          fillOpacity={0.92}
+          stroke={fill}
+          strokeWidth={1.6}
+          strokeLinejoin="round"
+        />
+      ) : (
+        <rect
+          x={x - bw / 2}
+          y={y - bh / 2}
+          width={bw}
+          height={bh}
+          rx={4}
+          fill={isUnaccounted ? '#f5f3ff' : '#fff'}
+          fillOpacity={0.92}
+          stroke={fill}
+          strokeWidth={1.6}
+          strokeDasharray={isUnaccounted ? '5 3' : undefined}
+        />
+      )}
       {imageUrl ? (
         <>
           <clipPath id={clipId}>
@@ -530,6 +554,7 @@ export default function CoupledRigCanvas({
                 side={d.side}
                 icon={d.iconId}
                 imageUrl={d.topDownImageUrl}
+                shape={d.isCustom ? d.shape : null}
                 isUnaccounted={d.isUnaccounted}
                 editable={d.editable}
                 active={selected?.id === d.id}

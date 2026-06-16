@@ -8,7 +8,18 @@ import { usePhysicsView } from '@/modules/calculator/use-physics-result';
 import { useSetupSave } from '@/components/calculator/hooks/useSetupSave';
 import { AccessoryPicker } from '@/components/calculator/accessory-picker';
 import type { AccessoryItem } from '@/components/calculator/accessory-picker';
-import type { CustomLoad } from '@/modules/calculator/types';
+import type { CustomLoad, LoadShape } from '@/modules/calculator/types';
+
+const SHAPES: { value: LoadShape; label: string }[] = [
+  { value: 'box', label: 'Box' },
+  { value: 'drawer', label: 'Drawer' },
+  { value: 'toolbox', label: 'Toolbox' },
+  { value: 'cylinder', label: 'Cylinder / jerry' },
+  { value: 'lshape', label: 'L-shape' },
+];
+// A custom item rests at roughly chassis/tray height; CoG = deck + half its
+// height. The user fine-tunes it by dragging in the side view.
+const CUSTOM_LOAD_DECK_MM = 600;
 import CoupledRigCanvas from '@/components/schematic/CoupledRigCanvas';
 import RigSchematic from '@/components/schematic/RigSchematic';
 import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
@@ -49,9 +60,6 @@ export function LayoutEditorInner({
   });
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [contribMsg, setContribMsg] = useState<string | null>(null);
-  // Top-down is the editing surface; Side shows the vertical placement (by
-  // mounting location) so roof/chassis/underbody gear reads sensibly.
-  const [canvasView, setCanvasView] = useState<'top' | 'side'>('top');
 
   const addVehicle = useCallback(
     (item: AccessoryItem) =>
@@ -199,47 +207,32 @@ export function LayoutEditorInner({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-      <div className="order-2 lg:order-1">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <div className="border-tb-neutral-200 inline-flex rounded-lg border bg-white p-0.5 text-xs font-semibold">
-            {(['top', 'side'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setCanvasView(m)}
-                className={`rounded-md px-3 py-1 transition-colors ${
-                  canvasView === m
-                    ? 'bg-tb-primary text-white'
-                    : 'hover:text-tb-primary text-gray-500'
-                }`}
-                aria-pressed={canvasView === m}
-              >
-                {m === 'top' ? 'Top-down' : 'Side'}
-              </button>
-            ))}
-          </div>
-          {canvasView === 'side' && (
-            <span className="text-[11px] text-gray-400">
-              Drag a load up/down to set its height.
-            </span>
-          )}
-        </div>
+      <div className="order-2 space-y-3 lg:order-1">
         {view ? (
-          canvasView === 'top' ? (
-            <CoupledRigCanvas
-              model={view.schematic!}
-              result={view.result}
-              onMove={onMove}
-              onRemove={onRemove}
-              onToggleLock={setAccessoryLock}
-            />
-          ) : (
-            <RigSchematic
-              model={view.schematic!}
-              onMoveHeight={onMoveHeight}
-              onToggleLock={setAccessoryLock}
-            />
-          )
+          <>
+            <div>
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                Top-down — front/back &amp; left/right
+              </p>
+              <CoupledRigCanvas
+                model={view.schematic!}
+                result={view.result}
+                onMove={onMove}
+                onRemove={onRemove}
+                onToggleLock={setAccessoryLock}
+              />
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                Side — drag a load up/down to set its height
+              </p>
+              <RigSchematic
+                model={view.schematic!}
+                onMoveHeight={onMoveHeight}
+                onToggleLock={setAccessoryLock}
+              />
+            </div>
+          </>
         ) : (
           <div className="border-tb-neutral-200 flex h-64 items-center justify-center rounded-2xl border border-dashed text-sm text-gray-400">
             Loading your rig…
@@ -350,10 +343,13 @@ function CustomLoadForm({
   const [side, setSide] = useState<'vehicle' | 'caravan'>('vehicle');
   const [len, setLen] = useState('');
   const [wid, setWid] = useState('');
+  const [hgt, setHgt] = useState('');
+  const [shape, setShape] = useState<LoadShape>('box');
 
   function submit() {
     const massKg = parseFloat(weight);
     if (!label.trim() || isNaN(massKg) || massKg <= 0) return;
+    const heightMm = hgt ? Math.round(parseFloat(hgt)) : null;
     onCreate({
       id: `custom:${crypto.randomUUID()}`,
       label: label.trim(),
@@ -361,13 +357,19 @@ function CustomLoadForm({
       side: hasCaravan ? side : 'vehicle',
       cogXMm: null,
       cogYMm: null,
+      // Sit the item on the deck; its centre is half its height up. Draggable.
+      cogZMm: heightMm != null ? CUSTOM_LOAD_DECK_MM + heightMm / 2 : null,
       footprintLengthMm: len ? Math.round(parseFloat(len)) : null,
       footprintWidthMm: wid ? Math.round(parseFloat(wid)) : null,
+      footprintHeightMm: heightMm,
+      shape,
     });
     setLabel('');
     setWeight('');
     setLen('');
     setWid('');
+    setHgt('');
+    setShape('box');
     setOpen(false);
   }
 
@@ -424,16 +426,39 @@ function CustomLoadForm({
           value={len}
           onChange={(e) => setLen(e.target.value)}
           inputMode="numeric"
-          placeholder="Length mm (opt)"
+          placeholder="Length mm"
           className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs"
         />
         <input
           value={wid}
           onChange={(e) => setWid(e.target.value)}
           inputMode="numeric"
-          placeholder="Width mm (opt)"
+          placeholder="Width mm"
           className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs"
         />
+        <input
+          value={hgt}
+          onChange={(e) => setHgt(e.target.value)}
+          inputMode="numeric"
+          placeholder="Height mm"
+          className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-[11px] font-medium text-gray-500">
+          Shape
+        </label>
+        <select
+          value={shape}
+          onChange={(e) => setShape(e.target.value as LoadShape)}
+          className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+        >
+          {SHAPES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="flex gap-2 pt-1">
         <button

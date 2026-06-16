@@ -181,6 +181,8 @@ export function usePhysicsView(
               label: l.label,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,
+              footprintHeightMm: l.footprintHeightMm,
+              shape: l.shape,
               isUnaccounted: l.isUnaccounted,
               editable: true, // custom loads are always freely movable
               isCustom: true,
@@ -211,6 +213,8 @@ export function usePhysicsView(
               label: l.label,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,
+              footprintHeightMm: l.footprintHeightMm,
+              shape: l.shape,
               isUnaccounted: l.isUnaccounted,
               editable: true,
               isCustom: true,

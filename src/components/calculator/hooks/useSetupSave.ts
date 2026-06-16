@@ -62,6 +62,10 @@ export function useSetupSave(
         ...(l.cogXMm != null ? { cogXMm: l.cogXMm } : {}),
         ...(l.cogYMm != null ? { cogYMm: l.cogYMm } : {}),
         ...(l.cogZMm != null ? { cogZMm: l.cogZMm } : {}),
+        ...(l.footprintHeightMm != null
+          ? { footprintHeightMm: l.footprintHeightMm }
+          : {}),
+        ...(l.shape ? { shape: l.shape } : {}),
         ...(l.footprintLengthMm != null
           ? { footprintLengthMm: l.footprintLengthMm }
           : {}),

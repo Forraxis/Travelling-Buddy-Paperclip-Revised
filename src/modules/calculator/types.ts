@@ -41,6 +41,9 @@ export interface AccessorySelection {
   topDownImageUrl?: string | null;
 }
 
+/** Basic preset shapes a custom item can take (top-down silhouette). */
+export type LoadShape = 'box' | 'cylinder' | 'drawer' | 'toolbox' | 'lshape';
+
 /** A user-made load (not a catalogue accessory) placed in the layout editor. */
 export interface CustomLoad {
   id: string;
@@ -52,6 +55,10 @@ export interface CustomLoad {
   cogZMm?: number | null;
   footprintLengthMm?: number | null;
   footprintWidthMm?: number | null;
+  /** Object height (mm) — makes the item a 3D box for the side view. */
+  footprintHeightMm?: number | null;
+  /** Basic preset silhouette; defaults to a box. */
+  shape?: LoadShape | null;
   /** The weighbridge-calibration residual mass, rendered/labelled distinctly. */
   isUnaccounted?: boolean;
 }

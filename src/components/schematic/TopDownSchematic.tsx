@@ -53,6 +53,35 @@ function WheelMark({ x, y }: { x: number; y: number }) {
 
 // A sized accessory footprint: a rounded box scaled to real dimensions, with an
 // index badge. Draggable (grab cursor + dashed halo) when editable.
+// Shape-aware silhouette body for a custom load (box/cylinder/L), else a rect.
+function shapeBody(
+  shape: string | null | undefined,
+  x: number,
+  y: number,
+  bw: number,
+  bh: number,
+  fill: string,
+) {
+  const common = { fill, fillOpacity: 0.85, stroke: '#fff', strokeWidth: 1.5 };
+  if (shape === 'cylinder') {
+    return <ellipse cx={x} cy={y} rx={bw / 2} ry={bh / 2} {...common} />;
+  }
+  if (shape === 'lshape') {
+    const d = `M ${x - bw / 2} ${y - bh / 2} h ${bw} v ${bh * 0.45} h ${-bw * 0.5} v ${bh * 0.55} h ${-bw * 0.5} Z`;
+    return <path d={d} strokeLinejoin="round" {...common} />;
+  }
+  return (
+    <rect
+      x={x - bw / 2}
+      y={y - bh / 2}
+      width={bw}
+      height={bh}
+      rx={4}
+      {...common}
+    />
+  );
+}
+
 function FootprintMark({
   x,
   y,
@@ -60,6 +89,7 @@ function FootprintMark({
   h,
   n,
   side,
+  shape,
   draggable,
   dragging,
   onPointerDown,
@@ -70,6 +100,7 @@ function FootprintMark({
   h: number;
   n: number;
   side: 'vehicle' | 'caravan';
+  shape?: string | null;
   draggable?: boolean;
   dragging?: boolean;
   onPointerDown?: (e: React.PointerEvent) => void;
@@ -99,17 +130,7 @@ function FootprintMark({
           opacity={dragging ? 1 : 0.5}
         />
       )}
-      <rect
-        x={x - bw / 2}
-        y={y - bh / 2}
-        width={bw}
-        height={bh}
-        rx={4}
-        fill={fill}
-        fillOpacity={0.85}
-        stroke="#fff"
-        strokeWidth={1.5}
-      />
+      {shapeBody(shape, x, y, bw, bh, fill)}
       <circle cx={x} cy={y} r={badge} fill="#fff" fillOpacity={0.92} />
       <text
         x={x}
@@ -444,6 +465,7 @@ export default function TopDownSchematic({
                 h={sx(d.footprintWidthMm)}
                 n={d.n}
                 side={d.side}
+                shape={d.isCustom ? d.shape : null}
                 draggable={editable}
                 dragging={dragId === d.id}
                 onPointerDown={

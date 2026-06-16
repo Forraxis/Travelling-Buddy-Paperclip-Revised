@@ -21,6 +21,8 @@ const customLoadSchema = z.object({
   side: z.enum(['VEHICLE', 'CARAVAN', 'BOTH']).optional(),
   footprintLengthMm: z.number().int().min(0).max(10000).optional(),
   footprintWidthMm: z.number().int().min(0).max(5000).optional(),
+  footprintHeightMm: z.number().int().min(0).max(5000).optional(),
+  shape: z.enum(['box', 'cylinder', 'drawer', 'toolbox', 'lshape']).optional(),
   isUnaccounted: z.boolean().optional(),
   notes: z.string().max(500).optional(),
 });
@@ -166,6 +168,8 @@ export async function POST(request: Request) {
             side: l.side,
             footprintLengthMm: l.footprintLengthMm,
             footprintWidthMm: l.footprintWidthMm,
+            footprintHeightMm: l.footprintHeightMm,
+            shape: l.shape,
             isUnaccounted: l.isUnaccounted ?? false,
             notes: l.notes,
           })),
