@@ -115,6 +115,12 @@ export function usePhysicsView(
       const result = calculate(input);
       const schematic = buildSchematicModel({
         title: rigTitle(effectiveVehicle, effectiveCaravan),
+        vehicleSlug: (effectiveVehicle as AnyVariant).slug as
+          | string
+          | undefined,
+        caravanSlug: (effectiveCaravan as AnyVariant | null)?.slug as
+          | string
+          | undefined,
         vehicle: {
           wheelbaseMm: Number(effectiveVehicle.wheelbaseMm),
           frontOverhangMm:

@@ -70,6 +70,8 @@ export interface BuildSchematicArgs {
   vehicleAccessories: SchematicAccessory[];
   caravanAccessories: SchematicAccessory[];
   result: PhysicsResult;
+  vehicleSlug?: string;
+  caravanSlug?: string;
 }
 
 export interface AxleGauge {
@@ -160,6 +162,9 @@ export interface SchematicModel {
   lateral?: PhysicsResult['vehicle']['lateral'];
   /** Caravan lateral (left/right) distribution — for the coupled-rig editor. */
   caravanLateral?: NonNullable<PhysicsResult['caravan']>['lateral'];
+  /** Slugs of the current rig, so the UI can deep-link to the full layout planner. */
+  vehicleSlug?: string;
+  caravanSlug?: string;
 }
 
 function vehicleBodyKind(bodyType?: string | null): VehicleBodyKind {
@@ -434,5 +439,7 @@ export function buildSchematicModel(
     zones,
     lateral: result.vehicle.lateral,
     caravanLateral: result.caravan?.lateral,
+    vehicleSlug: args.vehicleSlug,
+    caravanSlug: args.caravanSlug,
   };
 }

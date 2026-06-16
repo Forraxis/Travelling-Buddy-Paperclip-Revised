@@ -257,6 +257,15 @@ export default async function Home() {
                 Browse vehicles
               </Link>
             </div>
+            <p className="tb-reveal mt-4 text-sm text-white/70 [animation-delay:280ms]">
+              <Link
+                href="/calculator"
+                className="font-semibold text-white underline-offset-2 hover:underline"
+              >
+                Plan your load layout →
+              </Link>{' '}
+              drag your gear into place and watch the axle loads shift.
+            </p>
             <p className="tb-reveal mt-6 text-xs text-white/50 [animation-delay:320ms]">
               No login required · Physics-grade, not guesswork · 10 compliance
               metrics
