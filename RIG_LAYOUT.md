@@ -230,9 +230,10 @@ that anchor. Builds on the existing `CalibrationOverrides` hook
     rate-limited anon `POST /api/calibrations/contribute` (recomputes P₀
     server-side, "store raw"); opt-in share panel in the calibration result view.
   - `calibration-contribution.ts` derivation: bareness-weighted robust weighted-
-    median, N≥3 gate, sane-ratio + CoG-band guards (22 unit tests).
+    median, N≥3 gate (counts **distinct contributors** via fingerprint collapse),
+    sane-ratio + CoG-band guards (27 unit tests).
   - `/admin/moderation/calibrations` queue (per-variant aggregate + drilldown,
-    Publish/Reject, CoG sign-off checkbox).
+    Publish/Reject, CoG sign-off checkbox, **"Currently live" banner + Unpublish**).
   - **Live wiring DONE:** `getVariantById` includes `calibrationCorrection` →
     `buildPhysicsInput` folds it via `mergeModelCorrection`, **live mode only**,
     **only when the user hasn't weighed their own rig**, and **never in baseline**
@@ -241,11 +242,14 @@ that anchor. Builds on the existing `CalibrationOverrides` hook
   - Math written up for Rule-11 in **CALIBRATION_SIGNOFF.md §9** (incl. §9.6 impl
     guards + known limitations). **Awaiting Tim's §9.5 red pen** — CoG is gated
     by default in code; only un-gate per-variant via the moderator checkbox.
-  - **Known limitations (documented, deferred):** no per-contributor dedup (rows,
-    not distinct submitters, clear the gate); no admin un-publish/revert of a
-    correction (forward-only; DB edit is the escape hatch); moderation is
-    all-or-nothing per variant; the queue doesn't surface the currently-published
-    correction. See CALIBRATION_SIGNOFF.md §9.6.
+  - **Moat-hardening DONE (2026-06-16):** per-contributor dedup
+    (`duplicateFingerprint` = `user:<id>` or content hash; gate counts distinct
+    contributors; idempotent resubmit); admin un-publish/revert action +
+    Unpublish button; queue surfaces the currently-live correction and
+    published-only variants. See CALIBRATION_SIGNOFF.md §9.6 ("Resolved").
+  - **Known limitations (still deferred):** moderation is all-or-nothing per
+    variant (no per-row reject); anon dedup is content-based, not true identity.
+    See CALIBRATION_SIGNOFF.md §9.6.
 
 ### Trust / legal
 Calibrating to a weighbridge ticket *raises* credibility ("calibrated to your

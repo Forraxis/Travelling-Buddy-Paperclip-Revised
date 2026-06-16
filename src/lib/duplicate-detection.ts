@@ -60,6 +60,54 @@ export function accessoryFingerprint(data: {
   return createHash('sha256').update(key).digest('hex').slice(0, 16);
 }
 
+// Round a ticket value to the nearest kg so trivially-different re-keys of the
+// same weigh-in collapse to one fingerprint. null/undefined → '' (stable).
+function roundKg(v: unknown): string {
+  return typeof v === 'number' && Number.isFinite(v) ? String(Math.round(v)) : '';
+}
+
+/**
+ * Identity fingerprint for one P3 calibration contribution (per variant).
+ *
+ * A signed-in contributor is one vote per variant — keyed on `submitterId`, so
+ * five weigh-ins from the same account collapse to a single vote and can't clear
+ * the MIN_SAMPLES gate alone. An anonymous contribution falls back to a content
+ * hash of the (rounded) ticket, so an identical weigh-in re-submitted (double
+ * click, replay) also collapses to one vote. Variant is folded in so the same
+ * user/ticket still contributes independently to different vehicles.
+ */
+export function calibrationFingerprint(data: {
+  submitterId: string | null | undefined;
+  vehicleVariantId: string;
+  granularity: string;
+  measurement: {
+    totalKg?: number;
+    frontAxleKg?: number;
+    rearAxleKg?: number;
+    towBallKg?: number;
+    corners?: { fl?: number; fr?: number; rl?: number; rr?: number };
+  };
+  kerbWeightKg: number;
+}): string {
+  const identity = data.submitterId
+    ? `user:${data.submitterId}`
+    : [
+        'anon',
+        normalise(data.granularity),
+        roundKg(data.measurement.totalKg),
+        roundKg(data.measurement.frontAxleKg),
+        roundKg(data.measurement.rearAxleKg),
+        roundKg(data.measurement.towBallKg),
+        roundKg(data.measurement.corners?.fl),
+        roundKg(data.measurement.corners?.fr),
+        roundKg(data.measurement.corners?.rl),
+        roundKg(data.measurement.corners?.rr),
+        roundKg(data.kerbWeightKg),
+      ].join(',');
+  const key = [data.vehicleVariantId, identity].join('|');
+  return createHash('sha256').update(key).digest('hex').slice(0, 16);
+}
+
 export interface DuplicateCheckResult {
   hasDuplicate: boolean;
   existingId: string | null;

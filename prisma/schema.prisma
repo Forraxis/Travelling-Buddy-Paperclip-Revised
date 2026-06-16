@@ -761,6 +761,12 @@ model CalibrationContribution {
    * Per-contribution kerb-CoG-fraction signal; null when no axle/corner data.
    */
   cogFractionDelta Float?
+  /**
+   * Per-contributor identity: `user:<id>` when signed in, else a content hash of
+   * the ticket. Collapses one actor (or one re-submitted weigh-in) to a single
+   * vote in aggregation, so MIN_SAMPLES gates on distinct contributors, not rows.
+   */
+  duplicateFingerprint String?
   status           SubmissionStatus       @default(PENDING)
   source           String?
   decidedById      String?
@@ -775,6 +781,7 @@ model CalibrationContribution {
   @@index([status])
   @@index([vehicleVariantId, status])
   @@index([submitterId])
+  @@index([vehicleVariantId, duplicateFingerprint, status])
 }
 
 /**

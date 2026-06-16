@@ -4,8 +4,10 @@ import {
   measuredTotalKg,
   weightedMedian,
   aggregateCorrection,
+  collapseByFingerprint,
   mergeModelCorrection,
   MIN_SAMPLES,
+  type AggregateInput,
   type DerivedContribution,
   type ModelCorrection,
 } from '../calibration-contribution';
@@ -179,7 +181,9 @@ describe('weightedMedian', () => {
 });
 
 describe('aggregateCorrection', () => {
-  const row = (over: Partial<DerivedContribution>): DerivedContribution => ({
+  const row = (
+    over: Partial<DerivedContribution & { fingerprint: string | null }>,
+  ): DerivedContribution & { fingerprint?: string | null } => ({
     measuredTotalKg: 2200,
     predictedTotalKg: 2160,
     residualMassKg: 40,
@@ -234,6 +238,72 @@ describe('aggregateCorrection', () => {
 
   it('MIN_SAMPLES is the documented gate', () => {
     expect(MIN_SAMPLES).toBe(3);
+  });
+
+  it('collapses one contributor to a single vote (gate counts contributors)', () => {
+    // Five rows, but all from the same fingerprint → one vote, below the gate.
+    const rows = [
+      row({ fingerprint: 'a', kerbMassDeltaKg: 30 }),
+      row({ fingerprint: 'a', kerbMassDeltaKg: 40 }),
+      row({ fingerprint: 'a', kerbMassDeltaKg: 50 }),
+      row({ fingerprint: 'a', kerbMassDeltaKg: 60 }),
+      row({ fingerprint: 'a', kerbMassDeltaKg: 70 }),
+    ];
+    const agg = aggregateCorrection(rows);
+    expect(agg.kerbMassSampleCount).toBe(1);
+    expect(agg.kerbMassDeltaKg).toBeNull(); // 1 < MIN_SAMPLES
+  });
+
+  it('publishes once three DISTINCT contributors clear the gate', () => {
+    const rows = [
+      row({ fingerprint: 'a', kerbMassDeltaKg: 35 }),
+      row({ fingerprint: 'a', kerbMassDeltaKg: 35 }), // same actor, ignored
+      row({ fingerprint: 'b', kerbMassDeltaKg: 40 }),
+      row({ fingerprint: 'c', kerbMassDeltaKg: 45 }),
+    ];
+    const agg = aggregateCorrection(rows);
+    expect(agg.kerbMassSampleCount).toBe(3);
+    expect(agg.kerbMassDeltaKg).toBe(40);
+  });
+
+  it('null fingerprints each count as their own contributor (legacy rows)', () => {
+    const rows = [
+      row({ fingerprint: null, kerbMassDeltaKg: 35 }),
+      row({ fingerprint: null, kerbMassDeltaKg: 40 }),
+      row({ fingerprint: null, kerbMassDeltaKg: 45 }),
+    ];
+    const agg = aggregateCorrection(rows);
+    expect(agg.kerbMassSampleCount).toBe(3);
+    expect(agg.kerbMassDeltaKg).toBe(40);
+  });
+});
+
+describe('collapseByFingerprint', () => {
+  const r = (over: Partial<AggregateInput>): AggregateInput => ({
+    kerbMassDeltaKg: 40,
+    barenessWeight: 0.9,
+    cogFractionDelta: 0.02,
+    ...over,
+  });
+
+  it('keeps the highest-bareness row per fingerprint', () => {
+    const out = collapseByFingerprint([
+      r({ fingerprint: 'a', barenessWeight: 0.5, kerbMassDeltaKg: 10 }),
+      r({ fingerprint: 'a', barenessWeight: 0.95, kerbMassDeltaKg: 20 }),
+      r({ fingerprint: 'a', barenessWeight: 0.7, kerbMassDeltaKg: 30 }),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].kerbMassDeltaKg).toBe(20); // the 0.95-bareness read
+  });
+
+  it('passes null-fingerprint rows through untouched', () => {
+    const out = collapseByFingerprint([
+      r({ fingerprint: null }),
+      r({ fingerprint: null }),
+      r({ fingerprint: 'x' }),
+      r({ fingerprint: 'x' }),
+    ]);
+    expect(out).toHaveLength(3); // 2 nulls + 1 collapsed 'x'
   });
 });
 

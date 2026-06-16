@@ -369,20 +369,33 @@ simply *reduces* the published kerb. Directionally fine; flagged for your eye.
   the deferred tow-ball calibration, §4.4).
 - **TOWBALL-only tickets** carry no vehicle total → contribution rejected (422).
 
+**Resolved (2026-06-16):**
+- **Per-contributor dedup.** ✅ `CalibrationContribution.duplicateFingerprint`
+  now carries a per-contributor identity: `user:<id>` when signed in, else a
+  content hash of the rounded ticket (`calibrationFingerprint`, duplicate-detection.ts).
+  `aggregateCorrection` collapses rows sharing a fingerprint to their
+  highest-bareness representative *before* the gate, so **`MIN_SAMPLES = 3` now
+  counts distinct contributors, not rows** — one actor can no longer clear the
+  gate alone. The contribute API is also idempotent per fingerprint (a resubmit
+  while a PENDING row exists returns `{ok, deduped}` without growing the pool).
+  Legacy rows with a null fingerprint each count as their own contributor.
+- **Un-publish / revert.** ✅ `unpublishCalibrationCorrection(variantId)`
+  (moderation actions.ts) deletes the live `VehicleCalibrationCorrection` (with a
+  ModerationAction + AuditLog DELETE). The approved contribution pool is kept, so
+  re-approving any new pending row re-derives the correction from scratch. Exposed
+  as an "Unpublish" button in the queue.
+- **Live correction surfaced in the queue.** ✅ The moderation queue now loads
+  every published `VehicleCalibrationCorrection`, shows a "Currently live:" banner
+  per variant (kerb-mass / CoG deltas, applied vs gated, N), and lists
+  published-only variants (no pending) so a moderator can review and unpublish
+  before deciding. Re-approval still recomputes `cogApplied` from the current
+  checkbox over the whole approved pool — but the moderator can now see what's
+  live before they tick it.
+
 **Known limitations (documented, deferred — not blockers, but know them):**
-- **No per-contributor dedup.** `MIN_SAMPLES = 3` counts *rows*, not distinct
-  submitters; the share UI only de-dupes within a browser session. One actor can
-  clear the gate alone. Mitigations in place: anon POST is rate-limited, and
-  bareness-weighted median + moderation-gating bound the damage. A
-  `duplicateFingerprint` (as other submission models carry) is the proper fix.
-- **No un-publish / revert.** Approval only ever upserts a correction; there's no
-  admin action to clear `kerbMassApplied` or delete a `VehicleCalibrationCorrection`.
-  A skewed correction is forward-only — it moves only as new contributions outvote
-  it in the median. Manual escape hatch = a DB edit. Build an "unpublish" action
-  before leaning on auto-apply in production.
-- **Re-approval recomputes `cogApplied` from the *current* checkbox** over the whole
-  approved pool, and the queue doesn't surface the currently-published correction —
-  a moderator can't see what's live before deciding. Surface it before relying on
-  CoG in prod.
 - **All-or-nothing moderation** — Approve/Reject act on every PENDING row for a
   variant; no per-row reject (consistent with the positions queue).
+- **Anon dedup is content-based, not identity-based.** A determined actor can
+  still vary fabricated tickets to register as distinct anon "contributors". The
+  rate-limit + bareness-weighted median + moderation gate bound the damage; true
+  anon identity (IP/device) is out of scope.

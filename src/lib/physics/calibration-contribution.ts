@@ -185,24 +185,53 @@ export interface CorrectionAggregate {
   cogSampleCount: number;
 }
 
-/** The only fields the aggregator reads — so callers can't silently feed zeros. */
+/**
+ * The fields the aggregator reads — so callers can't silently feed zeros.
+ *
+ * `fingerprint` is the per-contributor identity (see calibrationFingerprint):
+ * rows sharing one collapse to a single vote, so the MIN_SAMPLES gate counts
+ * distinct contributors, not raw rows. A null/absent fingerprint counts as its
+ * own distinct contributor (legacy rows predating the dedup column).
+ */
 export type AggregateInput = Pick<
   DerivedContribution,
   'kerbMassDeltaKg' | 'barenessWeight' | 'cogFractionDelta'
->;
+> & { fingerprint?: string | null };
+
+/**
+ * Collapse rows sharing a fingerprint to their highest-bareness representative
+ * — one contributor's cleanest base read. Null-fingerprint rows pass through as
+ * distinct. This is what turns "rows" into "distinct contributors" for the gate.
+ */
+export function collapseByFingerprint(rows: AggregateInput[]): AggregateInput[] {
+  const best = new Map<string, AggregateInput>();
+  const passthrough: AggregateInput[] = [];
+  for (const r of rows) {
+    if (r.fingerprint == null) {
+      passthrough.push(r);
+      continue;
+    }
+    const cur = best.get(r.fingerprint);
+    if (!cur || r.barenessWeight > cur.barenessWeight) best.set(r.fingerprint, r);
+  }
+  return [...passthrough, ...best.values()];
+}
 
 /**
  * Fold a pool of derived contributions into one per-variant correction.
  * Bareness weighting makes near-kerb weigh-ins dominate (the cleanest base
- * read) and fully-loaded rigs count for little. Each correction publishes only
- * once it has MIN_SAMPLES contributing rows.
+ * read) and fully-loaded rigs count for little. Rows are first collapsed per
+ * contributor (fingerprint), so each correction publishes only once it has
+ * MIN_SAMPLES contributing rows from distinct contributors.
  */
 export function aggregateCorrection(rows: AggregateInput[]): CorrectionAggregate {
-  const massSamples: WeightedSample[] = rows
+  const collapsed = collapseByFingerprint(rows);
+
+  const massSamples: WeightedSample[] = collapsed
     .map((r) => ({ value: r.kerbMassDeltaKg, weight: r.barenessWeight }))
     .filter((s) => s.weight > 0);
 
-  const cogSamples: WeightedSample[] = rows
+  const cogSamples: WeightedSample[] = collapsed
     .filter((r) => r.cogFractionDelta != null)
     .map((r) => ({ value: r.cogFractionDelta as number, weight: r.barenessWeight }))
     .filter((s) => s.weight > 0);

@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { serverError, withRateLimit } from '@/lib/api-helpers';
 import { deriveContribution } from '@/lib/physics/calibration-contribution';
+import { calibrationFingerprint } from '@/lib/duplicate-detection';
 import { calculate } from '@/lib/physics/engine';
 import type { PhysicsInput } from '@/lib/physics/types';
 import type { WeighbridgeMeasurement } from '@/lib/physics/calibration';
@@ -111,10 +112,35 @@ export async function POST(request: Request) {
       );
     }
 
+    // Per-contributor identity (signed-in id, else a content hash of the ticket).
+    // One actor — or one re-submitted weigh-in — is a single vote per variant, so
+    // a contributor can't stuff the pending pool to clear the MIN_SAMPLES gate.
+    const fingerprint = calibrationFingerprint({
+      submitterId: session?.user?.id ?? null,
+      vehicleVariantId,
+      granularity: measurement.granularity,
+      measurement,
+      kerbWeightKg: input.vehicle.kerbWeightKg,
+    });
+    // Idempotent: if this contributor already has a PENDING row for the variant,
+    // treat the resubmit as a no-op success rather than growing the pool.
+    const existingPending = await prisma.calibrationContribution.findFirst({
+      where: {
+        vehicleVariantId,
+        duplicateFingerprint: fingerprint,
+        status: 'PENDING',
+      },
+      select: { id: true },
+    });
+    if (existingPending) {
+      return NextResponse.json({ ok: true, deduped: true }, { status: 200 });
+    }
+
     await prisma.calibrationContribution.create({
       data: {
         submitterId: session?.user?.id ?? null,
         vehicleVariantId,
+        duplicateFingerprint: fingerprint,
         granularity: measurement.granularity,
         measurement: measurement as object,
         weighedSnapshot: input as object,

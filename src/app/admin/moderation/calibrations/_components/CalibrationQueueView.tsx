@@ -5,6 +5,7 @@ import type { CorrectionAggregate } from '@/lib/physics/calibration-contribution
 import {
   approveCalibrationContributions,
   rejectCalibrationContributions,
+  unpublishCalibrationCorrection,
 } from '../actions';
 
 export interface CalibrationRow {
@@ -16,6 +17,18 @@ export interface CalibrationRow {
   barenessWeight: number;
   kerbMassDeltaKg: number | null;
   cogFractionDelta: number | null;
+  duplicateFingerprint: string | null;
+}
+
+/** The currently-published correction for a variant (null if none live). */
+export interface LiveCorrection {
+  kerbMassDeltaKg: number | null;
+  kerbMassSampleCount: number;
+  kerbMassApplied: boolean;
+  cogFractionDelta: number | null;
+  cogSampleCount: number;
+  cogApplied: boolean;
+  updatedAt: string;
 }
 
 export interface CalibrationGroup {
@@ -24,6 +37,7 @@ export interface CalibrationGroup {
   minSamples: number;
   rows: CalibrationRow[];
   aggregate: CorrectionAggregate;
+  live: LiveCorrection | null;
 }
 
 function fmtKg(n: number | null): string {
@@ -39,8 +53,28 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
   const [applyCog, setApplyCog] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
 
-  function remove(id: string) {
+  // Drop the whole card (approve publishes a correction — it reappears as a
+  // live-only card on the next load, with the server's full-pool numbers).
+  function dropGroup(id: string) {
     setRows((r) => r.filter((g) => g.vehicleVariantId !== id));
+  }
+
+  // Clear just the pending rows; keep the card alive if a correction is live.
+  function clearPending(id: string) {
+    setRows((r) =>
+      r
+        .map((g) => (g.vehicleVariantId === id ? { ...g, rows: [] } : g))
+        .filter((g) => g.rows.length > 0 || g.live != null),
+    );
+  }
+
+  // Clear the live correction; keep the card alive if there are still pending.
+  function clearLive(id: string) {
+    setRows((r) =>
+      r
+        .map((g) => (g.vehicleVariantId === id ? { ...g, live: null } : g))
+        .filter((g) => g.rows.length > 0 || g.live != null),
+    );
   }
 
   function onApprove(g: CalibrationGroup) {
@@ -50,7 +84,7 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
         g.vehicleVariantId,
         applyCog[g.vehicleVariantId] ?? false,
       );
-      if (res.success) remove(g.vehicleVariantId);
+      if (res.success) dropGroup(g.vehicleVariantId);
       else setError(res.error);
     });
   }
@@ -59,7 +93,24 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
     setError(null);
     startTransition(async () => {
       const res = await rejectCalibrationContributions(g.vehicleVariantId);
-      if (res.success) remove(g.vehicleVariantId);
+      if (res.success) clearPending(g.vehicleVariantId);
+      else setError(res.error);
+    });
+  }
+
+  function onUnpublish(g: CalibrationGroup) {
+    setError(null);
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        `Unpublish the live correction for ${g.variantName}? The calculator will stop applying it. Approved contributions are kept, so re-approving any new contribution re-derives it.`,
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const res = await unpublishCalibrationCorrection(g.vehicleVariantId);
+      if (res.success) clearLive(g.vehicleVariantId);
       else setError(res.error);
     });
   }
@@ -87,7 +138,7 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
 
       {rows.length === 0 ? (
         <p className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
-          No pending calibration contributions. 🎉
+          No pending contributions and no published corrections. 🎉
         </p>
       ) : (
         <ul className="space-y-3">
@@ -95,6 +146,7 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
             const a = g.aggregate;
             const massReady = a.kerbMassSampleCount >= g.minSamples;
             const cogReady = a.cogSampleCount >= g.minSamples;
+            const hasPending = g.rows.length > 0;
             return (
               <li
                 key={g.vehicleVariantId}
@@ -104,10 +156,30 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900">{g.variantName}</p>
                     <p className="text-sm text-gray-500">
-                      {g.rows.length} pending contribution
-                      {g.rows.length === 1 ? '' : 's'}
+                      {hasPending
+                        ? `${g.rows.length} pending contribution${g.rows.length === 1 ? '' : 's'}`
+                        : 'No pending contributions'}
                     </p>
 
+                    {g.live && (
+                      <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                        <span className="font-semibold">Currently live:</span>{' '}
+                        kerb-mass{' '}
+                        <span className="font-mono">
+                          {fmtKg(g.live.kerbMassDeltaKg)}
+                        </span>{' '}
+                        {g.live.kerbMassApplied ? '(applied)' : '(not applied)'},
+                        N={g.live.kerbMassSampleCount} · CoG Δ{' '}
+                        <span className="font-mono">
+                          {fmtFrac(g.live.cogFractionDelta)}
+                        </span>{' '}
+                        {g.live.cogApplied ? '(applied)' : '(gated)'}, N=
+                        {g.live.cogSampleCount}
+                      </div>
+                    )}
+
+                    {hasPending && (
+                    <>
                     <div className="mt-2 grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
                       <span className="text-gray-700">
                         Kerb-mass Δ (weighted median):{' '}
@@ -171,41 +243,57 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
                         </tbody>
                       </table>
                     </details>
+                    </>
+                    )}
                   </div>
 
                   <div className="flex shrink-0 flex-col items-end gap-2">
-                    <label className="flex items-center gap-1.5 text-xs text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={applyCog[g.vehicleVariantId] ?? false}
-                        disabled={!cogReady}
-                        onChange={(e) =>
-                          setApplyCog((s) => ({
-                            ...s,
-                            [g.vehicleVariantId]: e.target.checked,
-                          }))
-                        }
-                      />
-                      Apply CoG shift (sign-off)
-                    </label>
-                    <div className="flex gap-2">
+                    {hasPending && (
+                      <>
+                        <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={applyCog[g.vehicleVariantId] ?? false}
+                            disabled={!cogReady}
+                            onChange={(e) =>
+                              setApplyCog((s) => ({
+                                ...s,
+                                [g.vehicleVariantId]: e.target.checked,
+                              }))
+                            }
+                          />
+                          Apply CoG shift (sign-off)
+                        </label>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => onReject(g)}
+                            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => onApprove(g)}
+                            className="rounded-md bg-tb-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-tb-primary/90 disabled:opacity-50"
+                          >
+                            Publish correction
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    {g.live && (
                       <button
                         type="button"
                         disabled={pending}
-                        onClick={() => onReject(g)}
-                        className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                        onClick={() => onUnpublish(g)}
+                        className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                       >
-                        Reject
+                        Unpublish
                       </button>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => onApprove(g)}
-                        className="rounded-md bg-tb-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-tb-primary/90 disabled:opacity-50"
-                      >
-                        Publish correction
-                      </button>
-                    </div>
+                    )}
                   </div>
                 </div>
               </li>

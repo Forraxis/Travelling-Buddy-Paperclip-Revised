@@ -20,11 +20,13 @@ function toAggregateInput(row: {
   kerbMassDeltaKg: number | null;
   barenessWeight: number;
   cogFractionDelta: number | null;
+  duplicateFingerprint: string | null;
 }): AggregateInput {
   return {
     barenessWeight: row.barenessWeight,
     kerbMassDeltaKg: row.kerbMassDeltaKg ?? 0,
     cogFractionDelta: row.cogFractionDelta,
+    fingerprint: row.duplicateFingerprint,
   };
 }
 
@@ -65,6 +67,7 @@ export async function approveCalibrationContributions(
           kerbMassDeltaKg: true,
           barenessWeight: true,
           cogFractionDelta: true,
+          duplicateFingerprint: true,
         },
       });
       const agg = aggregateCorrection(approved.map(toAggregateInput));
@@ -155,6 +158,69 @@ export async function rejectCalibrationContributions(
         notes,
       },
     });
+    revalidatePath('/admin/moderation/calibrations');
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Un-publish (delete) the live per-variant correction. Publication is otherwise
+ * forward-only — a skewed correction moves only as new contributions outvote it
+ * in the median — so this is the escape hatch for a bad one. The approved
+ * contribution pool is left intact, so re-approving any new pending row
+ * re-derives the correction from scratch. See CALIBRATION_SIGNOFF.md §9.6.
+ */
+export async function unpublishCalibrationCorrection(
+  vehicleVariantId: string,
+): Promise<ActionResult> {
+  const user = await getAdminUser();
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  try {
+    const existing = await prisma.vehicleCalibrationCorrection.findUnique({
+      where: { vehicleVariantId },
+    });
+    if (!existing) {
+      return { success: false, error: 'No published correction for this variant' };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.vehicleCalibrationCorrection.delete({ where: { vehicleVariantId } });
+      await tx.moderationAction.create({
+        data: {
+          submissionType: 'calibration_contribution',
+          submissionId: vehicleVariantId,
+          moderatorId: user.id,
+          action: 'REJECT',
+          notes: `Unpublished correction (was kerb-mass ${
+            existing.kerbMassDeltaKg?.toFixed(0) ?? 'n/a'
+          } kg, CoG Δ ${existing.cogFractionDelta?.toFixed(3) ?? 'n/a'}${
+            existing.cogApplied ? ', CoG applied' : ''
+          })`,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          entityType: 'VehicleCalibrationCorrection',
+          entityId: vehicleVariantId,
+          action: 'DELETE',
+          changedBy: user.id,
+          changes: toJson({
+            kerbMassDeltaKg: existing.kerbMassDeltaKg,
+            kerbMassApplied: existing.kerbMassApplied,
+            cogFractionDelta: existing.cogFractionDelta,
+            cogApplied: existing.cogApplied,
+          }),
+          reason: 'Community calibration correction unpublished',
+        },
+      });
+    });
+
     revalidatePath('/admin/moderation/calibrations');
     return { success: true };
   } catch (err) {
