@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod/v4';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { serverError } from '@/lib/api-helpers';
+import { serverError, withRateLimit } from '@/lib/api-helpers';
 import { aggregatePositions } from '@/lib/fitment-positions';
 
 const itemSchema = z.object({
@@ -23,6 +23,10 @@ const contributeSchema = z.object({
 // growing even before sign-up. Every row lands PENDING for moderation.
 export async function POST(request: Request) {
   try {
+    // Anonymous write path — throttle to blunt contribution flooding/queue spam.
+    const limited = withRateLimit(request);
+    if (limited) return limited;
+
     const session = await auth();
     const body = await request.json();
     const parsed = contributeSchema.safeParse(body);

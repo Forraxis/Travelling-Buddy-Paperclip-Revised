@@ -119,6 +119,18 @@ describe('deriveContribution', () => {
     ).toBeNull();
   });
 
+  it('drops an implausible CoG shift while keeping the kerb-mass signal', () => {
+    // Nearly all weight on the front axle → an absurd implied base-CoG fraction.
+    const d = deriveContribution(baseInput, {
+      granularity: 'AXLE',
+      frontAxleKg: 2000,
+      rearAxleKg: 200,
+    })!;
+    expect(d).not.toBeNull();
+    expect(d.cogFractionDelta).toBeNull(); // beyond the sane band → discarded
+    expect(Number.isFinite(d.kerbMassDeltaKg)).toBe(true); // mass signal survives
+  });
+
   it('rejects an incomplete snapshot whose prediction is non-finite (no NaN rows)', () => {
     // Vehicle stripped to kerb + wheelbase (what a non-loose zod object yields)
     // but the arrays/scalars intact — the engine then reads NaN from the missing

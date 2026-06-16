@@ -259,15 +259,17 @@ change here, I change in the code — this doc is the contract.
 
 ---
 
-## 9. P3 — per-model regression from contributed calibrations (PROPOSED, awaiting red pen)
+## 9. P3 — per-model regression from contributed calibrations (BUILT; CoG math awaiting red pen)
 
 This is the data moat: many users' weighbridge contributions, aggregated, correct
 the **base** kerb estimates the model is weakest at — kerb **mass** and kerb
 **CoG position** — for *everyone*, including users who never weigh. Code:
-`src/lib/physics/calibration-contribution.ts` (pure, 20 unit tests). Nothing here
-moves a public number until you tick the boxes in §9.5 — corrections sit unused
-in `VehicleCalibrationCorrection` until an admin publishes them, and the CoG part
-stays gated even then.
+`src/lib/physics/calibration-contribution.ts` (pure, 22 unit tests). A correction
+sits unused in `VehicleCalibrationCorrection` until an admin publishes it. Once
+published, the **kerb-mass** part applies automatically to users who haven't
+weighed; the **kerb-CoG** part stays gated behind a per-variant moderator sign-off
+(the §9.5 red-pen below), so it never moves a public number until you've blessed
+the math.
 
 ### 9.1 What one contribution gives us
 
@@ -321,8 +323,9 @@ bareness-positive rows. ← is N=3 enough, or do you want a higher floor for CoG
 
 `mergeModelCorrection()` folds a published correction into `CalibrationOverrides`:
 - kerb-mass → `vehicleKerbKg` when `kerbMassApplied`.
-- kerb-CoG → `vehicleKerbCogFraction` (used at `engine.ts:284`) **only when
-  `cogApplied`** — set by the moderator's "Apply CoG shift (sign-off)" tick.
+- kerb-CoG → `vehicleKerbCogFraction` (used at the kerb load in
+  `computeVehicleAxles`, engine.ts) **only when `cogApplied`** — set by the
+  moderator's "Apply CoG shift (sign-off)" tick.
 A user's **own** weighbridge calibration always wins (we never clobber a field the
 caller set), so contributors still see their measured reality, not the crowd mean.
 
@@ -337,3 +340,49 @@ caller set), so contributors still see their measured reality, not the crowd mea
 Until §9.5 is ticked, treat the CoG-fraction output as **diagnostic only**. The
 plumbing, capture, math and moderation are built; flipping CoG live is one
 checkbox behind your red pen.
+
+### 9.6 Implementation guards & known limitations (so this sheet matches the code)
+
+These are the concrete behaviours `calibration-contribution.ts` ships with — not
+new sign-off items, but documented so a reviewer can reconcile §9 with the code.
+
+**Drop / guard rules (a contribution or signal is silently discarded when):**
+- **Implausible total** — measured/predicted outside `[0.5, 2.0]` → whole
+  contribution dropped (likely an extra digit / wrong vehicle / units mistake).
+- **Non-finite prediction** — an incomplete snapshot whose engine result is NaN/∞
+  is dropped, never stored (defence behind the `.loose()` zod schema).
+- **Degenerate base mass** — CoG signal skipped when `kerb + ΔM ≤ 0.5·kerb`
+  (measured far under predicted = noise, not a CoG read).
+- **Implausible CoG shift** — `|ΔfracCoG| > 0.30` → the CoG signal is dropped
+  (the kerb-mass signal from the same ticket is kept). Keeps wild fractions out of
+  the median and the moderator's view, independent of the `cogApplied` gate.
+- **Zero bareness** — `kerb ≤ 0` → `b = 0`, and zero-weight rows are excluded from
+  both aggregates by `weightedMedian`.
+
+**Negative residual** (model over-reads): unlike P1 §6.1's static-bias ruling, P3
+folds a negative ΔM straight into the kerb-mass median — a net-negative correction
+simply *reduces* the published kerb. Directionally fine; flagged for your eye.
+
+**Explicitly out of scope for P3:**
+- **Caravan-side calibration.** `CalibrationContribution` is vehicle-only
+  (`vehicleVariantId` required). Caravan tare/TBM regression is future work (ties to
+  the deferred tow-ball calibration, §4.4).
+- **TOWBALL-only tickets** carry no vehicle total → contribution rejected (422).
+
+**Known limitations (documented, deferred — not blockers, but know them):**
+- **No per-contributor dedup.** `MIN_SAMPLES = 3` counts *rows*, not distinct
+  submitters; the share UI only de-dupes within a browser session. One actor can
+  clear the gate alone. Mitigations in place: anon POST is rate-limited, and
+  bareness-weighted median + moderation-gating bound the damage. A
+  `duplicateFingerprint` (as other submission models carry) is the proper fix.
+- **No un-publish / revert.** Approval only ever upserts a correction; there's no
+  admin action to clear `kerbMassApplied` or delete a `VehicleCalibrationCorrection`.
+  A skewed correction is forward-only — it moves only as new contributions outvote
+  it in the median. Manual escape hatch = a DB edit. Build an "unpublish" action
+  before leaning on auto-apply in production.
+- **Re-approval recomputes `cogApplied` from the *current* checkbox** over the whole
+  approved pool, and the queue doesn't surface the currently-published correction —
+  a moderator can't see what's live before deciding. Surface it before relying on
+  CoG in prod.
+- **All-or-nothing moderation** — Approve/Reject act on every PENDING row for a
+  variant; no per-row reject (consistent with the positions queue).

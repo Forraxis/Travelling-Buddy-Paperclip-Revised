@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 import { getAdminUser } from '@/modules/admin/lib/auth';
 import {
   aggregateCorrection,
-  type DerivedContribution,
+  type AggregateInput,
 } from '@/lib/physics/calibration-contribution';
 
 type ActionResult = { success: true } | { success: false; error: string };
@@ -16,15 +16,12 @@ function toJson(value: unknown): Prisma.InputJsonValue {
 }
 
 /** Minimal projection the aggregator needs from a stored contribution row. */
-function toDerived(row: {
+function toAggregateInput(row: {
   kerbMassDeltaKg: number | null;
   barenessWeight: number;
   cogFractionDelta: number | null;
-}): DerivedContribution {
+}): AggregateInput {
   return {
-    measuredTotalKg: 0,
-    predictedTotalKg: 0,
-    residualMassKg: 0,
     barenessWeight: row.barenessWeight,
     kerbMassDeltaKg: row.kerbMassDeltaKg ?? 0,
     cogFractionDelta: row.cogFractionDelta,
@@ -70,7 +67,7 @@ export async function approveCalibrationContributions(
           cogFractionDelta: true,
         },
       });
-      const agg = aggregateCorrection(approved.map(toDerived));
+      const agg = aggregateCorrection(approved.map(toAggregateInput));
 
       await tx.vehicleCalibrationCorrection.upsert({
         where: { vehicleVariantId },

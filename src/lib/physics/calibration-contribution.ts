@@ -25,6 +25,14 @@ export const MIN_SAMPLES = 3;
 const SANE_TOTAL_LO = 0.5;
 const SANE_TOTAL_HI = 2.0;
 
+/**
+ * Discard a CoG-fraction signal whose implied shift is beyond this band — a
+ * fraction this far off 0.45 means the CoG sits outside a believable envelope,
+ * so it's noise, not a base-CoG read. Keeps wild values out of the median (and
+ * out of the moderator's view), independent of the cogApplied gate.
+ */
+const MAX_COG_FRACTION_DELTA = 0.3;
+
 function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
 }
@@ -123,7 +131,11 @@ export function deriveContribution(
     // not a CoG read.
     if (baseMass > 0.5 * kerb) {
       const f = (axles.front - otherFront) / baseMass;
-      cogFractionDelta = f - VEHICLE_KERB_COG_FRACTION;
+      const delta = f - VEHICLE_KERB_COG_FRACTION;
+      // Keep only a believable shift; an implausible one is a noisy ticket, not
+      // evidence about the base CoG.
+      cogFractionDelta =
+        Math.abs(delta) <= MAX_COG_FRACTION_DELTA ? delta : null;
     }
   }
 
@@ -173,15 +185,19 @@ export interface CorrectionAggregate {
   cogSampleCount: number;
 }
 
+/** The only fields the aggregator reads — so callers can't silently feed zeros. */
+export type AggregateInput = Pick<
+  DerivedContribution,
+  'kerbMassDeltaKg' | 'barenessWeight' | 'cogFractionDelta'
+>;
+
 /**
  * Fold a pool of derived contributions into one per-variant correction.
  * Bareness weighting makes near-kerb weigh-ins dominate (the cleanest base
  * read) and fully-loaded rigs count for little. Each correction publishes only
  * once it has MIN_SAMPLES contributing rows.
  */
-export function aggregateCorrection(
-  rows: DerivedContribution[],
-): CorrectionAggregate {
+export function aggregateCorrection(rows: AggregateInput[]): CorrectionAggregate {
   const massSamples: WeightedSample[] = rows
     .map((r) => ({ value: r.kerbMassDeltaKg, weight: r.barenessWeight }))
     .filter((s) => s.weight > 0);
@@ -234,6 +250,9 @@ export function mergeModelCorrection(
     correction.kerbMassDeltaKg != null &&
     out.vehicleKerbKg == null
   ) {
+    // vehicleKerbKg is an ADDITIVE offset in the engine (kerbWeightKg + this),
+    // and kerbMassDeltaKg is exactly that delta — semantics match. Don't repurpose
+    // vehicleKerbKg as an absolute anywhere or the two conventions collide.
     out.vehicleKerbKg = correction.kerbMassDeltaKg;
   }
   if (

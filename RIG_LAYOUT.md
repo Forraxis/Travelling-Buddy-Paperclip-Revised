@@ -224,16 +224,28 @@ that anchor. Builds on the existing `CalibrationOverrides` hook
 - **P2** — `SetupVersion` snapshots: save named/dated/noted versions, revert,
   compare two side-by-side.
 - **P3** — contribute calibration (opt-in default-on) → per-model base-estimate
-  improvement regression; surfaced via `CalibrationOverrides`. **BUILT (capture +
-  math + moderation):** `CalibrationContribution`/`VehicleCalibrationCorrection`
-  schema, `POST /api/calibrations/contribute`, opt-in panel, the
-  `calibration-contribution.ts` derivation (bareness-weighted robust median, 20
-  tests), `/admin/moderation/calibrations` queue. kerb-MASS auto-publishes past
-  the N≥3 gate; kerb-CoG-FRACTION stays **gated** behind a moderator sign-off.
-  See CALIBRATION_SIGNOFF.md §9 (awaiting Tim's red pen). REMAINING: wire the
-  published correction into `buildPhysicsInput` (load `VehicleCalibrationCorrection`
-  with the variant, `mergeModelCorrection` when the user hasn't weighed) — nothing
-  is live in the calculator until that wiring lands, by design.
+  improvement regression; surfaced via `CalibrationOverrides`. **BUILT END-TO-END
+  (capture + math + moderation + live wiring):**
+  - Schema `CalibrationContribution` / `VehicleCalibrationCorrection`;
+    rate-limited anon `POST /api/calibrations/contribute` (recomputes P₀
+    server-side, "store raw"); opt-in share panel in the calibration result view.
+  - `calibration-contribution.ts` derivation: bareness-weighted robust weighted-
+    median, N≥3 gate, sane-ratio + CoG-band guards (22 unit tests).
+  - `/admin/moderation/calibrations` queue (per-variant aggregate + drilldown,
+    Publish/Reject, CoG sign-off checkbox).
+  - **Live wiring DONE:** `getVariantById` includes `calibrationCorrection` →
+    `buildPhysicsInput` folds it via `mergeModelCorrection`, **live mode only**,
+    **only when the user hasn't weighed their own rig**, and **never in baseline**
+    (so contributions can't feed back on their own P₀). kerb-MASS auto-applies
+    once published past the gate; kerb-CoG stays gated behind `cogApplied`.
+  - Math written up for Rule-11 in **CALIBRATION_SIGNOFF.md §9** (incl. §9.6 impl
+    guards + known limitations). **Awaiting Tim's §9.5 red pen** — CoG is gated
+    by default in code; only un-gate per-variant via the moderator checkbox.
+  - **Known limitations (documented, deferred):** no per-contributor dedup (rows,
+    not distinct submitters, clear the gate); no admin un-publish/revert of a
+    correction (forward-only; DB edit is the escape hatch); moderation is
+    all-or-nothing per variant; the queue doesn't surface the currently-published
+    correction. See CALIBRATION_SIGNOFF.md §9.6.
 
 ### Trust / legal
 Calibrating to a weighbridge ticket *raises* credibility ("calibrated to your

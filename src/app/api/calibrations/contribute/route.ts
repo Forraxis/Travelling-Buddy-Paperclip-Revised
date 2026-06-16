@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod/v4';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { serverError } from '@/lib/api-helpers';
+import { serverError, withRateLimit } from '@/lib/api-helpers';
 import { deriveContribution } from '@/lib/physics/calibration-contribution';
 import { calculate } from '@/lib/physics/engine';
 import type { PhysicsInput } from '@/lib/physics/types';
@@ -53,6 +53,13 @@ const bodySchema = z.object({
 // CALIBRATION_SIGNOFF.md §9 and RIG_LAYOUT.md "Phase E / P3".
 export async function POST(request: Request) {
   try {
+    // Anonymous write path — throttle to blunt fabricated-contribution flooding
+    // (a burst of plausible near-kerb tickets could skew the weighted median a
+    // moderator later bulk-approves). Moderation-gating limits the blast radius;
+    // this caps the rate. (In-memory per-instance limiter — see rate-limit.ts.)
+    const limited = withRateLimit(request);
+    if (limited) return limited;
+
     const session = await auth();
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);

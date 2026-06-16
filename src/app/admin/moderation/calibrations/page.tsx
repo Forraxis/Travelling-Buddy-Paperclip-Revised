@@ -4,7 +4,6 @@ import { prisma } from '@/lib/db';
 import {
   aggregateCorrection,
   MIN_SAMPLES,
-  type DerivedContribution,
 } from '@/lib/physics/calibration-contribution';
 import {
   CalibrationQueueView,
@@ -68,15 +67,13 @@ export default async function CalibrationQueuePage() {
     });
   }
   for (const g of groups.values()) {
-    const derived: DerivedContribution[] = g.rows.map((r) => ({
-      measuredTotalKg: r.measuredTotalKg,
-      predictedTotalKg: r.predictedTotalKg,
-      residualMassKg: r.residualMassKg,
-      barenessWeight: r.barenessWeight,
-      kerbMassDeltaKg: r.kerbMassDeltaKg ?? 0,
-      cogFractionDelta: r.cogFractionDelta,
-    }));
-    g.aggregate = aggregateCorrection(derived);
+    g.aggregate = aggregateCorrection(
+      g.rows.map((r) => ({
+        barenessWeight: r.barenessWeight,
+        kerbMassDeltaKg: r.kerbMassDeltaKg ?? 0,
+        cogFractionDelta: r.cogFractionDelta,
+      })),
+    );
   }
 
   return <CalibrationQueueView groups={[...groups.values()]} />;
