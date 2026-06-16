@@ -58,10 +58,11 @@ DATABASE_URL=… npx prisma generate
 # 4. Run the dev server (Next + turbopack on port 3070)
 npm run dev          # → https://tbr.dev.ragebots.me
 
-# Quality gates
-npx tsc --noEmit
-npx vitest run
-npx eslint src
+# Quality gates (the same checks CI runs)
+npm run type-check   # tsc --noEmit
+npm run test         # vitest run
+npm run lint         # eslint . && prettier --check .
+npm run lint:fix     # auto-fix eslint + prettier
 ```
 
 > After any `schema.prisma` change, regenerate the client **and restart** the dev
