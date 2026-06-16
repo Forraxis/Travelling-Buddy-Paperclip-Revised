@@ -42,11 +42,17 @@ export function buildPhysicsInput(
   const greyWaterCapL = Number(caravan?.greyWaterCapacityL ?? 0);
   const freshWaterPercent =
     freshWaterCapL > 0
-      ? Math.min(100, (state.caravanAssumptions.freshWaterL / freshWaterCapL) * 100)
+      ? Math.min(
+          100,
+          (state.caravanAssumptions.freshWaterL / freshWaterCapL) * 100,
+        )
       : 0;
   const greyWaterPercent =
     greyWaterCapL > 0
-      ? Math.min(100, (state.caravanAssumptions.greyWaterL / greyWaterCapL) * 100)
+      ? Math.min(
+          100,
+          (state.caravanAssumptions.greyWaterL / greyWaterCapL) * 100,
+        )
       : 0;
 
   // In baseline mode, drop the positioned unaccounted load so P₀ is the clean
@@ -70,8 +76,10 @@ export function buildPhysicsInput(
   };
   const modelCorrection: ModelCorrection | null =
     mode === 'live' && !state.calibration
-      ? ((vehicle.calibrationCorrection as ModelCorrection | null | undefined) ??
-        null)
+      ? ((vehicle.calibrationCorrection as
+          | ModelCorrection
+          | null
+          | undefined) ?? null)
       : null;
   const calibrationOverrides =
     mergeModelCorrection(baseOverrides, modelCorrection) ?? baseOverrides;
@@ -87,7 +95,9 @@ export function buildPhysicsInput(
       maxTowBallDownloadKg: Number(vehicle.maxTowBallDownloadKg),
       wheelbaseMm: Number(vehicle.wheelbaseMm),
       frontOverhangMm:
-        vehicle.frontOverhangMm != null ? Number(vehicle.frontOverhangMm) : null,
+        vehicle.frontOverhangMm != null
+          ? Number(vehicle.frontOverhangMm)
+          : null,
       rearOverhangMm:
         vehicle.rearOverhangMm != null ? Number(vehicle.rearOverhangMm) : null,
       trackWidthMm: vehicleProfile(
@@ -111,12 +121,16 @@ export function buildPhysicsInput(
             | 'TRIPLE_AXLE',
           couplingToAxleMm: Number(caravan.couplingToAxleMm),
           axleSpacingMm:
-            caravan.axleSpacingMm != null ? Number(caravan.axleSpacingMm) : null,
+            caravan.axleSpacingMm != null
+              ? Number(caravan.axleSpacingMm)
+              : null,
           freshWaterCapacityL: freshWaterCapL,
           greyWaterCapacityL: greyWaterCapL,
           trackWidthMm: caravanProfile(
             caravanBodyKindFromType(
-              ((caravan.model ?? {}) as AnyVariant).bodyType as string | undefined,
+              ((caravan.model ?? {}) as AnyVariant).bodyType as
+                | string
+                | undefined,
             ),
           ).trackWidthMm,
         }

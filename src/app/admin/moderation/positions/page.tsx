@@ -2,7 +2,10 @@ import { redirect } from 'next/navigation';
 import { getAdminUser } from '@/modules/admin/lib/auth';
 import { prisma } from '@/lib/db';
 import { aggregatePositions } from '@/lib/fitment-positions';
-import { PositionQueueView, type PositionGroup } from './_components/PositionQueueView';
+import {
+  PositionQueueView,
+  type PositionGroup,
+} from './_components/PositionQueueView';
 
 export const metadata = { title: 'Position Queue — Admin' };
 

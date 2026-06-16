@@ -17,7 +17,9 @@ export function TopDownImageView({ items }: { items: Item[] }) {
   const [rows, setRows] = useState(items);
   const [q, setQ] = useState('');
   const filtered = rows.filter((r) =>
-    `${r.brand} ${r.name} ${r.category}`.toLowerCase().includes(q.toLowerCase()),
+    `${r.brand} ${r.name} ${r.category}`
+      .toLowerCase()
+      .includes(q.toLowerCase()),
   );
 
   return (
@@ -34,19 +36,31 @@ export function TopDownImageView({ items }: { items: Item[] }) {
             key={r.id}
             item={r}
             onSaved={(url) =>
-              setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, topDownImageUrl: url } : x)))
+              setRows((rs) =>
+                rs.map((x) =>
+                  x.id === r.id ? { ...x, topDownImageUrl: url } : x,
+                ),
+              )
             }
           />
         ))}
         {filtered.length === 0 && (
-          <li className="px-4 py-6 text-center text-sm text-gray-400">No matches.</li>
+          <li className="px-4 py-6 text-center text-sm text-gray-400">
+            No matches.
+          </li>
         )}
       </ul>
     </div>
   );
 }
 
-function Row({ item, onSaved }: { item: Item; onSaved: (url: string | null) => void }) {
+function Row({
+  item,
+  onSaved,
+}: {
+  item: Item;
+  onSaved: (url: string | null) => void;
+}) {
   const [url, setUrl] = useState(item.topDownImageUrl ?? '');
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -67,7 +81,11 @@ function Row({ item, onSaved }: { item: Item; onSaved: (url: string | null) => v
     <li className="flex flex-wrap items-center gap-3 px-4 py-2.5">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50">
         {item.topDownImageUrl ? (
-          <img src={item.topDownImageUrl} alt="" className="h-full w-full object-cover" />
+          <img
+            src={item.topDownImageUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
         ) : (
           <span className="text-[10px] text-gray-400">icon</span>
         )}
@@ -90,7 +108,7 @@ function Row({ item, onSaved }: { item: Item; onSaved: (url: string | null) => v
         type="button"
         onClick={save}
         disabled={pending || !dirty}
-        className="rounded bg-tb-primary px-3 py-1 text-xs font-medium text-white hover:bg-tb-primary/90 disabled:opacity-40"
+        className="bg-tb-primary hover:bg-tb-primary/90 rounded px-3 py-1 text-xs font-medium text-white disabled:opacity-40"
       >
         {pending ? '…' : 'Save'}
       </button>

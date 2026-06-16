@@ -15,7 +15,10 @@ interface SetupAccessoryDTO {
   fitment?: {
     installedWeightKg?: number | string | null;
     mountingLocation?: string | null;
-    accessory?: { name?: string | null; topDownImageUrl?: string | null } | null;
+    accessory?: {
+      name?: string | null;
+      topDownImageUrl?: string | null;
+    } | null;
   } | null;
 }
 

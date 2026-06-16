@@ -17,8 +17,7 @@ function loadKeys(state: CalculatorState): Map<string, string> {
     m.set(`acc:${a.accessoryId}`, a.label ?? 'Accessory');
   for (const a of state.caravanAccessories ?? [])
     m.set(`cvacc:${a.accessoryId}`, a.label ?? 'Caravan accessory');
-  for (const l of state.customLoads ?? [])
-    m.set(`load:${l.id}`, l.label);
+  for (const l of state.customLoads ?? []) m.set(`load:${l.id}`, l.label);
   return m;
 }
 
@@ -62,9 +61,18 @@ export function VersionCompare({
   if (sa?.towBallKg != null || sb?.towBallKg != null)
     rows.push({ label: 'Tow ball', a: sa?.towBallKg, b: sb?.towBallKg });
   if (sa?.gcmKg != null || sb?.gcmKg != null)
-    rows.push({ label: 'GCM', a: sa?.gcmKg, b: sb?.gcmKg, limit: sa?.gcmLimitKg });
+    rows.push({
+      label: 'GCM',
+      a: sa?.gcmKg,
+      b: sb?.gcmKg,
+      limit: sa?.gcmLimitKg,
+    });
   if (sa?.caravanAtmKg != null || sb?.caravanAtmKg != null)
-    rows.push({ label: 'Caravan ATM', a: sa?.caravanAtmKg, b: sb?.caravanAtmKg });
+    rows.push({
+      label: 'Caravan ATM',
+      a: sa?.caravanAtmKg,
+      b: sb?.caravanAtmKg,
+    });
 
   const { added, removed } = diffLoads(a.stateSnapshot, b.stateSnapshot);
 
@@ -95,18 +103,23 @@ export function VersionCompare({
         <span className="text-[10px] font-semibold tracking-wide text-gray-400 uppercase">
           Metric
         </span>
-        <span className="truncate text-right text-[10px] font-medium text-gray-500" title={a.label}>
+        <span
+          className="truncate text-right text-[10px] font-medium text-gray-500"
+          title={a.label}
+        >
           {a.label}
         </span>
-        <span className="truncate text-right text-[10px] font-medium text-gray-500" title={b.label}>
+        <span
+          className="truncate text-right text-[10px] font-medium text-gray-500"
+          title={b.label}
+        >
           {b.label}
         </span>
         <span className="text-right text-[10px] font-semibold tracking-wide text-gray-400 uppercase">
           Δ
         </span>
         {rows.map((r) => {
-          const delta =
-            r.a != null && r.b != null ? r.b - r.a : null;
+          const delta = r.a != null && r.b != null ? r.b - r.a : null;
           return (
             <div key={r.label} className="contents">
               <span className="border-t border-teal-100 py-1 text-gray-600">
@@ -130,9 +143,7 @@ export function VersionCompare({
                         : 'text-teal-600',
                 ].join(' ')}
               >
-                {delta == null
-                  ? '—'
-                  : `${delta > 0 ? '+' : ''}${delta}`}
+                {delta == null ? '—' : `${delta > 0 ? '+' : ''}${delta}`}
               </span>
             </div>
           );

@@ -150,10 +150,7 @@ export function WeighbridgeCalibrationPanel() {
       : null;
   };
 
-  const apply = (
-    measurement: WeighbridgeMeasurement,
-    staticOnly: boolean,
-  ) => {
+  const apply = (measurement: WeighbridgeMeasurement, staticOnly: boolean) => {
     // Strip any prior unaccounted load so we re-solve against a clean C₀.
     if (cal?.unaccountedLoadId) removeCustomLoad(cal.unaccountedLoadId);
 
@@ -265,8 +262,8 @@ export function WeighbridgeCalibrationPanel() {
           </p>
         )}
 
-        <div className="mb-3 overflow-hidden rounded-md border border-tb-neutral-200">
-          <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 bg-tb-neutral-50 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-gray-400 uppercase">
+        <div className="border-tb-neutral-200 mb-3 overflow-hidden rounded-md border">
+          <div className="bg-tb-neutral-50 grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-gray-400 uppercase">
             <span>Metric</span>
             <span className="text-right">Model</span>
             <span className="text-right">Calibrated</span>
@@ -274,7 +271,7 @@ export function WeighbridgeCalibrationPanel() {
           {rows.map((r) => (
             <div
               key={r.k}
-              className="grid grid-cols-[1fr_auto_auto] gap-x-3 border-t border-tb-neutral-100 px-3 py-1.5 text-xs tabular-nums"
+              className="border-tb-neutral-100 grid grid-cols-[1fr_auto_auto] gap-x-3 border-t px-3 py-1.5 text-xs tabular-nums"
             >
               <span className="text-gray-600">{r.k}</span>
               <span className="text-right text-gray-400">
@@ -304,15 +301,16 @@ export function WeighbridgeCalibrationPanel() {
             onChange={(e) => onToggleStatic(e.target.checked)}
             style={{ accentColor: ACCENT }}
           />
-          I don&apos;t know where the extra weight sits (use a static correction)
+          I don&apos;t know where the extra weight sits (use a static
+          correction)
         </label>
 
         {state.vehicleVariantId && (
           <div className="mb-3 rounded-md border border-violet-100 bg-violet-50/50 p-2.5">
             {shareState === 'done' ? (
               <p className="text-[11px] text-violet-700">
-                Thanks — shared anonymously. Contributions like yours sharpen the
-                base estimates for this model. ✓
+                Thanks — shared anonymously. Contributions like yours sharpen
+                the base estimates for this model. ✓
               </p>
             ) : (
               <>
@@ -344,7 +342,7 @@ export function WeighbridgeCalibrationPanel() {
           </div>
         )}
 
-        <div className="flex gap-2 border-t border-tb-neutral-100 pt-3">
+        <div className="border-tb-neutral-100 flex gap-2 border-t pt-3">
           <button
             type="button"
             onClick={onClear}
@@ -389,7 +387,7 @@ export function WeighbridgeCalibrationPanel() {
         ))}
       </div>
 
-      <div className="mb-3 divide-y divide-tb-neutral-100">
+      <div className="divide-tb-neutral-100 mb-3 divide-y">
         {fidelity === 'TOTAL' && (
           <Field
             label="Total / GVM"

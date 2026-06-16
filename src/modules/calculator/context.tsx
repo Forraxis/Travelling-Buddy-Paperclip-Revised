@@ -134,7 +134,6 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         active = false;
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Hydrate a saved DB setup into full state (incl. custom loads + calibration,

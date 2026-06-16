@@ -84,7 +84,10 @@ export interface CalibrationResult {
  */
 export const MIN_POSITIONED_MASS_KG = 15;
 
-function defaultOverhang(v: number | null | undefined, fallback: number): number {
+function defaultOverhang(
+  v: number | null | undefined,
+  fallback: number,
+): number {
   return v != null && v > 0 ? v : fallback;
 }
 
@@ -247,11 +250,11 @@ export function solveVehicleCalibration(
       twist += Math.abs(rem);
     }
     offsets.corners = cornerOff;
-    offsets.frontAxleKg = round1(
-      (dFront ?? 0) - (contrib.front),
-    );
+    offsets.frontAxleKg = round1((dFront ?? 0) - contrib.front);
     offsets.rearAxleKg = round1((dRear ?? 0) - contrib.rear);
-    offsets.gvmKg = round1((offsets.frontAxleKg ?? 0) + (offsets.rearAxleKg ?? 0));
+    offsets.gvmKg = round1(
+      (offsets.frontAxleKg ?? 0) + (offsets.rearAxleKg ?? 0),
+    );
     if (twist > 1) {
       notes.push(
         `Corner ticket: total, front/rear and left/right reproduced by the load; ${Math.round(twist)} kg of diagonal twist held as a static corner offset.`,
@@ -263,8 +266,10 @@ export function solveVehicleCalibration(
     // AXLE: remainder only where x was clamped (otherwise exact).
     offsets.frontAxleKg = round1(dFront - contrib.front);
     offsets.rearAxleKg = round1((dRear ?? 0) - contrib.rear);
-    offsets.gvmKg = round1((offsets.frontAxleKg ?? 0) + (offsets.rearAxleKg ?? 0));
-    const clamped = Math.abs((offsets.frontAxleKg ?? 0)) > 1;
+    offsets.gvmKg = round1(
+      (offsets.frontAxleKg ?? 0) + (offsets.rearAxleKg ?? 0),
+    );
+    const clamped = Math.abs(offsets.frontAxleKg ?? 0) > 1;
     notes.push(
       clamped
         ? 'Axle ticket: load clamped to the rig; remainder held as a static axle offset.'
@@ -289,8 +294,8 @@ function staticFromResidual(
   if (cornerResidual) {
     return {
       gvmKg: round1(mTotal),
-      frontAxleKg: round1((dFront ?? 0)),
-      rearAxleKg: round1((dRear ?? 0)),
+      frontAxleKg: round1(dFront ?? 0),
+      rearAxleKg: round1(dRear ?? 0),
       corners: {
         fl: round1(cornerResidual.fl),
         fr: round1(cornerResidual.fr),

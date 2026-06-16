@@ -81,7 +81,9 @@ function FootprintMark({
   return (
     <g
       onPointerDown={onPointerDown}
-      style={{ cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'default' }}
+      style={{
+        cursor: draggable ? (dragging ? 'grabbing' : 'grab') : 'default',
+      }}
     >
       {draggable && (
         <rect
@@ -197,10 +199,34 @@ export default function TopDownSchematic({
 
   const corners = lat
     ? ([
-        { k: 'fl', x: px(v.frontAxleMm), y: centerY - vTrack, load: lat.corners.fl, limit: lat.frontCornerLimitKg },
-        { k: 'fr', x: px(v.frontAxleMm), y: centerY + vTrack, load: lat.corners.fr, limit: lat.frontCornerLimitKg },
-        { k: 'rl', x: px(v.rearAxleMm), y: centerY - vTrack, load: lat.corners.rl, limit: lat.rearCornerLimitKg },
-        { k: 'rr', x: px(v.rearAxleMm), y: centerY + vTrack, load: lat.corners.rr, limit: lat.rearCornerLimitKg },
+        {
+          k: 'fl',
+          x: px(v.frontAxleMm),
+          y: centerY - vTrack,
+          load: lat.corners.fl,
+          limit: lat.frontCornerLimitKg,
+        },
+        {
+          k: 'fr',
+          x: px(v.frontAxleMm),
+          y: centerY + vTrack,
+          load: lat.corners.fr,
+          limit: lat.frontCornerLimitKg,
+        },
+        {
+          k: 'rl',
+          x: px(v.rearAxleMm),
+          y: centerY - vTrack,
+          load: lat.corners.rl,
+          limit: lat.rearCornerLimitKg,
+        },
+        {
+          k: 'rr',
+          x: px(v.rearAxleMm),
+          y: centerY + vTrack,
+          load: lat.corners.rr,
+          limit: lat.rearCornerLimitKg,
+        },
       ] as const)
     : [];
 
@@ -231,7 +257,7 @@ export default function TopDownSchematic({
 
   return (
     <figure
-      className="mb-4 rounded-xl border border-tb-neutral-200 bg-gradient-to-b from-white to-tb-neutral-50 p-3"
+      className="border-tb-neutral-200 to-tb-neutral-50 mb-4 rounded-xl border bg-gradient-to-b from-white p-3"
       aria-label={`Top-down weight distribution for ${model.title}`}
     >
       <svg
@@ -243,14 +269,54 @@ export default function TopDownSchematic({
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
       >
-        <line x1={12} y1={centerY} x2={VB_W - 12} y2={centerY} stroke="#cbd5e1" strokeWidth={1} strokeDasharray="6 5" />
-        <text x={16} y={centerY - vHalf - 6} fontSize={11} fontWeight={600} fill="#64748b">LEFT</text>
-        <text x={16} y={centerY + vHalf + 16} fontSize={11} fontWeight={600} fill="#64748b">RIGHT</text>
+        <line
+          x1={12}
+          y1={centerY}
+          x2={VB_W - 12}
+          y2={centerY}
+          stroke="#cbd5e1"
+          strokeWidth={1}
+          strokeDasharray="6 5"
+        />
+        <text
+          x={16}
+          y={centerY - vHalf - 6}
+          fontSize={11}
+          fontWeight={600}
+          fill="#64748b"
+        >
+          LEFT
+        </text>
+        <text
+          x={16}
+          y={centerY + vHalf + 16}
+          fontSize={11}
+          fontWeight={600}
+          fill="#64748b"
+        >
+          RIGHT
+        </text>
 
         {c && (
           <g>
-            <rect x={px(c.bodyRearMm)} y={centerY - (c.widthMm / 2) * scale} width={px(c.bodyFrontMm) - px(c.bodyRearMm)} height={c.widthMm * scale} rx={8} fill={BODY_VAN} stroke={STROKE} strokeWidth={2.5} />
-            <line x1={px(c.bodyFrontMm)} y1={centerY} x2={px(c.couplingMm)} y2={centerY} stroke={TIRE} strokeWidth={3} />
+            <rect
+              x={px(c.bodyRearMm)}
+              y={centerY - (c.widthMm / 2) * scale}
+              width={px(c.bodyFrontMm) - px(c.bodyRearMm)}
+              height={c.widthMm * scale}
+              rx={8}
+              fill={BODY_VAN}
+              stroke={STROKE}
+              strokeWidth={2.5}
+            />
+            <line
+              x1={px(c.bodyFrontMm)}
+              y1={centerY}
+              x2={px(c.couplingMm)}
+              y2={centerY}
+              stroke={TIRE}
+              strokeWidth={3}
+            />
             {c.axleMms.map((mm, i) => (
               <g key={i}>
                 <WheelMark x={px(mm)} y={centerY - (c.widthMm / 2) * scale} />
@@ -261,8 +327,26 @@ export default function TopDownSchematic({
         )}
 
         <g>
-          <rect x={vRear} y={centerY - vHalf} width={vFront - vRear} height={vHalf * 2} rx={10} fill={BODY} stroke={STROKE} strokeWidth={2.5} />
-          <rect x={cabStart} y={centerY - vHalf + 4} width={cabEnd - cabStart} height={vHalf * 2 - 8} rx={6} fill={GLASS} stroke={STROKE} strokeWidth={1.2} />
+          <rect
+            x={vRear}
+            y={centerY - vHalf}
+            width={vFront - vRear}
+            height={vHalf * 2}
+            rx={10}
+            fill={BODY}
+            stroke={STROKE}
+            strokeWidth={2.5}
+          />
+          <rect
+            x={cabStart}
+            y={centerY - vHalf + 4}
+            width={cabEnd - cabStart}
+            height={vHalf * 2 - 8}
+            rx={6}
+            fill={GLASS}
+            stroke={STROKE}
+            strokeWidth={1.2}
+          />
           <WheelMark x={px(v.frontAxleMm)} y={centerY - vTrack} />
           <WheelMark x={px(v.frontAxleMm)} y={centerY + vTrack} />
           <WheelMark x={px(v.rearAxleMm)} y={centerY - vTrack} />
@@ -286,7 +370,16 @@ export default function TopDownSchematic({
                 fillOpacity={active ? 0.12 : 0.04}
               />
               {i > 0 && (
-                <line x1={x0} y1={centerY - vHalf} x2={x0} y2={centerY + vHalf} stroke={STROKE} strokeOpacity={0.15} strokeWidth={1} strokeDasharray="2 3" />
+                <line
+                  x1={x0}
+                  y1={centerY - vHalf}
+                  x2={x0}
+                  y2={centerY + vHalf}
+                  stroke={STROKE}
+                  strokeOpacity={0.15}
+                  strokeWidth={1}
+                  strokeDasharray="2 3"
+                />
               )}
               {x1 - x0 > 34 && (
                 <text
@@ -309,8 +402,22 @@ export default function TopDownSchematic({
           const below = cn.k === 'fr' || cn.k === 'rr';
           return (
             <g key={cn.k}>
-              <circle cx={cn.x} cy={cn.y} r={5} fill={hex(st)} stroke="#fff" strokeWidth={1.5} />
-              <text x={cn.x} y={cn.y + (below ? 20 : -12)} textAnchor="middle" fontSize={11} fontWeight={700} fill={hex(st)}>
+              <circle
+                cx={cn.x}
+                cy={cn.y}
+                r={5}
+                fill={hex(st)}
+                stroke="#fff"
+                strokeWidth={1.5}
+              />
+              <text
+                x={cn.x}
+                y={cn.y + (below ? 20 : -12)}
+                textAnchor="middle"
+                fontSize={11}
+                fontWeight={700}
+                fill={hex(st)}
+              >
                 {Math.round(cn.load).toLocaleString()} kg
               </text>
             </g>
@@ -346,20 +453,32 @@ export default function TopDownSchematic({
       </svg>
 
       {lat && (
-        <figcaption className="mt-1 border-t border-tb-neutral-200 px-1 pt-2">
+        <figcaption className="border-tb-neutral-200 mt-1 border-t px-1 pt-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-tb-primary">
+            <span className="text-tb-primary font-semibold">
               Left / right balance
             </span>
-            <span className={`font-bold tabular-nums ${lat.status === 'fail' ? 'text-tb-danger' : lat.status === 'warn' ? 'text-tb-warning' : 'text-tb-success'}`}>
+            <span
+              className={`font-bold tabular-nums ${lat.status === 'fail' ? 'text-tb-danger' : lat.status === 'warn' ? 'text-tb-warning' : 'text-tb-success'}`}
+            >
               {lat.imbalancePct < 0.5
                 ? 'Balanced'
                 : `${Math.round(Math.abs(lat.imbalanceKg))} kg ${lat.imbalanceKg > 0 ? 'right' : 'left'}-heavy (${lat.imbalancePct.toFixed(0)}%)`}
             </span>
           </div>
-          <div className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-tb-neutral-200">
-            <div className="h-full bg-tb-primary-light/70" style={{ width: `${(lat.leftKg / (lat.leftKg + lat.rightKg)) * 100}%` }} />
-            <div className="h-full bg-tb-primary/70" style={{ width: `${(lat.rightKg / (lat.leftKg + lat.rightKg)) * 100}%` }} />
+          <div className="bg-tb-neutral-200 mt-1.5 flex h-2 overflow-hidden rounded-full">
+            <div
+              className="bg-tb-primary-light/70 h-full"
+              style={{
+                width: `${(lat.leftKg / (lat.leftKg + lat.rightKg)) * 100}%`,
+              }}
+            />
+            <div
+              className="bg-tb-primary/70 h-full"
+              style={{
+                width: `${(lat.rightKg / (lat.leftKg + lat.rightKg)) * 100}%`,
+              }}
+            />
           </div>
 
           {nudge && (
@@ -368,9 +487,10 @@ export default function TopDownSchematic({
               onClick={() =>
                 onMovePosition?.(nudge.dot.id, nudge.dot.xMm, nudge.newY)
               }
-              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-tb-primary/30 bg-tb-primary/5 px-2.5 py-1 text-[11px] font-semibold text-tb-primary transition-colors hover:bg-tb-primary/10"
+              className="border-tb-primary/30 bg-tb-primary/5 text-tb-primary hover:bg-tb-primary/10 mt-2 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors"
             >
-              ⚖︎ Auto-balance — move “{nudge.dot.label}” {Math.abs(nudge.applied)}
+              ⚖︎ Auto-balance — move “{nudge.dot.label}”{' '}
+              {Math.abs(nudge.applied)}
               {' mm '}
               {nudge.dir}
             </button>
@@ -383,9 +503,9 @@ export default function TopDownSchematic({
             </p>
           )}
           {lat.overShareCorner && (
-            <p className="mt-1.5 text-[11px] text-tb-danger">
-              One tyre is over its share — redistribute weight toward the lighter
-              side.
+            <p className="text-tb-danger mt-1.5 text-[11px]">
+              One tyre is over its share — redistribute weight toward the
+              lighter side.
             </p>
           )}
         </figcaption>

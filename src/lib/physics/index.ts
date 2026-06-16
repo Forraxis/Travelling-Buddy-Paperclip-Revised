@@ -1,8 +1,5 @@
 export { calculate } from './engine';
-export {
-  solveVehicleCalibration,
-  MIN_POSITIONED_MASS_KG,
-} from './calibration';
+export { solveVehicleCalibration, MIN_POSITIONED_MASS_KG } from './calibration';
 export {
   calibrateToWeighbridge,
   type WeighbridgeCalibrationOutput,

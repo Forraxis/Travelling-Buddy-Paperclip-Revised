@@ -85,7 +85,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { created: accepted.length, skipped: data.items.length - accepted.length },
+      {
+        created: accepted.length,
+        skipped: data.items.length - accepted.length,
+      },
       { status: 201 },
     );
   } catch (err) {

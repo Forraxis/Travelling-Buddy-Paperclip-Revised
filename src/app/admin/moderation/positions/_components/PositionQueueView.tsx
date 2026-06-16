@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { PositionAggregate, PositionSample } from '@/lib/fitment-positions';
-import {
-  approveFitmentPositions,
-  rejectFitmentPositions,
-} from '../actions';
+import type {
+  PositionAggregate,
+  PositionSample,
+} from '@/lib/fitment-positions';
+import { approveFitmentPositions, rejectFitmentPositions } from '../actions';
 
 export interface PositionGroup {
   key: {
@@ -44,11 +44,7 @@ export function PositionQueueView({ groups }: { groups: PositionGroup[] }) {
     startTransition(async () => {
       const res = await approveFitmentPositions(g.key);
       if (res.success) {
-        remove(
-          g.key.fitmentId,
-          g.key.vehicleVariantId,
-          g.key.caravanVariantId,
-        );
+        remove(g.key.fitmentId, g.key.vehicleVariantId, g.key.caravanVariantId);
       } else {
         setError(res.error);
       }
@@ -60,11 +56,7 @@ export function PositionQueueView({ groups }: { groups: PositionGroup[] }) {
     startTransition(async () => {
       const res = await rejectFitmentPositions(g.key);
       if (res.success) {
-        remove(
-          g.key.fitmentId,
-          g.key.vehicleVariantId,
-          g.key.caravanVariantId,
-        );
+        remove(g.key.fitmentId, g.key.vehicleVariantId, g.key.caravanVariantId);
       } else {
         setError(res.error);
       }
@@ -162,7 +154,7 @@ export function PositionQueueView({ groups }: { groups: PositionGroup[] }) {
                       type="button"
                       disabled={pending}
                       onClick={() => onApprove(g)}
-                      className="rounded-md bg-tb-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-tb-primary/90 disabled:opacity-50"
+                      className="bg-tb-primary hover:bg-tb-primary/90 rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                     >
                       Promote consensus
                     </button>

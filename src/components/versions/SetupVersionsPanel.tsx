@@ -180,13 +180,15 @@ export function SetupVersionsPanel() {
       )}
 
       {showForm && (
-        <div className="mb-3 space-y-2 rounded-md border border-tb-neutral-200 bg-tb-neutral-50/50 p-3">
+        <div className="border-tb-neutral-200 bg-tb-neutral-50/50 mb-3 space-y-2 rounded-md border p-3">
           <input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder={calibrated ? 'e.g. As weighed (Apr)' : 'e.g. Loaded for the trip'}
+            placeholder={
+              calibrated ? 'e.g. As weighed (Apr)' : 'e.g. Loaded for the trip'
+            }
             maxLength={120}
-            className="w-full rounded border border-tb-neutral-200 bg-white px-2 py-1 text-sm"
+            className="border-tb-neutral-200 w-full rounded border bg-white px-2 py-1 text-sm"
           />
           <textarea
             value={note}
@@ -194,7 +196,7 @@ export function SetupVersionsPanel() {
             placeholder="Note (optional) — what's different about this setup?"
             maxLength={1000}
             rows={2}
-            className="w-full resize-none rounded border border-tb-neutral-200 bg-white px-2 py-1 text-xs"
+            className="border-tb-neutral-200 w-full resize-none rounded border bg-white px-2 py-1 text-xs"
           />
           {calibrated && (
             <p className="text-[11px] text-violet-600">
@@ -232,7 +234,7 @@ export function SetupVersionsPanel() {
           {versions.map((v) => (
             <li
               key={v.id}
-              className="rounded-md border border-tb-neutral-200 p-2.5"
+              className="border-tb-neutral-200 rounded-md border p-2.5"
             >
               <div className="flex items-start gap-2">
                 <input

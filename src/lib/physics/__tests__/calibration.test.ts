@@ -51,7 +51,8 @@ describe('solveVehicleCalibration — AXLE (§4.2 / §7)', () => {
       rearAxleKg: 1690,
     };
     const { unaccountedLoad } = solveVehicleCalibration(m, predictedAxle, geom);
-    const contribFront = (unaccountedLoad!.massKg * unaccountedLoad!.cogXMm) / geom.wheelbaseMm;
+    const contribFront =
+      (unaccountedLoad!.massKg * unaccountedLoad!.cogXMm) / geom.wheelbaseMm;
     // ΔF should come back out as 30 kg on the front axle.
     expect(contribFront).toBeCloseTo(30, 0);
   });
@@ -212,7 +213,10 @@ describe('engine — applies vehicle static offsets', () => {
       base.vehicle.totalWeightKg + 100,
       1,
     );
-    expect(cal.vehicle.frontAxleKg).toBeCloseTo(base.vehicle.frontAxleKg + 40, 1);
+    expect(cal.vehicle.frontAxleKg).toBeCloseTo(
+      base.vehicle.frontAxleKg + 40,
+      1,
+    );
     expect(cal.vehicle.rearAxleKg).toBeCloseTo(base.vehicle.rearAxleKg + 60, 1);
     // total stays consistent with front+rear
     expect(cal.vehicle.frontAxleKg + cal.vehicle.rearAxleKg).toBeCloseTo(

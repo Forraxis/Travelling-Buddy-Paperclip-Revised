@@ -85,7 +85,10 @@ export function stateToParams(state: CalculatorState): URLSearchParams {
   }
 
   if (state.accessories.length > 0) {
-    params.set(PARAM.accessories, state.accessories.map(encodeAccessory).join(','));
+    params.set(
+      PARAM.accessories,
+      state.accessories.map(encodeAccessory).join(','),
+    );
   }
 
   if (state.caravanAccessories.length > 0) {

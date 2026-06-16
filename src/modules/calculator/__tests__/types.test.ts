@@ -187,7 +187,11 @@ describe('calculatorReducer', () => {
 
   it('SET_CALIBRATION stores the calibration slice', () => {
     const calibration = {
-      measurement: { granularity: 'AXLE' as const, frontAxleKg: 1210, rearAxleKg: 1690 },
+      measurement: {
+        granularity: 'AXLE' as const,
+        frontAxleKg: 1210,
+        rearAxleKg: 1690,
+      },
       vehicleStaticOffsets: { frontAxleKg: 0, rearAxleKg: 0 },
       unaccountedLoadId: 'load-1',
       notes: ['axle ticket reproduced'],
@@ -207,7 +211,11 @@ describe('calculatorReducer', () => {
         { id: 'keep', label: 'Drawer', massKg: 40, side: 'vehicle' },
       ],
       calibration: {
-        measurement: { granularity: 'AXLE', frontAxleKg: 1210, rearAxleKg: 1690 },
+        measurement: {
+          granularity: 'AXLE',
+          frontAxleKg: 1210,
+          rearAxleKg: 1690,
+        },
         vehicleStaticOffsets: {},
         unaccountedLoadId: 'load-1',
         notes: [],

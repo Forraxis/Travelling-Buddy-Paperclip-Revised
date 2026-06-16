@@ -369,9 +369,21 @@ function computeVehicleAxles(
 // are internally consistent (corners sum to axles sum to GVM), so total stays
 // equal to front+rear. See CALIBRATION_SIGNOFF.md §5.
 function applyVehicleStaticOffsets(
-  base: { frontAxleKg: number; rearAxleKg: number; totalKg: number; lateral: VehicleLateral },
-  offsets: NonNullable<PhysicsInput['calibrationOverrides']>['vehicleStaticOffsets'],
-): { frontAxleKg: number; rearAxleKg: number; totalKg: number; lateral: VehicleLateral } {
+  base: {
+    frontAxleKg: number;
+    rearAxleKg: number;
+    totalKg: number;
+    lateral: VehicleLateral;
+  },
+  offsets: NonNullable<
+    PhysicsInput['calibrationOverrides']
+  >['vehicleStaticOffsets'],
+): {
+  frontAxleKg: number;
+  rearAxleKg: number;
+  totalKg: number;
+  lateral: VehicleLateral;
+} {
   if (!offsets) return base;
   const frontAxleKg = base.frontAxleKg + (offsets.frontAxleKg ?? 0);
   const rearAxleKg = base.rearAxleKg + (offsets.rearAxleKg ?? 0);
@@ -399,7 +411,9 @@ function applyVehicleStaticOffsets(
       { k: 'rl', ratio: corners.rl / base.lateral.rearCornerLimitKg },
       { k: 'rr', ratio: corners.rr / base.lateral.rearCornerLimitKg },
     ];
-    const overs = ratios.filter((o) => o.ratio > 1).sort((a, b) => b.ratio - a.ratio);
+    const overs = ratios
+      .filter((o) => o.ratio > 1)
+      .sort((a, b) => b.ratio - a.ratio);
     lateral = {
       ...base.lateral,
       corners,

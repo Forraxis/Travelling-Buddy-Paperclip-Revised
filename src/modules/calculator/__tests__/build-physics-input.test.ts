@@ -43,7 +43,12 @@ const stateWithCalibration: CalculatorState = {
 
 describe('buildPhysicsInput — calibration modes', () => {
   it('live mode includes the unaccounted load and the static offsets', () => {
-    const input = buildPhysicsInput(stateWithCalibration, vehicle, null, 'live');
+    const input = buildPhysicsInput(
+      stateWithCalibration,
+      vehicle,
+      null,
+      'live',
+    );
     // both custom loads present as vehicle accessories
     expect(input.vehicleAccessories).toHaveLength(2);
     expect(input.calibrationOverrides?.vehicleStaticOffsets).toEqual({
@@ -114,7 +119,12 @@ describe('buildPhysicsInput — P3 per-model correction', () => {
   });
 
   it('the user’s own weighbridge calibration beats the crowd correction', () => {
-    const input = buildPhysicsInput(stateWithCalibration, corrected, null, 'live');
+    const input = buildPhysicsInput(
+      stateWithCalibration,
+      corrected,
+      null,
+      'live',
+    );
     expect(input.calibrationOverrides?.vehicleKerbKg).toBeUndefined();
     expect(input.calibrationOverrides?.vehicleKerbCogFraction).toBeUndefined();
     // their own static offsets still apply

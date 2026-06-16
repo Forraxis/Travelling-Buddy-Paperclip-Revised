@@ -45,10 +45,13 @@ export function buildResultSummary(
     frontAxleLimitKg: v.frontAxleLimitKg,
     rearAxleKg: Math.round(v.rearAxleKg),
     rearAxleLimitKg: v.rearAxleLimitKg,
-    towBallKg: v.towBallDownloadKg != null ? Math.round(v.towBallDownloadKg) : undefined,
+    towBallKg:
+      v.towBallDownloadKg != null ? Math.round(v.towBallDownloadKg) : undefined,
     gcmKg: v.gcmKg != null ? Math.round(v.gcmKg) : undefined,
     gcmLimitKg: v.gcmLimitKg,
-    caravanAtmKg: result.caravan ? Math.round(result.caravan.totalWeightKg) : undefined,
+    caravanAtmKg: result.caravan
+      ? Math.round(result.caravan.totalWeightKg)
+      : undefined,
     caravanGtmKg: result.caravan ? Math.round(result.caravan.gtmKg) : undefined,
     calibrated,
   };
@@ -56,7 +59,9 @@ export function buildResultSummary(
 
 // ── Client API wrappers ────────────────────────────────────────────────────
 
-export async function listVersions(setupId: string): Promise<SetupVersionDTO[]> {
+export async function listVersions(
+  setupId: string,
+): Promise<SetupVersionDTO[]> {
   const r = await fetch(`/api/setups/${setupId}/versions`);
   if (!r.ok) return [];
   const data = await r.json();
