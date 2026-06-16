@@ -32,6 +32,11 @@ export interface AccessorySelection {
   cogYMm?: number | null;
   /** Vertical CoG height (mm above ground). Defaults from mounting location. */
   cogZMm?: number | null;
+  /**
+   * Catalogue accessories are locked to their known position on add; the user
+   * unlocks one to reposition it (x/y/z). Custom loads are always movable.
+   */
+  positionUnlocked?: boolean;
   /** Real top-down image (R2) — overrides the category icon. */
   topDownImageUrl?: string | null;
 }
@@ -99,6 +104,8 @@ export type CalculatorAction =
     }
   | { type: 'ADD_CARAVAN_ACCESSORY'; accessory: AccessorySelection }
   | { type: 'REMOVE_CARAVAN_ACCESSORY'; accessoryId: string }
+  | { type: 'SET_ACCESSORY_HEIGHT'; accessoryId: string; cogZMm: number }
+  | { type: 'SET_ACCESSORY_LOCK'; accessoryId: string; unlocked: boolean }
   | { type: 'ADD_CUSTOM_LOAD'; load: CustomLoad }
   | { type: 'REMOVE_CUSTOM_LOAD'; id: string }
   | {
@@ -107,6 +114,7 @@ export type CalculatorAction =
       cogXMm: number;
       cogYMm: number;
     }
+  | { type: 'SET_CUSTOM_LOAD_HEIGHT'; id: string; cogZMm: number }
   | { type: 'SET_CALIBRATION'; calibration: CalibrationState }
   | { type: 'CLEAR_CALIBRATION' }
   | { type: 'LOAD_STATE'; state: CalculatorState }
@@ -198,6 +206,35 @@ export function calculatorReducer(
             : a,
         ),
       };
+    case 'SET_ACCESSORY_HEIGHT':
+      // Applies to whichever side holds the accessory (vehicle or caravan).
+      return {
+        ...state,
+        accessories: state.accessories.map((a) =>
+          a.accessoryId === action.accessoryId
+            ? { ...a, cogZMm: action.cogZMm }
+            : a,
+        ),
+        caravanAccessories: state.caravanAccessories.map((a) =>
+          a.accessoryId === action.accessoryId
+            ? { ...a, cogZMm: action.cogZMm }
+            : a,
+        ),
+      };
+    case 'SET_ACCESSORY_LOCK':
+      return {
+        ...state,
+        accessories: state.accessories.map((a) =>
+          a.accessoryId === action.accessoryId
+            ? { ...a, positionUnlocked: action.unlocked }
+            : a,
+        ),
+        caravanAccessories: state.caravanAccessories.map((a) =>
+          a.accessoryId === action.accessoryId
+            ? { ...a, positionUnlocked: action.unlocked }
+            : a,
+        ),
+      };
     case 'ADD_CARAVAN_ACCESSORY':
       if (
         state.caravanAccessories.some(
@@ -223,6 +260,13 @@ export function calculatorReducer(
       return {
         ...state,
         customLoads: state.customLoads.filter((l) => l.id !== action.id),
+      };
+    case 'SET_CUSTOM_LOAD_HEIGHT':
+      return {
+        ...state,
+        customLoads: state.customLoads.map((l) =>
+          l.id === action.id ? { ...l, cogZMm: action.cogZMm } : l,
+        ),
       };
     case 'SET_CUSTOM_LOAD_POSITION':
       return {

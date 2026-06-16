@@ -13,8 +13,25 @@ import { stashLayoutHandoff } from '@/lib/layout-handoff';
 /** Side-profile + top-down (plan) views of the rig with a small toggle. */
 export default function SchematicViewer({ model }: { model: SchematicModel }) {
   const [view, setView] = useState<'side' | 'top'>('side');
-  const { state, setAccessoryPosition } = useCalculatorState();
+  const {
+    state,
+    setAccessoryPosition,
+    setAccessoryHeight,
+    setAccessoryLock,
+    setCustomLoadPosition,
+    setCustomLoadHeight,
+  } = useCalculatorState();
   const searchParams = useSearchParams();
+
+  // Route a drag to the right setter: custom loads vs catalogue accessories.
+  const isCustomDot = (id: string) =>
+    model.dots.find((d) => d.id === id)?.isCustom ?? false;
+  const onMovePosition = (id: string, x: number, y: number) =>
+    isCustomDot(id)
+      ? setCustomLoadPosition(id, x, y)
+      : setAccessoryPosition(id, x, y);
+  const onMoveHeight = (id: string, z: number) =>
+    isCustomDot(id) ? setCustomLoadHeight(id, z) : setAccessoryHeight(id, z);
 
   // Deep-link to the full-screen layout planner for this rig. Carry the saved
   // setup if there is one (full fidelity), else seed the attached caravan.
@@ -62,9 +79,13 @@ export default function SchematicViewer({ model }: { model: SchematicModel }) {
 
       {view === 'side' ? (
         <>
-          <RigSchematic model={model} />
+          <RigSchematic
+            model={model}
+            onMoveHeight={onMoveHeight}
+            onToggleLock={setAccessoryLock}
+          />
           <p className="mt-1.5 text-center text-[11px] text-gray-400">
-            Switch to{' '}
+            Drag a load up/down to set its height. Switch to{' '}
             <button
               type="button"
               onClick={() => setView('top')}
@@ -72,14 +93,15 @@ export default function SchematicViewer({ model }: { model: SchematicModel }) {
             >
               Top-down
             </button>{' '}
-            to drag your gear into position.
+            for front/back &amp; left/right.
           </p>
         </>
       ) : (
         <>
           <TopDownSchematic
             model={model}
-            onMovePosition={setAccessoryPosition}
+            onMovePosition={onMovePosition}
+            onToggleLock={setAccessoryLock}
           />
           <ContributeLayoutButton />
         </>

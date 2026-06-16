@@ -111,6 +111,8 @@ const accessoryEntrySchema = z.object({
   fillPercent: z.number().int().min(0).max(100).default(100),
   cogXMm: z.number().int().optional(),
   cogYMm: z.number().int().optional(),
+  cogZMm: z.number().int().optional(),
+  positionUnlocked: z.boolean().optional(),
   notes: z.string().max(500).optional(),
 });
 
@@ -138,6 +140,7 @@ const updateSchema = z.object({
         mountingLocation: z.nativeEnum(MountingLocation),
         cogXMm: z.number().int().optional(),
         cogYMm: z.number().int().optional(),
+        cogZMm: z.number().int().optional(),
         side: z.enum(['VEHICLE', 'CARAVAN', 'BOTH']).optional(),
         footprintLengthMm: z.number().int().min(0).max(10000).optional(),
         footprintWidthMm: z.number().int().min(0).max(5000).optional(),
@@ -267,6 +270,8 @@ export async function PATCH(
               fillPercent: a.fillPercent,
               cogXMmOverride: a.cogXMm,
               cogYMmOverride: a.cogYMm,
+              cogZMmOverride: a.cogZMm,
+              positionUnlocked: a.positionUnlocked ?? false,
               notes: a.notes,
             })),
           });
@@ -285,6 +290,8 @@ export async function PATCH(
               fillPercent: a.fillPercent,
               cogXMmOverride: a.cogXMm,
               cogYMmOverride: a.cogYMm,
+              cogZMmOverride: a.cogZMm,
+              positionUnlocked: a.positionUnlocked ?? false,
               notes: a.notes,
             })),
           });
@@ -302,6 +309,7 @@ export async function PATCH(
               mountingLocation: l.mountingLocation,
               cogXMm: l.cogXMm,
               cogYMm: l.cogYMm,
+              cogZMm: l.cogZMm,
               side: l.side,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,

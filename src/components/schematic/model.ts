@@ -21,7 +21,13 @@ import {
   resolveVehiclePositionMm,
   resolveCaravanPositionMm,
   resolveVehicleLateralMm,
+  resolveVehicleHeightMm,
 } from '@/lib/physics/position-map';
+
+/** Top of the height range the side view maps onto (mm above ground). */
+export const SCHEMATIC_MAX_HEIGHT_MM = 2200;
+
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 import { vehicleProfile, caravanProfile } from './vehicle-profiles';
 import { accessoryFootprint } from './accessory-footprint';
 import { iconForMount, type IconId } from './accessory-icons';
@@ -53,6 +59,8 @@ export interface SchematicAccessory {
   cogXMm?: number | null;
   /** Lateral position from centreline, mm (+ = right). Defaults per mount. */
   cogYMm?: number | null;
+  /** Vertical CoG height (mm above ground). Defaults from the mounting location. */
+  cogZMm?: number | null;
   label?: string | null;
   /** Explicit footprint (mm) — overrides the per-mount default (custom loads). */
   footprintLengthMm?: number | null;
@@ -61,6 +69,10 @@ export interface SchematicAccessory {
   topDownImageUrl?: string | null;
   /** Weighbridge "unaccounted" residual — rendered distinctly on the top-down. */
   isUnaccounted?: boolean;
+  /** Position is editable (a custom load, or an unlocked catalogue accessory). */
+  editable?: boolean;
+  /** A user-made custom load (vs a catalogue accessory). */
+  isCustom?: boolean;
 }
 
 export interface BuildSchematicArgs {
@@ -109,6 +121,12 @@ export interface AccessoryDot {
   topDownImageUrl?: string | null;
   /** Weighbridge "unaccounted" residual — rendered distinctly (tint/dash). */
   isUnaccounted?: boolean;
+  /** Effective vertical CoG height (mm above ground) — drives the side view + drag. */
+  cogZMm: number;
+  /** Position is editable (custom load, or unlocked catalogue accessory). */
+  editable: boolean;
+  /** A user-made custom load (vs a catalogue accessory). */
+  isCustom: boolean;
 }
 
 /** A labelled longitudinal mounting band, in global mm, for the top-down view. */
@@ -307,11 +325,17 @@ export function buildSchematicModel(
       acc.footprintLengthMm != null && acc.footprintWidthMm != null
         ? { lengthMm: acc.footprintLengthMm, widthMm: acc.footprintWidthMm }
         : accessoryFootprint(acc.mountingLocation, acc.weightKg);
+    // Effective height drives both the side-view dot position and the drag.
+    const cogZMm =
+      acc.cogZMm != null
+        ? acc.cogZMm
+        : resolveVehicleHeightMm(acc.mountingLocation);
     dots.push({
       id: acc.id,
       n: ++n,
       xMm: xPhysics, // vehicle physics x is already global (rear axle = 0)
-      heightHint: heightHintFor(acc.mountingLocation),
+      heightHint: clamp01(cogZMm / SCHEMATIC_MAX_HEIGHT_MM),
+      cogZMm,
       weightKg: acc.weightKg,
       label: acc.label || locationLabel(acc.mountingLocation),
       side: 'vehicle',
@@ -321,6 +345,8 @@ export function buildSchematicModel(
       iconId: iconForMount(acc.mountingLocation, acc.label),
       topDownImageUrl: acc.topDownImageUrl,
       isUnaccounted: acc.isUnaccounted,
+      editable: acc.editable ?? false,
+      isCustom: acc.isCustom ?? false,
     });
   }
 
@@ -397,11 +423,13 @@ export function buildSchematicModel(
         acc.footprintLengthMm != null && acc.footprintWidthMm != null
           ? { lengthMm: acc.footprintLengthMm, widthMm: acc.footprintWidthMm }
           : accessoryFootprint(acc.mountingLocation, acc.weightKg);
+      const hint = heightHintFor(acc.mountingLocation);
       dots.push({
         id: acc.id,
         n: ++n,
         xMm: hitchMm - xPhysics,
-        heightHint: heightHintFor(acc.mountingLocation),
+        heightHint: hint,
+        cogZMm: acc.cogZMm ?? hint * SCHEMATIC_MAX_HEIGHT_MM,
         weightKg: acc.weightKg,
         label: acc.label || locationLabel(acc.mountingLocation),
         side: 'caravan',
@@ -411,6 +439,8 @@ export function buildSchematicModel(
         iconId: iconForMount(acc.mountingLocation, acc.label),
         topDownImageUrl: acc.topDownImageUrl,
         isUnaccounted: acc.isUnaccounted,
+        editable: acc.editable ?? false,
+        isCustom: acc.isCustom ?? false,
       });
     }
   }

@@ -31,9 +31,12 @@ export function LayoutEditorInner({
     removeCaravanAccessory,
     setAccessoryPosition,
     setCaravanAccessoryPosition,
+    setAccessoryHeight,
+    setAccessoryLock,
     addCustomLoad,
     removeCustomLoad,
     setCustomLoadPosition,
+    setCustomLoadHeight,
   } = useCalculatorState();
   const view = usePhysicsView();
   const router = useRouter();
@@ -101,6 +104,13 @@ export function LayoutEditorInner({
       else removeCaravanAccessory(id);
     },
     [isCustom, removeCustomLoad, removeAccessory, removeCaravanAccessory],
+  );
+  const onMoveHeight = useCallback(
+    (id: string, cogZMm: number) => {
+      if (isCustom(id)) setCustomLoadHeight(id, cogZMm);
+      else setAccessoryHeight(id, cogZMm);
+    },
+    [isCustom, setCustomLoadHeight, setAccessoryHeight],
   );
 
   async function handleSave() {
@@ -210,7 +220,7 @@ export function LayoutEditorInner({
           </div>
           {canvasView === 'side' && (
             <span className="text-[11px] text-gray-400">
-              Vertical placement follows each item&rsquo;s mounting location.
+              Drag a load up/down to set its height.
             </span>
           )}
         </div>
@@ -221,9 +231,14 @@ export function LayoutEditorInner({
               result={view.result}
               onMove={onMove}
               onRemove={onRemove}
+              onToggleLock={setAccessoryLock}
             />
           ) : (
-            <RigSchematic model={view.schematic!} />
+            <RigSchematic
+              model={view.schematic!}
+              onMoveHeight={onMoveHeight}
+              onToggleLock={setAccessoryLock}
+            />
           )
         ) : (
           <div className="border-tb-neutral-200 flex h-64 items-center justify-center rounded-2xl border border-dashed text-sm text-gray-400">

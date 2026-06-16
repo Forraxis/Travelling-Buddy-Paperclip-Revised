@@ -162,8 +162,12 @@ export function usePhysicsView(
             mountingLocation: a.mountingLocation as MountingLocation,
             cogXMm: a.cogXMm,
             cogYMm: a.cogYMm,
+            cogZMm: a.cogZMm,
             label: a.label,
             topDownImageUrl: a.topDownImageUrl,
+            // Catalogue accessories sit at their known position until unlocked.
+            editable: a.positionUnlocked ?? false,
+            isCustom: false,
           })),
           ...state.customLoads
             .filter((l) => l.side === 'vehicle')
@@ -173,10 +177,13 @@ export function usePhysicsView(
               mountingLocation: 'CHASSIS_MID' as MountingLocation,
               cogXMm: l.cogXMm,
               cogYMm: l.cogYMm,
+              cogZMm: l.cogZMm,
               label: l.label,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,
               isUnaccounted: l.isUnaccounted,
+              editable: true, // custom loads are always freely movable
+              isCustom: true,
             })),
         ],
         caravanAccessories: [
@@ -186,8 +193,11 @@ export function usePhysicsView(
             mountingLocation: a.mountingLocation as MountingLocation,
             cogXMm: a.cogXMm,
             cogYMm: a.cogYMm,
+            cogZMm: a.cogZMm,
             label: a.label,
             topDownImageUrl: a.topDownImageUrl,
+            editable: a.positionUnlocked ?? false,
+            isCustom: false,
           })),
           ...state.customLoads
             .filter((l) => l.side === 'caravan')
@@ -197,10 +207,13 @@ export function usePhysicsView(
               mountingLocation: 'CARAVAN_CHASSIS_MID' as MountingLocation,
               cogXMm: l.cogXMm,
               cogYMm: l.cogYMm,
+              cogZMm: l.cogZMm,
               label: l.label,
               footprintLengthMm: l.footprintLengthMm,
               footprintWidthMm: l.footprintWidthMm,
               isUnaccounted: l.isUnaccounted,
+              editable: true,
+              isCustom: true,
             })),
         ],
         result,

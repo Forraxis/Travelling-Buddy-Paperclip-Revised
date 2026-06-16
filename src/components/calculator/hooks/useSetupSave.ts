@@ -41,6 +41,8 @@ export function useSetupSave(
         fillPercent: 100,
         ...(a.cogXMm != null ? { cogXMm: a.cogXMm } : {}),
         ...(a.cogYMm != null ? { cogYMm: a.cogYMm } : {}),
+        ...(a.cogZMm != null ? { cogZMm: a.cogZMm } : {}),
+        ...(a.positionUnlocked ? { positionUnlocked: true } : {}),
       })),
       caravanAccessories: state.caravanAccessories.map((a) => ({
         fitmentId: a.accessoryId,
@@ -48,6 +50,8 @@ export function useSetupSave(
         fillPercent: 100,
         ...(a.cogXMm != null ? { cogXMm: a.cogXMm } : {}),
         ...(a.cogYMm != null ? { cogYMm: a.cogYMm } : {}),
+        ...(a.cogZMm != null ? { cogZMm: a.cogZMm } : {}),
+        ...(a.positionUnlocked ? { positionUnlocked: true } : {}),
       })),
       customLoads: state.customLoads.map((l) => ({
         label: l.label,
@@ -57,6 +61,7 @@ export function useSetupSave(
         side: l.side === 'caravan' ? 'CARAVAN' : 'VEHICLE',
         ...(l.cogXMm != null ? { cogXMm: l.cogXMm } : {}),
         ...(l.cogYMm != null ? { cogYMm: l.cogYMm } : {}),
+        ...(l.cogZMm != null ? { cogZMm: l.cogZMm } : {}),
         ...(l.footprintLengthMm != null
           ? { footprintLengthMm: l.footprintLengthMm }
           : {}),

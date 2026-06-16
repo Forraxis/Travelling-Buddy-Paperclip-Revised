@@ -40,11 +40,14 @@ interface CalculatorContextValue {
     cogXMm: number,
     cogYMm: number,
   ) => void;
+  setAccessoryHeight: (accessoryId: string, cogZMm: number) => void;
+  setAccessoryLock: (accessoryId: string, unlocked: boolean) => void;
   addCaravanAccessory: (accessory: AccessorySelection) => void;
   removeCaravanAccessory: (accessoryId: string) => void;
   addCustomLoad: (load: CustomLoad) => void;
   removeCustomLoad: (id: string) => void;
   setCustomLoadPosition: (id: string, cogXMm: number, cogYMm: number) => void;
+  setCustomLoadHeight: (id: string, cogZMm: number) => void;
   reset: () => void;
   dispatch: (action: CalculatorAction) => void;
 }
@@ -225,6 +228,16 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
       }),
     [],
   );
+  const setAccessoryHeight = useCallback(
+    (accessoryId: string, cogZMm: number) =>
+      dispatch({ type: 'SET_ACCESSORY_HEIGHT', accessoryId, cogZMm }),
+    [],
+  );
+  const setAccessoryLock = useCallback(
+    (accessoryId: string, unlocked: boolean) =>
+      dispatch({ type: 'SET_ACCESSORY_LOCK', accessoryId, unlocked }),
+    [],
+  );
   const addCaravanAccessory = useCallback(
     (accessory: AccessorySelection) =>
       dispatch({ type: 'ADD_CARAVAN_ACCESSORY', accessory }),
@@ -248,6 +261,11 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
       dispatch({ type: 'SET_CUSTOM_LOAD_POSITION', id, cogXMm, cogYMm }),
     [],
   );
+  const setCustomLoadHeight = useCallback(
+    (id: string, cogZMm: number) =>
+      dispatch({ type: 'SET_CUSTOM_LOAD_HEIGHT', id, cogZMm }),
+    [],
+  );
   const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
   return (
@@ -262,11 +280,14 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         removeAccessory,
         setAccessoryPosition,
         setCaravanAccessoryPosition,
+        setAccessoryHeight,
+        setAccessoryLock,
         addCaravanAccessory,
         removeCaravanAccessory,
         addCustomLoad,
         removeCustomLoad,
         setCustomLoadPosition,
+        setCustomLoadHeight,
         reset,
         dispatch,
       }}

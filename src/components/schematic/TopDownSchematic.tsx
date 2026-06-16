@@ -127,13 +127,16 @@ function FootprintMark({
 
 export interface TopDownSchematicProps {
   model: SchematicModel;
-  /** When provided, vehicle accessory footprints become draggable. */
+  /** When provided, editable vehicle footprints become draggable. */
   onMovePosition?: (id: string, cogXMm: number, cogYMm: number) => void;
+  /** When provided, catalogue accessories show a lock toggle. */
+  onToggleLock?: (id: string, unlocked: boolean) => void;
 }
 
 export default function TopDownSchematic({
   model,
   onMovePosition,
+  onToggleLock,
 }: TopDownSchematicProps) {
   const v = model.vehicle;
   const c = model.caravan;
@@ -426,28 +429,63 @@ export default function TopDownSchematic({
 
         {/* Accessory footprints last so they sit on top + are grabbable */}
         {model.dots.map((d: AccessoryDot) => {
-          const editable = !!onMovePosition && d.side === 'vehicle';
+          // Vehicle items are draggable only when editable (custom load, or an
+          // unlocked catalogue accessory). Caravan dots stay static here.
+          const editable =
+            !!onMovePosition && d.side === 'vehicle' && d.editable;
+          const showLock =
+            !!onToggleLock && d.side === 'vehicle' && !d.isCustom;
           return (
-            <FootprintMark
-              key={d.id}
-              x={px(d.xMm)}
-              y={py(d.yMm)}
-              w={sx(d.footprintLengthMm)}
-              h={sx(d.footprintWidthMm)}
-              n={d.n}
-              side={d.side}
-              draggable={editable}
-              dragging={dragId === d.id}
-              onPointerDown={
-                editable
-                  ? (e) => {
-                      e.preventDefault();
-                      (e.target as Element).setPointerCapture?.(e.pointerId);
-                      setDragId(d.id);
-                    }
-                  : undefined
-              }
-            />
+            <g key={d.id}>
+              <FootprintMark
+                x={px(d.xMm)}
+                y={py(d.yMm)}
+                w={sx(d.footprintLengthMm)}
+                h={sx(d.footprintWidthMm)}
+                n={d.n}
+                side={d.side}
+                draggable={editable}
+                dragging={dragId === d.id}
+                onPointerDown={
+                  editable
+                    ? (e) => {
+                        e.preventDefault();
+                        (e.target as Element).setPointerCapture?.(e.pointerId);
+                        setDragId(d.id);
+                      }
+                    : undefined
+                }
+              />
+              {showLock && (
+                <g
+                  onClick={() => onToggleLock!(d.id, !d.editable)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <title>
+                    {d.editable
+                      ? 'Unlocked — drag to reposition. Click to re-lock.'
+                      : 'Locked to the known position. Click to unlock + move.'}
+                  </title>
+                  <circle
+                    cx={px(d.xMm) + sx(d.footprintLengthMm) / 2 + 8}
+                    cy={py(d.yMm) - sx(d.footprintWidthMm) / 2 - 8}
+                    r={7}
+                    fill="#fff"
+                    stroke={d.editable ? '#e07a3f' : '#94a3b8'}
+                    strokeWidth={1.25}
+                  />
+                  <text
+                    x={px(d.xMm) + sx(d.footprintLengthMm) / 2 + 8}
+                    y={py(d.yMm) - sx(d.footprintWidthMm) / 2 - 5}
+                    textAnchor="middle"
+                    fontSize={8}
+                    pointerEvents="none"
+                  >
+                    {d.editable ? '🔓' : '🔒'}
+                  </text>
+                </g>
+              )}
+            </g>
           );
         })}
       </svg>

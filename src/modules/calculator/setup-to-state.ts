@@ -12,6 +12,8 @@ interface SetupAccessoryDTO {
   fitmentId: string;
   cogXMmOverride?: number | null;
   cogYMmOverride?: number | null;
+  cogZMmOverride?: number | null;
+  positionUnlocked?: boolean | null;
   fitment?: {
     installedWeightKg?: number | string | null;
     mountingLocation?: string | null;
@@ -28,6 +30,7 @@ interface SetupCustomLoadDTO {
   weightKg: number | string;
   cogXMm?: number | null;
   cogYMm?: number | null;
+  cogZMm?: number | null;
   side?: 'VEHICLE' | 'CARAVAN' | 'BOTH' | null;
   footprintLengthMm?: number | null;
   footprintWidthMm?: number | null;
@@ -58,6 +61,8 @@ function mapAccessory(a: SetupAccessoryDTO): AccessorySelection {
     label: a.fitment?.accessory?.name ?? undefined,
     cogXMm: a.cogXMmOverride ?? null,
     cogYMm: a.cogYMmOverride ?? null,
+    cogZMm: a.cogZMmOverride ?? null,
+    positionUnlocked: a.positionUnlocked ?? false,
     topDownImageUrl: a.fitment?.accessory?.topDownImageUrl ?? null,
   };
 }
@@ -70,6 +75,7 @@ function mapCustomLoad(l: SetupCustomLoadDTO): CustomLoad {
     side: l.side === 'CARAVAN' ? 'caravan' : 'vehicle',
     cogXMm: l.cogXMm ?? null,
     cogYMm: l.cogYMm ?? null,
+    cogZMm: l.cogZMm ?? null,
     footprintLengthMm: l.footprintLengthMm ?? null,
     footprintWidthMm: l.footprintWidthMm ?? null,
     isUnaccounted: l.isUnaccounted ?? false,

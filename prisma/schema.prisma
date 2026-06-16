@@ -593,6 +593,10 @@ model SetupAccessory {
   fillPercent      Int              @default(100)
   cogXMmOverride   Int?
   cogYMmOverride   Int?
+  /** Vertical CoG height override (mm). Set when the user unlocks + repositions. */
+  cogZMmOverride   Int?
+  /** Catalogue accessories sit at their known position until the user unlocks them. */
+  positionUnlocked Boolean          @default(false)
   notes            String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -615,6 +619,8 @@ model SetupCaravanAccessory {
   fillPercent      Int                     @default(100)
   cogXMmOverride   Int?
   cogYMmOverride   Int?
+  cogZMmOverride   Int?
+  positionUnlocked Boolean                 @default(false)
   notes            String?
   createdAt        DateTime                @default(now())
   updatedAt        DateTime                @updatedAt
@@ -636,6 +642,7 @@ model SetupCustomLoad {
   mountingLocation  MountingLocation
   cogXMm            Int?
   cogYMm            Int?
+  cogZMm            Int?
   /**
    * Which side this load sits on (a user-made item may be placed anywhere).
    */

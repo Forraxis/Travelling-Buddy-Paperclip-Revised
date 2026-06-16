@@ -1,11 +1,13 @@
 'use client';
 
-import type {
-  SchematicModel,
-  VehicleShape,
-  CaravanShape,
-  AxleGauge,
-  AccessoryDot,
+import { useRef, useState } from 'react';
+import {
+  SCHEMATIC_MAX_HEIGHT_MM,
+  type SchematicModel,
+  type VehicleShape,
+  type CaravanShape,
+  type AxleGauge,
+  type AccessoryDot,
 } from './model';
 import type { MetricStatus } from '@/lib/physics/types';
 
@@ -18,6 +20,10 @@ const GROUND_Y = 250;
 const WHEEL_R = 26;
 const GAUGE_TOP = 288;
 const GAUGE_H = 54;
+// Vertical band the accessory dots occupy (heightHint 0 → base, 1 → top).
+const BODY_TOP_Y = GROUND_Y - 126;
+const BODY_BASE_Y = GROUND_Y - 16;
+const HEIGHT_SNAP_MM = 25;
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const STROKE = '#1b3a5c';
@@ -363,14 +369,38 @@ function Gauge({ g, p }: { g: AxleGauge; p: (mm: number) => number }) {
 }
 
 // ── Accessory dot ────────────────────────────────────────────────────────────
-function Dot({ d, p }: { d: AccessoryDot; p: (mm: number) => number }) {
+function Dot({
+  d,
+  p,
+  dragging,
+  onPointerDown,
+  onToggleLock,
+}: {
+  d: AccessoryDot;
+  p: (mm: number) => number;
+  dragging?: boolean;
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onToggleLock?: (id: string, unlocked: boolean) => void;
+}) {
   const x = p(d.xMm);
-  const bodyTop = GROUND_Y - 126;
-  const bodyBase = GROUND_Y - 16;
-  const y = bodyBase - d.heightHint * (bodyBase - bodyTop);
+  const y = BODY_BASE_Y - d.heightHint * (BODY_BASE_Y - BODY_TOP_Y);
   const r = Math.max(8, Math.min(16, 6 + Math.sqrt(d.weightKg) * 0.95));
+  // Catalogue accessories carry a lock toggle; custom loads are always free.
+  const showLock = !d.isCustom && !!onToggleLock;
   return (
     <g>
+      {d.editable && (
+        <circle
+          cx={x}
+          cy={y}
+          r={r + 5}
+          fill="none"
+          stroke="#e07a3f"
+          strokeWidth={1.5}
+          strokeDasharray="3 2"
+          opacity={dragging ? 1 : 0.6}
+        />
+      )}
       <circle
         cx={x}
         cy={y}
@@ -379,6 +409,11 @@ function Dot({ d, p }: { d: AccessoryDot; p: (mm: number) => number }) {
         fillOpacity={0.9}
         stroke="#fff"
         strokeWidth={2}
+        onPointerDown={d.editable ? onPointerDown : undefined}
+        style={{
+          cursor: d.editable ? (dragging ? 'grabbing' : 'grab') : 'default',
+          touchAction: 'none',
+        }}
       />
       <text
         x={x}
@@ -387,9 +422,39 @@ function Dot({ d, p }: { d: AccessoryDot; p: (mm: number) => number }) {
         fontSize={10}
         fontWeight={700}
         fill="#fff"
+        pointerEvents="none"
       >
         {d.n}
       </text>
+      {showLock && (
+        <g
+          onClick={() => onToggleLock!(d.id, !d.editable)}
+          style={{ cursor: 'pointer' }}
+        >
+          <title>
+            {d.editable
+              ? 'Locked position is off — drag to reposition. Click to re-lock.'
+              : 'Position locked to the known mounting. Click to unlock + reposition.'}
+          </title>
+          <circle
+            cx={x + r + 7}
+            cy={y - r - 3}
+            r={7}
+            fill="#fff"
+            stroke={d.editable ? '#e07a3f' : '#94a3b8'}
+            strokeWidth={1.25}
+          />
+          <text
+            x={x + r + 7}
+            y={y - r}
+            textAnchor="middle"
+            fontSize={8}
+            pointerEvents="none"
+          >
+            {d.editable ? '🔓' : '🔒'}
+          </text>
+        </g>
+      )}
     </g>
   );
 }
@@ -398,9 +463,18 @@ function Dot({ d, p }: { d: AccessoryDot; p: (mm: number) => number }) {
 export interface RigSchematicProps {
   model: SchematicModel;
   className?: string;
+  /** When provided, editable dots can be dragged vertically to set their height (mm). */
+  onMoveHeight?: (id: string, cogZMm: number) => void;
+  /** When provided, catalogue accessories show a lock toggle. */
+  onToggleLock?: (id: string, unlocked: boolean) => void;
 }
 
-export default function RigSchematic({ model, className }: RigSchematicProps) {
+export default function RigSchematic({
+  model,
+  className,
+  onMoveHeight,
+  onToggleLock,
+}: RigSchematicProps) {
   const span = Math.max(1, model.maxXMm - model.minXMm);
   const scale = DRAW_W / span;
   const p = (mm: number) => PAD + (mm - model.minXMm) * scale;
@@ -408,16 +482,40 @@ export default function RigSchematic({ model, className }: RigSchematicProps) {
   const v = model.vehicle;
   const c = model.caravan;
 
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+
+  // Pointer Y → clamped, snapped CoG height (mm). Vertical only — x/y unchanged.
+  function eventToHeight(e: React.PointerEvent): number {
+    const rect = svgRef.current!.getBoundingClientRect();
+    const svgY = ((e.clientY - rect.top) / rect.height) * VB_H;
+    let hint = (BODY_BASE_Y - svgY) / (BODY_BASE_Y - BODY_TOP_Y);
+    hint = Math.min(1, Math.max(0, hint));
+    return (
+      Math.round((hint * SCHEMATIC_MAX_HEIGHT_MM) / HEIGHT_SNAP_MM) *
+      HEIGHT_SNAP_MM
+    );
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!dragId || !onMoveHeight) return;
+    onMoveHeight(dragId, eventToHeight(e));
+  }
+
   return (
     <figure
       className={`border-tb-neutral-200 to-tb-neutral-50 mb-4 rounded-xl border bg-gradient-to-b from-white p-3 ${className ?? ''}`}
       aria-label={`Side-profile weight schematic for ${model.title}`}
     >
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${VB_W} ${VB_H}`}
         className="h-auto w-full"
         role="img"
         preserveAspectRatio="xMidYMid meet"
+        onPointerMove={onPointerMove}
+        onPointerUp={() => setDragId(null)}
+        onPointerLeave={() => setDragId(null)}
       >
         {/* ground line + soft shadow */}
         <line
@@ -445,7 +543,18 @@ export default function RigSchematic({ model, className }: RigSchematicProps) {
         </g>
 
         {model.dots.map((d) => (
-          <Dot key={d.id} d={d} p={p} />
+          <Dot
+            key={d.id}
+            d={d}
+            p={p}
+            dragging={dragId === d.id}
+            onToggleLock={onToggleLock}
+            onPointerDown={(e) => {
+              if (!d.editable || !onMoveHeight) return;
+              setDragId(d.id);
+              (e.target as Element).setPointerCapture?.(e.pointerId);
+            }}
+          />
         ))}
         {model.axles.map((g) => (
           <Gauge key={g.id} g={g} p={p} />

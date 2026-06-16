@@ -262,6 +262,8 @@ export interface CoupledRigCanvasProps {
   result: PhysicsResult;
   onMove: (side: Side, id: string, cogXMm: number, cogYMm: number) => void;
   onRemove?: (side: Side, id: string) => void;
+  /** When provided, catalogue accessories show a lock toggle. */
+  onToggleLock?: (id: string, unlocked: boolean) => void;
 }
 
 export default function CoupledRigCanvas({
@@ -269,6 +271,7 @@ export default function CoupledRigCanvas({
   result,
   onMove,
   onRemove,
+  onToggleLock,
 }: CoupledRigCanvasProps) {
   const v = model.vehicle;
   const c = model.caravan;
@@ -513,31 +516,68 @@ export default function CoupledRigCanvas({
           </g>
         )}
 
-        {/* Footprints — both sides draggable */}
-        {model.dots.map((d: AccessoryDot) => (
-          <Footprint
-            key={d.id}
-            x={px(d.xMm)}
-            y={py(d.yMm)}
-            w={sx(d.footprintLengthMm)}
-            h={sx(d.footprintWidthMm)}
-            n={d.n}
-            side={d.side}
-            icon={d.iconId}
-            imageUrl={d.topDownImageUrl}
-            isUnaccounted={d.isUnaccounted}
-            editable
-            active={selected?.id === d.id}
-            dragging={drag?.id === d.id}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              (e.target as Element).setPointerCapture?.(e.pointerId);
-              setDrag({ id: d.id, side: d.side });
-              setSelected({ id: d.id, side: d.side });
-            }}
-            onClick={() => setSelected({ id: d.id, side: d.side })}
-          />
-        ))}
+        {/* Footprints — custom loads + unlocked catalogue accessories are draggable */}
+        {model.dots.map((d: AccessoryDot) => {
+          const showLock = !!onToggleLock && !d.isCustom;
+          return (
+            <g key={d.id}>
+              <Footprint
+                x={px(d.xMm)}
+                y={py(d.yMm)}
+                w={sx(d.footprintLengthMm)}
+                h={sx(d.footprintWidthMm)}
+                n={d.n}
+                side={d.side}
+                icon={d.iconId}
+                imageUrl={d.topDownImageUrl}
+                isUnaccounted={d.isUnaccounted}
+                editable={d.editable}
+                active={selected?.id === d.id}
+                dragging={drag?.id === d.id}
+                onPointerDown={
+                  d.editable
+                    ? (e) => {
+                        e.preventDefault();
+                        (e.target as Element).setPointerCapture?.(e.pointerId);
+                        setDrag({ id: d.id, side: d.side });
+                        setSelected({ id: d.id, side: d.side });
+                      }
+                    : undefined
+                }
+                onClick={() => setSelected({ id: d.id, side: d.side })}
+              />
+              {showLock && (
+                <g
+                  onClick={() => onToggleLock!(d.id, !d.editable)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <title>
+                    {d.editable
+                      ? 'Unlocked — drag to reposition. Click to re-lock.'
+                      : 'Locked to the known position. Click to unlock + move.'}
+                  </title>
+                  <circle
+                    cx={px(d.xMm) + sx(d.footprintLengthMm) / 2 + 9}
+                    cy={py(d.yMm) - sx(d.footprintWidthMm) / 2 - 9}
+                    r={8}
+                    fill="#fff"
+                    stroke={d.editable ? '#e07a3f' : '#94a3b8'}
+                    strokeWidth={1.25}
+                  />
+                  <text
+                    x={px(d.xMm) + sx(d.footprintLengthMm) / 2 + 9}
+                    y={py(d.yMm) - sx(d.footprintWidthMm) / 2 - 6}
+                    textAnchor="middle"
+                    fontSize={9}
+                    pointerEvents="none"
+                  >
+                    {d.editable ? '🔓' : '🔒'}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
       </svg>
 
       {/* Selected-item nudge controls (precision + mobile fallback) */}
