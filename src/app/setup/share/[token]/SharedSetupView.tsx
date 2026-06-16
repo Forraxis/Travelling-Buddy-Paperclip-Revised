@@ -27,7 +27,7 @@ interface SharedSetup {
     fitment: {
       id: string;
       accessory: { id: string };
-      weightKg?: number | string;
+      installedWeightKg?: number | string;
     };
     quantityOverride: number;
     cogXMmOverride?: number | null;
@@ -37,7 +37,7 @@ interface SharedSetup {
     fitment: {
       id: string;
       accessory: { id: string };
-      weightKg?: number | string;
+      installedWeightKg?: number | string;
     };
     quantityOverride: number;
     cogXMmOverride?: number | null;
@@ -48,7 +48,7 @@ interface SharedSetup {
 function setupToInitialParams(setup: SharedSetup): URLSearchParams {
   const accessories: AccessorySelection[] = setup.accessories.map((a) => ({
     accessoryId: a.fitment.accessory.id,
-    massKg: Number(a.fitment.weightKg ?? 0),
+    massKg: Number(a.fitment.installedWeightKg ?? 0),
     mountingLocation: '',
     cogXMm: a.cogXMmOverride,
     cogYMm: a.cogYMmOverride,
@@ -57,7 +57,7 @@ function setupToInitialParams(setup: SharedSetup): URLSearchParams {
   const caravanAccessories: AccessorySelection[] = setup.caravanAccessories.map(
     (a) => ({
       accessoryId: a.fitment.accessory.id,
-      massKg: Number(a.fitment.weightKg ?? 0),
+      massKg: Number(a.fitment.installedWeightKg ?? 0),
       mountingLocation: '',
       cogXMm: a.cogXMmOverride,
       cogYMm: a.cogYMmOverride,

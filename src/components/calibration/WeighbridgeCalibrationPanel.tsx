@@ -13,6 +13,10 @@ import { usePhysicsView } from '@/modules/calculator/use-physics-result';
 
 const ACCENT = '#7c3aed'; // violet — distinct from the blue water accent
 
+// Sanity ceiling for a single weighbridge field (kg). Generous enough for a
+// heavy truck+van rig, tight enough to catch fat-finger typos (35000 for 3500).
+const MAX_TICKET_KG = 50_000;
+
 const FIDELITIES: { key: CalibrationGranularity; label: string }[] = [
   { key: 'TOTAL', label: 'Total' },
   { key: 'AXLE', label: 'Per-axle' },
@@ -28,7 +32,14 @@ function makeId(): string {
 
 function num(s: string): number | null {
   const v = parseFloat(s);
-  return Number.isFinite(v) && v >= 0 ? v : null;
+  return Number.isFinite(v) && v >= 0 && v <= MAX_TICKET_KG ? v : null;
+}
+
+// A field is "over" when it holds a real number above the sanity ceiling — used
+// to flag a likely typo without silently disabling the Calibrate button.
+function isOver(s: string): boolean {
+  const v = parseFloat(s);
+  return Number.isFinite(v) && v > MAX_TICKET_KG;
 }
 
 interface FieldProps {
@@ -39,6 +50,7 @@ interface FieldProps {
 }
 
 function Field({ label, value, ghost, onChange }: FieldProps) {
+  const over = isOver(value);
   return (
     <label className="flex items-center justify-between gap-2 py-1">
       <span className="min-w-0 flex-1 text-xs text-gray-600">{label}</span>
@@ -46,12 +58,19 @@ function Field({ label, value, ghost, onChange }: FieldProps) {
         <input
           type="number"
           min={0}
+          max={MAX_TICKET_KG}
           inputMode="decimal"
           value={value}
           placeholder={ghost != null ? String(Math.round(ghost)) : '0'}
           onChange={(e) => onChange(e.target.value)}
-          className="border-tb-neutral-200 focus:border-tb-primary-light focus:ring-tb-primary-light w-24 rounded border bg-white px-2 py-1 text-right text-xs text-gray-900 focus:ring-1 focus:outline-none"
+          className={[
+            'w-24 rounded border bg-white px-2 py-1 text-right text-xs text-gray-900 focus:ring-1 focus:outline-none',
+            over
+              ? 'border-red-400 focus:border-red-400 focus:ring-red-400'
+              : 'border-tb-neutral-200 focus:border-tb-primary-light focus:ring-tb-primary-light',
+          ].join(' ')}
           aria-label={label}
+          aria-invalid={over || undefined}
         />
         <span className="w-4 text-[11px] text-gray-400">kg</span>
       </span>
@@ -283,6 +302,7 @@ export function WeighbridgeCalibrationPanel() {
 
   // ── Entry view ───────────────────────────────────────────────────────────
   const canSubmit = buildMeasurement() != null;
+  const anyOver = [total, front, rear, fl, fr, rl, rr].some(isOver);
   return (
     <section className="border-tb-neutral-200 rounded-lg border bg-white p-4">
       <p className="mb-1 text-xs font-medium text-gray-500">
@@ -366,6 +386,13 @@ export function WeighbridgeCalibrationPanel() {
           </>
         )}
       </div>
+
+      {anyOver && (
+        <p className="mb-2 text-[11px] text-red-500">
+          That looks too heavy — weighbridge figures should be under{' '}
+          {MAX_TICKET_KG.toLocaleString()} kg. Check for an extra digit.
+        </p>
+      )}
 
       <button
         type="button"

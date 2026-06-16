@@ -48,6 +48,7 @@ export function SetupVersionsPanel() {
   const [label, setLabel] = useState('');
   const [note, setNote] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
+  const [revertedFrom, setRevertedFrom] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!setupId) return;
@@ -80,6 +81,7 @@ export function SetupVersionsPanel() {
       setLabel('');
       setNote('');
       setShowForm(false);
+      setRevertedFrom(null); // the working state is now captured
     }
   };
 
@@ -92,7 +94,10 @@ export function SetupVersionsPanel() {
     )
       return;
     const full = await getVersion(setupId, v.id);
-    if (full) dispatch({ type: 'LOAD_STATE', state: full.stateSnapshot });
+    if (full) {
+      dispatch({ type: 'LOAD_STATE', state: full.stateSnapshot });
+      setRevertedFrom(v.label);
+    }
   };
 
   const onDelete = async (v: SetupVersionDTO) => {
@@ -143,6 +148,36 @@ export function SetupVersionsPanel() {
           {showForm ? 'Cancel' : '+ Save version'}
         </button>
       </div>
+
+      {revertedFrom && !showForm && (
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+          <p className="text-[11px] leading-snug text-amber-800">
+            Reverted to <span className="font-medium">“{revertedFrom}”</span>.
+            These changes aren&apos;t saved — save a version to keep them.
+          </p>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setLabel(revertedFrom);
+                setShowForm(true);
+              }}
+              className="rounded-md px-2 py-1 text-[11px] font-medium text-white"
+              style={{ backgroundColor: ACCENT }}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setRevertedFrom(null)}
+              className="text-[11px] text-amber-700 hover:text-amber-900"
+              aria-label="Dismiss"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {showForm && (
         <div className="mb-3 space-y-2 rounded-md border border-tb-neutral-200 bg-tb-neutral-50/50 p-3">
