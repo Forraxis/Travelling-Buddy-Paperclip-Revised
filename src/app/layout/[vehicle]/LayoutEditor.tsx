@@ -31,7 +31,10 @@ export function LayoutEditor({
   return (
     <Suspense>
       <CalculatorProvider initialParams={params}>
-        <LayoutEditorInner vehicleName={vehicleName} setupId={setupId ?? null} />
+        <LayoutEditorInner
+          vehicleName={vehicleName}
+          setupId={setupId ?? null}
+        />
       </CalculatorProvider>
     </Suspense>
   );

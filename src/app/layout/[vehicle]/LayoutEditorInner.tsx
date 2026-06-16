@@ -83,7 +83,12 @@ export function LayoutEditorInner({
       else if (side === 'vehicle') setAccessoryPosition(id, x, y);
       else setCaravanAccessoryPosition(id, x, y);
     },
-    [isCustom, setCustomLoadPosition, setAccessoryPosition, setCaravanAccessoryPosition],
+    [
+      isCustom,
+      setCustomLoadPosition,
+      setAccessoryPosition,
+      setCaravanAccessoryPosition,
+    ],
   );
   const onRemove = useCallback(
     (side: Side, id: string) => {
@@ -121,7 +126,9 @@ export function LayoutEditorInner({
 
   async function handleContribute() {
     setContribMsg(null);
-    const vehItems = state.accessories.filter((a) => a.cogXMm != null && a.cogYMm != null);
+    const vehItems = state.accessories.filter(
+      (a) => a.cogXMm != null && a.cogYMm != null,
+    );
     const calls: Promise<Response>[] = [];
     if (state.vehicleVariantId && vehItems.length) {
       calls.push(
@@ -131,12 +138,18 @@ export function LayoutEditorInner({
           body: JSON.stringify({
             vehicleVariantId: state.vehicleVariantId,
             source: 'layout-editor',
-            items: vehItems.map((a) => ({ fitmentId: a.accessoryId, cogXMm: Math.round(a.cogXMm!), cogYMm: Math.round(a.cogYMm!) })),
+            items: vehItems.map((a) => ({
+              fitmentId: a.accessoryId,
+              cogXMm: Math.round(a.cogXMm!),
+              cogYMm: Math.round(a.cogYMm!),
+            })),
           }),
         }),
       );
     }
-    const vanItems = state.caravanAccessories.filter((a) => a.cogXMm != null && a.cogYMm != null);
+    const vanItems = state.caravanAccessories.filter(
+      (a) => a.cogXMm != null && a.cogYMm != null,
+    );
     if (state.caravanVariantId && vanItems.length) {
       calls.push(
         fetch('/api/fitments/positions', {
@@ -145,7 +158,11 @@ export function LayoutEditorInner({
           body: JSON.stringify({
             caravanVariantId: state.caravanVariantId,
             source: 'layout-editor',
-            items: vanItems.map((a) => ({ fitmentId: a.accessoryId, cogXMm: Math.round(a.cogXMm!), cogYMm: Math.round(a.cogYMm!) })),
+            items: vanItems.map((a) => ({
+              fitmentId: a.accessoryId,
+              cogXMm: Math.round(a.cogXMm!),
+              cogYMm: Math.round(a.cogYMm!),
+            })),
           }),
         }),
       );
@@ -155,7 +172,11 @@ export function LayoutEditorInner({
       return;
     }
     const results = await Promise.all(calls);
-    setContribMsg(results.every((r) => r.ok) ? 'Thanks! Submitted for review.' : 'Some items could not be submitted.');
+    setContribMsg(
+      results.every((r) => r.ok)
+        ? 'Thanks! Submitted for review.'
+        : 'Some items could not be submitted.',
+    );
   }
 
   const hasPositions =
@@ -173,16 +194,20 @@ export function LayoutEditorInner({
             onRemove={onRemove}
           />
         ) : (
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-dashed border-tb-neutral-200 text-sm text-gray-400">
+          <div className="border-tb-neutral-200 flex h-64 items-center justify-center rounded-2xl border border-dashed text-sm text-gray-400">
             Loading your rig…
           </div>
         )}
       </div>
 
       <aside className="order-1 space-y-4 lg:order-2">
-        <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
-          <h2 className="text-sm font-semibold text-tb-ink">Vehicle accessories</h2>
-          <p className="mb-2 text-xs text-gray-500">Add gear, then drag it into place.</p>
+        <div className="border-tb-neutral-200 rounded-2xl border bg-white p-4">
+          <h2 className="text-tb-ink text-sm font-semibold">
+            Vehicle accessories
+          </h2>
+          <p className="mb-2 text-xs text-gray-500">
+            Add gear, then drag it into place.
+          </p>
           <AccessoryPicker
             onAdd={addVehicle}
             onRemove={removeAccessory}
@@ -192,20 +217,31 @@ export function LayoutEditorInner({
         </div>
 
         {state.caravanVariantId ? (
-          <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
-            <h2 className="text-sm font-semibold text-tb-ink">Caravan accessories</h2>
-            <p className="mb-2 text-xs text-gray-500">Mounted gear moves the tow-ball.</p>
+          <div className="border-tb-neutral-200 rounded-2xl border bg-white p-4">
+            <h2 className="text-tb-ink text-sm font-semibold">
+              Caravan accessories
+            </h2>
+            <p className="mb-2 text-xs text-gray-500">
+              Mounted gear moves the tow-ball.
+            </p>
             <AccessoryPicker
               onAdd={addCaravan}
               onRemove={removeCaravanAccessory}
-              addedFitmentIds={state.caravanAccessories.map((a) => a.accessoryId)}
+              addedFitmentIds={state.caravanAccessories.map(
+                (a) => a.accessoryId,
+              )}
               context="caravan"
             />
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-tb-neutral-200 bg-white/60 p-4 text-xs text-gray-500">
+          <div className="border-tb-neutral-200 rounded-2xl border border-dashed bg-white/60 p-4 text-xs text-gray-500">
             Towing? Open this rig with a caravan attached from the{' '}
-            <Link href="/calculator/" className="font-medium text-tb-primary underline">calculator</Link>{' '}
+            <Link
+              href="/calculator/"
+              className="text-tb-primary font-medium underline"
+            >
+              calculator
+            </Link>{' '}
             to plan the coupled layout and tow-ball.
           </div>
         )}
@@ -217,23 +253,35 @@ export function LayoutEditorInner({
 
         <WeighbridgeCalibrationPanel />
 
-        <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
+        <div className="border-tb-neutral-200 rounded-2xl border bg-white p-4">
           <div className="flex gap-2">
-            <button type="button" onClick={handleSave} disabled={saving}
-              className="flex-1 rounded-lg bg-tb-primary px-3 py-2 text-sm font-semibold text-white hover:bg-tb-primary/90 disabled:opacity-50">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-tb-primary hover:bg-tb-primary/90 flex-1 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
               {saving ? 'Saving…' : 'Save layout'}
             </button>
-            <button type="button" onClick={handleContribute} disabled={!hasPositions}
-              className="flex-1 rounded-lg border border-tb-accent/40 bg-tb-accent/5 px-3 py-2 text-sm font-semibold text-tb-accent hover:bg-tb-accent/10 disabled:opacity-50">
+            <button
+              type="button"
+              onClick={handleContribute}
+              disabled={!hasPositions}
+              className="border-tb-accent/40 bg-tb-accent/5 text-tb-accent hover:bg-tb-accent/10 flex-1 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
               Share layout
             </button>
           </div>
-          {savedMsg && <p className="mt-2 text-xs text-tb-success">{savedMsg}</p>}
-          {contribMsg && <p className="mt-2 text-xs text-gray-500">{contribMsg}</p>}
+          {savedMsg && (
+            <p className="text-tb-success mt-2 text-xs">{savedMsg}</p>
+          )}
+          {contribMsg && (
+            <p className="mt-2 text-xs text-gray-500">{contribMsg}</p>
+          )}
         </div>
 
         {setupId && (
-          <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
+          <div className="border-tb-neutral-200 rounded-2xl border bg-white p-4">
             <SetupVersionsPanel />
           </div>
         )}
@@ -278,16 +326,17 @@ function CustomLoadForm({
 
   if (!open) {
     return (
-      <div className="rounded-2xl border border-tb-neutral-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-tb-ink">Custom load</h2>
+      <div className="border-tb-neutral-200 rounded-2xl border bg-white p-4">
+        <h2 className="text-tb-ink text-sm font-semibold">Custom load</h2>
         <p className="mb-2 text-xs text-gray-500">
-          Add anything not in the catalogue — a fridge, water, firewood — just for
-          your rig. Branded product? Use “+ Add accessory” to submit it for review.
+          Add anything not in the catalogue — a fridge, water, firewood — just
+          for your rig. Branded product? Use “+ Add accessory” to submit it for
+          review.
         </p>
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="w-full rounded-lg border border-dashed border-tb-neutral-300 px-3 py-2 text-sm font-medium text-tb-primary hover:bg-tb-neutral-50"
+          className="border-tb-neutral-300 text-tb-primary hover:bg-tb-neutral-50 w-full rounded-lg border border-dashed px-3 py-2 text-sm font-medium"
         >
           + Create custom item
         </button>
@@ -296,8 +345,8 @@ function CustomLoadForm({
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-tb-primary/30 bg-white p-4">
-      <h2 className="text-sm font-semibold text-tb-ink">New custom item</h2>
+    <div className="border-tb-primary/30 space-y-2 rounded-2xl border bg-white p-4">
+      <h2 className="text-tb-ink text-sm font-semibold">New custom item</h2>
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
@@ -343,7 +392,7 @@ function CustomLoadForm({
         <button
           type="button"
           onClick={submit}
-          className="flex-1 rounded-lg bg-tb-primary px-3 py-1.5 text-sm font-semibold text-white hover:bg-tb-primary/90"
+          className="bg-tb-primary hover:bg-tb-primary/90 flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-white"
         >
           Add to rig
         </button>

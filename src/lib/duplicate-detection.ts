@@ -63,7 +63,9 @@ export function accessoryFingerprint(data: {
 // Round a ticket value to the nearest kg so trivially-different re-keys of the
 // same weigh-in collapse to one fingerprint. null/undefined → '' (stable).
 function roundKg(v: unknown): string {
-  return typeof v === 'number' && Number.isFinite(v) ? String(Math.round(v)) : '';
+  return typeof v === 'number' && Number.isFinite(v)
+    ? String(Math.round(v))
+    : '';
 }
 
 /**

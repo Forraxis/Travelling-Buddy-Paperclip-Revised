@@ -51,13 +51,20 @@ export async function approveCalibrationContributions(
       select: { id: true },
     });
     if (pending.length === 0) {
-      return { success: false, error: 'No pending contributions for this variant' };
+      return {
+        success: false,
+        error: 'No pending contributions for this variant',
+      };
     }
 
     await prisma.$transaction(async (tx) => {
       await tx.calibrationContribution.updateMany({
         where: { id: { in: pending.map((p) => p.id) } },
-        data: { status: 'APPROVED', decidedById: user.id, decidedAt: new Date() },
+        data: {
+          status: 'APPROVED',
+          decidedById: user.id,
+          decidedAt: new Date(),
+        },
       });
 
       // Re-aggregate the full approved pool (prior approvals + these).
@@ -147,7 +154,10 @@ export async function rejectCalibrationContributions(
       },
     });
     if (updated.count === 0) {
-      return { success: false, error: 'No pending contributions for this variant' };
+      return {
+        success: false,
+        error: 'No pending contributions for this variant',
+      };
     }
     await prisma.moderationAction.create({
       data: {
@@ -186,11 +196,16 @@ export async function unpublishCalibrationCorrection(
       where: { vehicleVariantId },
     });
     if (!existing) {
-      return { success: false, error: 'No published correction for this variant' };
+      return {
+        success: false,
+        error: 'No published correction for this variant',
+      };
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.vehicleCalibrationCorrection.delete({ where: { vehicleVariantId } });
+      await tx.vehicleCalibrationCorrection.delete({
+        where: { vehicleVariantId },
+      });
       await tx.moderationAction.create({
         data: {
           submissionType: 'calibration_contribution',

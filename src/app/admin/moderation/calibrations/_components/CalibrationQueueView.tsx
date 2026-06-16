@@ -47,7 +47,11 @@ function fmtFrac(n: number | null): string {
   return n == null ? '—' : `${n >= 0 ? '+' : ''}${n.toFixed(3)}`;
 }
 
-export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] }) {
+export function CalibrationQueueView({
+  groups,
+}: {
+  groups: CalibrationGroup[];
+}) {
   const [pending, startTransition] = useTransition();
   const [rows, setRows] = useState(groups);
   const [applyCog, setApplyCog] = useState<Record<string, boolean>>({});
@@ -122,11 +126,12 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
           Calibration contribution queue
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Owners who weighed their rig and shared the ticket. Approving publishes
-          a bareness-weighted per-model correction. The kerb-MASS delta applies
-          automatically once it clears the sample gate; the kerb-CoG-FRACTION
-          delta stays gated behind the checkbox — the Rule-11 sign-off — because
-          the “everyone loads the back” confound needs a human eye.
+          Owners who weighed their rig and shared the ticket. Approving
+          publishes a bareness-weighted per-model correction. The kerb-MASS
+          delta applies automatically once it clears the sample gate; the
+          kerb-CoG-FRACTION delta stays gated behind the checkbox — the Rule-11
+          sign-off — because the “everyone loads the back” confound needs a
+          human eye.
         </p>
       </div>
 
@@ -168,8 +173,8 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
                         <span className="font-mono">
                           {fmtKg(g.live.kerbMassDeltaKg)}
                         </span>{' '}
-                        {g.live.kerbMassApplied ? '(applied)' : '(not applied)'},
-                        N={g.live.kerbMassSampleCount} · CoG Δ{' '}
+                        {g.live.kerbMassApplied ? '(applied)' : '(not applied)'}
+                        , N={g.live.kerbMassSampleCount} · CoG Δ{' '}
                         <span className="font-mono">
                           {fmtFrac(g.live.cogFractionDelta)}
                         </span>{' '}
@@ -179,71 +184,71 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
                     )}
 
                     {hasPending && (
-                    <>
-                    <div className="mt-2 grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-                      <span className="text-gray-700">
-                        Kerb-mass Δ (weighted median):{' '}
-                        <span className="font-mono font-semibold">
-                          {fmtKg(a.kerbMassDeltaKg)}
-                        </span>
-                        <span
-                          className={`ml-1 text-xs ${massReady ? 'text-green-600' : 'text-amber-600'}`}
-                        >
-                          {a.kerbMassSampleCount}/{g.minSamples}
-                          {massReady ? ' ✓' : ' (gate)'}
-                        </span>
-                      </span>
-                      <span className="text-gray-700">
-                        CoG-fraction Δ:{' '}
-                        <span className="font-mono font-semibold">
-                          {fmtFrac(a.cogFractionDelta)}
-                        </span>
-                        <span
-                          className={`ml-1 text-xs ${cogReady ? 'text-green-600' : 'text-amber-600'}`}
-                        >
-                          {a.cogSampleCount}/{g.minSamples}
-                          {cogReady ? ' ✓' : ' (gate)'}
-                        </span>
-                      </span>
-                    </div>
+                      <>
+                        <div className="mt-2 grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+                          <span className="text-gray-700">
+                            Kerb-mass Δ (weighted median):{' '}
+                            <span className="font-mono font-semibold">
+                              {fmtKg(a.kerbMassDeltaKg)}
+                            </span>
+                            <span
+                              className={`ml-1 text-xs ${massReady ? 'text-green-600' : 'text-amber-600'}`}
+                            >
+                              {a.kerbMassSampleCount}/{g.minSamples}
+                              {massReady ? ' ✓' : ' (gate)'}
+                            </span>
+                          </span>
+                          <span className="text-gray-700">
+                            CoG-fraction Δ:{' '}
+                            <span className="font-mono font-semibold">
+                              {fmtFrac(a.cogFractionDelta)}
+                            </span>
+                            <span
+                              className={`ml-1 text-xs ${cogReady ? 'text-green-600' : 'text-amber-600'}`}
+                            >
+                              {a.cogSampleCount}/{g.minSamples}
+                              {cogReady ? ' ✓' : ' (gate)'}
+                            </span>
+                          </span>
+                        </div>
 
-                    <details className="mt-2 text-xs text-gray-500">
-                      <summary className="cursor-pointer select-none">
-                        Per-contribution rows
-                      </summary>
-                      <table className="mt-1 w-full max-w-xl tabular-nums">
-                        <thead className="text-left text-gray-400">
-                          <tr>
-                            <th className="pr-3 font-normal">Ticket</th>
-                            <th className="pr-3 font-normal">Meas/Pred</th>
-                            <th className="pr-3 font-normal">Residual</th>
-                            <th className="pr-3 font-normal">Bareness</th>
-                            <th className="pr-3 font-normal">CoG Δ</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {g.rows.map((r) => (
-                            <tr key={r.id} className="text-gray-600">
-                              <td className="pr-3">{r.granularity}</td>
-                              <td className="pr-3 font-mono">
-                                {r.measuredTotalKg.toFixed(0)}/
-                                {r.predictedTotalKg.toFixed(0)}
-                              </td>
-                              <td className="pr-3 font-mono">
-                                {fmtKg(r.residualMassKg)}
-                              </td>
-                              <td className="pr-3 font-mono">
-                                {r.barenessWeight.toFixed(2)}
-                              </td>
-                              <td className="pr-3 font-mono">
-                                {fmtFrac(r.cogFractionDelta)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </details>
-                    </>
+                        <details className="mt-2 text-xs text-gray-500">
+                          <summary className="cursor-pointer select-none">
+                            Per-contribution rows
+                          </summary>
+                          <table className="mt-1 w-full max-w-xl tabular-nums">
+                            <thead className="text-left text-gray-400">
+                              <tr>
+                                <th className="pr-3 font-normal">Ticket</th>
+                                <th className="pr-3 font-normal">Meas/Pred</th>
+                                <th className="pr-3 font-normal">Residual</th>
+                                <th className="pr-3 font-normal">Bareness</th>
+                                <th className="pr-3 font-normal">CoG Δ</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {g.rows.map((r) => (
+                                <tr key={r.id} className="text-gray-600">
+                                  <td className="pr-3">{r.granularity}</td>
+                                  <td className="pr-3 font-mono">
+                                    {r.measuredTotalKg.toFixed(0)}/
+                                    {r.predictedTotalKg.toFixed(0)}
+                                  </td>
+                                  <td className="pr-3 font-mono">
+                                    {fmtKg(r.residualMassKg)}
+                                  </td>
+                                  <td className="pr-3 font-mono">
+                                    {r.barenessWeight.toFixed(2)}
+                                  </td>
+                                  <td className="pr-3 font-mono">
+                                    {fmtFrac(r.cogFractionDelta)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </details>
+                      </>
                     )}
                   </div>
 
@@ -277,7 +282,7 @@ export function CalibrationQueueView({ groups }: { groups: CalibrationGroup[] })
                             type="button"
                             disabled={pending}
                             onClick={() => onApprove(g)}
-                            className="rounded-md bg-tb-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-tb-primary/90 disabled:opacity-50"
+                            className="bg-tb-primary hover:bg-tb-primary/90 rounded-md px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                           >
                             Publish correction
                           </button>

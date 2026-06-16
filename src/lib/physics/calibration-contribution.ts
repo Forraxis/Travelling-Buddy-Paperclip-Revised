@@ -162,9 +162,7 @@ export interface WeightedSample {
  * let one fully-loaded outlier drag the estimate; the median resists that.
  */
 export function weightedMedian(samples: WeightedSample[]): number | null {
-  const valid = samples.filter(
-    (s) => Number.isFinite(s.value) && s.weight > 0,
-  );
+  const valid = samples.filter((s) => Number.isFinite(s.value) && s.weight > 0);
   if (valid.length === 0) return null;
   const sorted = [...valid].sort((a, b) => a.value - b.value);
   const total = sorted.reduce((acc, s) => acc + s.weight, 0);
@@ -203,7 +201,9 @@ export type AggregateInput = Pick<
  * — one contributor's cleanest base read. Null-fingerprint rows pass through as
  * distinct. This is what turns "rows" into "distinct contributors" for the gate.
  */
-export function collapseByFingerprint(rows: AggregateInput[]): AggregateInput[] {
+export function collapseByFingerprint(
+  rows: AggregateInput[],
+): AggregateInput[] {
   const best = new Map<string, AggregateInput>();
   const passthrough: AggregateInput[] = [];
   for (const r of rows) {
@@ -212,7 +212,8 @@ export function collapseByFingerprint(rows: AggregateInput[]): AggregateInput[] 
       continue;
     }
     const cur = best.get(r.fingerprint);
-    if (!cur || r.barenessWeight > cur.barenessWeight) best.set(r.fingerprint, r);
+    if (!cur || r.barenessWeight > cur.barenessWeight)
+      best.set(r.fingerprint, r);
   }
   return [...passthrough, ...best.values()];
 }
@@ -224,7 +225,9 @@ export function collapseByFingerprint(rows: AggregateInput[]): AggregateInput[] 
  * contributor (fingerprint), so each correction publishes only once it has
  * MIN_SAMPLES contributing rows from distinct contributors.
  */
-export function aggregateCorrection(rows: AggregateInput[]): CorrectionAggregate {
+export function aggregateCorrection(
+  rows: AggregateInput[],
+): CorrectionAggregate {
   const collapsed = collapseByFingerprint(rows);
 
   const massSamples: WeightedSample[] = collapsed
@@ -233,7 +236,10 @@ export function aggregateCorrection(rows: AggregateInput[]): CorrectionAggregate
 
   const cogSamples: WeightedSample[] = collapsed
     .filter((r) => r.cogFractionDelta != null)
-    .map((r) => ({ value: r.cogFractionDelta as number, weight: r.barenessWeight }))
+    .map((r) => ({
+      value: r.cogFractionDelta as number,
+      weight: r.barenessWeight,
+    }))
     .filter((s) => s.weight > 0);
 
   return {

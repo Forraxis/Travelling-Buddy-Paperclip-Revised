@@ -85,7 +85,7 @@ export default async function LayoutPlannerPage({
   const name = rigName(v);
 
   return (
-    <main className="min-h-screen bg-tb-neutral-50">
+    <main className="bg-tb-neutral-50 min-h-screen">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <nav className="mb-3 text-sm text-gray-500">
           <Link href="/" className="hover:text-tb-primary">
@@ -99,12 +99,13 @@ export default async function LayoutPlannerPage({
         </nav>
 
         <header className="mb-5">
-          <h1 className="font-display text-2xl font-bold text-tb-ink sm:text-3xl">
+          <h1 className="font-display text-tb-ink text-2xl font-bold sm:text-3xl">
             {name} — Load Layout Planner
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-gray-600">
             Drag your accessories onto the {v.model.name} and see exactly what
-            each placement does to your <strong>front and rear axle loads</strong>,{' '}
+            each placement does to your{' '}
+            <strong>front and rear axle loads</strong>,{' '}
             <strong>left/right balance</strong>, and{' '}
             <strong>tow-ball mass</strong> — live, as you move things. Hitch a
             caravan to see how coupling up shifts weight off the front axle.
@@ -120,7 +121,7 @@ export default async function LayoutPlannerPage({
 
         <section className="mt-10 grid gap-8 md:grid-cols-2">
           <div>
-            <h2 className="font-display text-lg font-semibold text-tb-ink">
+            <h2 className="font-display text-tb-ink text-lg font-semibold">
               Popular accessories for the {v.model.name}
             </h2>
             {popular.length > 0 ? (
@@ -138,39 +139,40 @@ export default async function LayoutPlannerPage({
               </ul>
             ) : (
               <p className="mt-3 text-sm text-gray-500">
-                No catalogued accessories for this model yet — add your own custom
-                loads in the planner above.
+                No catalogued accessories for this model yet — add your own
+                custom loads in the planner above.
               </p>
             )}
           </div>
 
           <div>
-            <h2 className="font-display text-lg font-semibold text-tb-ink">
+            <h2 className="font-display text-tb-ink text-lg font-semibold">
               How the planner works
             </h2>
             <dl className="mt-3 space-y-3 text-sm text-gray-700">
               <div>
-                <dt className="font-semibold text-tb-ink">
+                <dt className="text-tb-ink font-semibold">
                   Does where I mount things really matter?
                 </dt>
                 <dd className="mt-0.5 text-gray-600">
-                  Yes. A bull bar ahead of the front axle loads the front; a rear
-                  drawer system loads the rear and can push you over your rear
-                  axle rating long before GVM. Position changes the numbers.
+                  Yes. A bull bar ahead of the front axle loads the front; a
+                  rear drawer system loads the rear and can push you over your
+                  rear axle rating long before GVM. Position changes the
+                  numbers.
                 </dd>
               </div>
               <div>
-                <dt className="font-semibold text-tb-ink">
+                <dt className="text-tb-ink font-semibold">
                   What does hitching a caravan do?
                 </dt>
                 <dd className="mt-0.5 text-gray-600">
-                  The tow-ball download lifts weight off your front axle and adds
-                  it to the rear. The planner shows the hitched vs unhitched
-                  comparison so you can see it.
+                  The tow-ball download lifts weight off your front axle and
+                  adds it to the rear. The planner shows the hitched vs
+                  unhitched comparison so you can see it.
                 </dd>
               </div>
               <div>
-                <dt className="font-semibold text-tb-ink">
+                <dt className="text-tb-ink font-semibold">
                   Is this a substitute for a weighbridge?
                 </dt>
                 <dd className="mt-0.5 text-gray-600">

@@ -30,12 +30,17 @@ describe('parseEnv', () => {
   it('requires AUTH_SECRET + OAuth + site URL in production', () => {
     const { AUTH_SECRET, ...noSecret } = prodBase;
     void AUTH_SECRET;
-    expect(() => parseEnv(noSecret)).toThrow(/AUTH_SECRET is required in production/);
+    expect(() => parseEnv(noSecret)).toThrow(
+      /AUTH_SECRET is required in production/,
+    );
   });
 
   it('rejects a partially-configured R2 set in production', () => {
     expect(() =>
-      parseEnv({ ...prodBase, CLOUDFLARE_R2_ENDPOINT: 'https://r2.example.com' }),
+      parseEnv({
+        ...prodBase,
+        CLOUDFLARE_R2_ENDPOINT: 'https://r2.example.com',
+      }),
     ).toThrow(/R2 config is incomplete/);
   });
 

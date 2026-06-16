@@ -36,9 +36,7 @@ const vehicleSchema = z
   })
   .loose();
 
-const snapshotSchema = z
-  .object({ vehicle: vehicleSchema })
-  .loose(); // keep every other PhysicsInput field untouched
+const snapshotSchema = z.object({ vehicle: vehicleSchema }).loose(); // keep every other PhysicsInput field untouched
 
 const bodySchema = z.object({
   vehicleVariantId: z.string().min(1),

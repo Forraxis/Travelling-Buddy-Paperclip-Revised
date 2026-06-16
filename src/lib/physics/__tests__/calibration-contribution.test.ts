@@ -43,7 +43,11 @@ describe('measuredTotalKg', () => {
   it('reads the total for each granularity', () => {
     expect(measuredTotalKg({ granularity: 'TOTAL', totalKg: 3000 })).toBe(3000);
     expect(
-      measuredTotalKg({ granularity: 'AXLE', frontAxleKg: 1200, rearAxleKg: 1800 }),
+      measuredTotalKg({
+        granularity: 'AXLE',
+        frontAxleKg: 1200,
+        rearAxleKg: 1800,
+      }),
     ).toBe(3000);
     expect(
       measuredTotalKg({
@@ -54,8 +58,12 @@ describe('measuredTotalKg', () => {
   });
 
   it('returns null when the granularity fields are missing or tow-ball only', () => {
-    expect(measuredTotalKg({ granularity: 'AXLE', frontAxleKg: 1200 })).toBeNull();
-    expect(measuredTotalKg({ granularity: 'TOWBALL', towBallKg: 300 })).toBeNull();
+    expect(
+      measuredTotalKg({ granularity: 'AXLE', frontAxleKg: 1200 }),
+    ).toBeNull();
+    expect(
+      measuredTotalKg({ granularity: 'TOWBALL', towBallKg: 300 }),
+    ).toBeNull();
   });
 });
 
