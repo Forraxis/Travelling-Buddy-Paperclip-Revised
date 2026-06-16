@@ -28,15 +28,48 @@ The vehicle is always present. The caravan is an optional attachment.
 
 ## Tech Stack
 
-- **Framework:** Next.js (App Router) with TypeScript strict mode
-- **Styling:** Tailwind CSS
-- **Database:** PostgreSQL 16 with Prisma ORM
+- **Framework:** Next.js 16 (App Router) + React 19, TypeScript strict mode
+- **Styling:** Tailwind CSS v4
+- **Database:** PostgreSQL with Prisma 7 (PrismaPg driver adapter)
+- **Auth:** NextAuth v5 (Google OAuth + credentials)
+- **Async jobs:** BullMQ + Redis (VLM/OCR, photo post-process), auto-started via `src/instrumentation.ts`
+- **Storage / AI / email:** Cloudflare R2 (photos), Tesseract + Qwen VLM (submission OCR), Resend (email)
 - **Testing:** Vitest (unit), Playwright (e2e)
 - **Hosting:** Self-hosted on Proxmox
 
 ## Getting Started
 
-Application setup instructions will be added in Task 0.2 (Next.js scaffold).
+Postgres and Redis run locally in Docker (`tb-postgres` on 5432, `tb-redis` on 6379).
+
+```bash
+# 1. Install deps
+npm install
+
+# 2. Configure env — copy and fill in. The server validates env at boot
+#    (src/lib/env.ts); in production it refuses to start on missing secrets.
+cp .env.example .env.local
+
+# 3. Apply migrations + generate the Prisma client.
+#    The Prisma CLI does not auto-load .env, so pass DATABASE_URL inline:
+DATABASE_URL=postgresql://travelbuddy:travelbuddy_dev@localhost:5432/travellingbuddy \
+  npx prisma migrate dev
+DATABASE_URL=… npx prisma generate
+
+# 4. Run the dev server (Next + turbopack on port 3070)
+npm run dev          # → https://tbr.dev.ragebots.me
+
+# Quality gates
+npx tsc --noEmit
+npx vitest run
+npx eslint src
+```
+
+> After any `schema.prisma` change, regenerate the client **and restart** the dev
+> server — the running process holds the old client, otherwise Prisma throws a
+> validation error on the new fields.
+
+See `RIG_LAYOUT.md` and `CALIBRATION_SIGNOFF.md` for current feature state, and the
+root `CLAUDE.md` for an at-a-glance project orientation.
 
 ## License
 
