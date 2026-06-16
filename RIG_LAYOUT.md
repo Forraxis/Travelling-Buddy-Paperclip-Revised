@@ -224,7 +224,16 @@ that anchor. Builds on the existing `CalibrationOverrides` hook
 - **P2** — `SetupVersion` snapshots: save named/dated/noted versions, revert,
   compare two side-by-side.
 - **P3** — contribute calibration (opt-in default-on) → per-model base-estimate
-  improvement regression; surfaced via `CalibrationOverrides`.
+  improvement regression; surfaced via `CalibrationOverrides`. **BUILT (capture +
+  math + moderation):** `CalibrationContribution`/`VehicleCalibrationCorrection`
+  schema, `POST /api/calibrations/contribute`, opt-in panel, the
+  `calibration-contribution.ts` derivation (bareness-weighted robust median, 20
+  tests), `/admin/moderation/calibrations` queue. kerb-MASS auto-publishes past
+  the N≥3 gate; kerb-CoG-FRACTION stays **gated** behind a moderator sign-off.
+  See CALIBRATION_SIGNOFF.md §9 (awaiting Tim's red pen). REMAINING: wire the
+  published correction into `buildPhysicsInput` (load `VehicleCalibrationCorrection`
+  with the variant, `mergeModelCorrection` when the user hasn't weighed) — nothing
+  is live in the calculator until that wiring lands, by design.
 
 ### Trust / legal
 Calibrating to a weighbridge ticket *raises* credibility ("calibrated to your

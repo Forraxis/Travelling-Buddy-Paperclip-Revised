@@ -31,7 +31,10 @@ const FUEL_DENSITY: Record<string, number> = {
 const PASSENGER_KG = 80;
 
 // Vehicle CoG estimates — fractions of wheelbase from rear axle.
-const VEHICLE_KERB_COG_FRACTION = 0.45;
+// Exported as the single source of truth: the P3 calibration-contribution
+// derivation regresses a per-model delta against this baseline (keep in
+// lock-step — see calibration-contribution.ts / CALIBRATION_SIGNOFF.md §5).
+export const VEHICLE_KERB_COG_FRACTION = 0.45;
 const FUEL_COG_FRACTION = 0.45;
 const PASSENGER_COG_FRACTION = 0.6;
 const CARGO_COG_FRACTION = 0.3;
@@ -269,6 +272,7 @@ function computeVehicleAxles(
   cargoKg: number,
   towBallDownloadKg: number,
   totalVehicleWeightKg: number,
+  kerbCogFraction: number = VEHICLE_KERB_COG_FRACTION,
 ): { frontAxleKg: number; rearAxleKg: number; lateral: VehicleLateral } {
   const wb = vehicle.wheelbaseMm;
   const rearOverhang = vehicle.rearOverhangMm ?? 400;
@@ -278,7 +282,7 @@ function computeVehicleAxles(
   // Base loads sit on the centreline (y = 0); accessories carry a lateral
   // position (explicit cogY, else a default for side-specific mounts).
   const loads: Array<{ w: number; x: number; y: number }> = [
-    { w: effectiveKerbKg, x: wb * VEHICLE_KERB_COG_FRACTION, y: 0 },
+    { w: effectiveKerbKg, x: wb * kerbCogFraction, y: 0 },
     { w: fuelMassKg, x: wb * FUEL_COG_FRACTION, y: 0 },
     { w: passengerMassKg, x: wb * PASSENGER_COG_FRACTION, y: 0 },
     { w: cargoKg, x: wb * CARGO_COG_FRACTION, y: 0 },
@@ -506,6 +510,7 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     cargoKg,
     towBallDownloadKg,
     totalVehicleWeightKg,
+    calibration.vehicleKerbCogFraction ?? VEHICLE_KERB_COG_FRACTION,
   );
 
   // Weighbridge static-offset mop-up (the positioned unaccounted load is already

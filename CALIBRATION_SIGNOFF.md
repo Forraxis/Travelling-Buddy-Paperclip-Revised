@@ -256,3 +256,84 @@ what it's good at.
 
 Once these are ticked I'll implement P1 against exactly this spec. Anything you
 change here, I change in the code — this doc is the contract.
+
+---
+
+## 9. P3 — per-model regression from contributed calibrations (PROPOSED, awaiting red pen)
+
+This is the data moat: many users' weighbridge contributions, aggregated, correct
+the **base** kerb estimates the model is weakest at — kerb **mass** and kerb
+**CoG position** — for *everyone*, including users who never weigh. Code:
+`src/lib/physics/calibration-contribution.ts` (pure, 20 unit tests). Nothing here
+moves a public number until you tick the boxes in §9.5 — corrections sit unused
+in `VehicleCalibrationCorrection` until an admin publishes them, and the CoG part
+stays gated even then.
+
+### 9.1 What one contribution gives us
+
+For a weighed config **C₀** and its ticket **M₀** we recompute the model
+prediction **P₀** (server-side; never trust client deltas) and derive:
+
+- **Residual mass** `ΔM = measuredTotal − predictedTotal` — the unexplained mass.
+- **Bareness** `b = kerb / measuredTotal ∈ (0,1]` — how much of what's on the
+  scale is the base vehicle. `b≈1` = stripped vehicle = a clean read on the base;
+  `b≈0.5` = half the weight is gear, so the base signal is swamped.
+- **kerb-mass signal** = `ΔM` (raw; the aggregate, not the row, interprets it).
+- **kerb-CoG-fraction signal** (needs an axle split): treat the unexplained mass
+  as if it were part of the base vehicle and ask where the base mass would have
+  to sit to reproduce the **measured** front axle, given the other modelled loads
+  are right:
+
+  ```
+  otherFront = P₀.frontAxle − kerb · 0.45          (non-kerb modelled front load)
+  f          = (measuredFront − otherFront) / (kerb + ΔM)
+  ΔfracCoG   = f − 0.45                              (0.45 = VEHICLE_KERB_COG_FRACTION)
+  ```
+
+  Folding ΔM into the base is the **conservative** choice (it attributes the
+  whole front/rear discrepancy to the base, not to phantom extra loads). ← ruling needed.
+
+### 9.2 The confound (why CoG is gated and mass is not)
+
+A single `ΔM` and `ΔfracCoG` conflate **model bias** with **real junk aboard**
+(tools, water, dirt, undeclared mods). Across the crowd the idiosyncratic junk
+*averages out* — but it is **not zero-mean in position**: people load the back
+(tubs, drawers, tow-ball). So a naïve mean would read "everyone loads the back"
+as "the base CoG sits further back." Two defences:
+
+1. **Bareness weighting** — weight every contribution by `b`, so near-kerb
+   weigh-ins dominate and fully-loaded rigs barely count. ← is `b = kerb/measured`
+   the right weight, or do you want `b²` / a hard cutoff?
+2. **Robust median, not mean** — one loaded outlier can't drag the estimate.
+
+Because **mass is strictly-positive junk** too, the kerb-mass delta is *also*
+biased upward by gear — bareness weighting is what makes it trustworthy. We still
+auto-publish mass (it's directionally safe and easy to sanity-check), but hold
+**CoG** behind your explicit sign-off per variant.
+
+### 9.3 Aggregation
+
+Per variant, over the **approved** pool: `correction = weightedMedian({value, b})`
+for mass and (separately) CoG. Each publishes only once it has **≥ MIN_SAMPLES = 3**
+bareness-positive rows. ← is N=3 enough, or do you want a higher floor for CoG?
+
+### 9.4 How it reaches the engine
+
+`mergeModelCorrection()` folds a published correction into `CalibrationOverrides`:
+- kerb-mass → `vehicleKerbKg` when `kerbMassApplied`.
+- kerb-CoG → `vehicleKerbCogFraction` (used at `engine.ts:284`) **only when
+  `cogApplied`** — set by the moderator's "Apply CoG shift (sign-off)" tick.
+A user's **own** weighbridge calibration always wins (we never clobber a field the
+caller set), so contributors still see their measured reality, not the crowd mean.
+
+### 9.5 Sign-off checklist (please initial / red-pen)
+
+- [ ] §9.1 per-contribution CoG derivation (fold ΔM into the base) is sound.
+- [ ] §9.2 bareness weight `b = kerb/measuredTotal` is the right confound defence.
+- [ ] §9.2 keep CoG gated behind per-variant sign-off; mass may auto-publish.
+- [ ] §9.3 robust weighted-median aggregation + `MIN_SAMPLES = 3` floor.
+- [ ] §9.4 user's own calibration supersedes the per-model correction.
+
+Until §9.5 is ticked, treat the CoG-fraction output as **diagnostic only**. The
+plumbing, capture, math and moderation are built; flipping CoG live is one
+checkbox behind your red pen.

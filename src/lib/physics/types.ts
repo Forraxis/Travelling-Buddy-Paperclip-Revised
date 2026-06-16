@@ -128,6 +128,12 @@ export interface CalibrationStaticOffsets {
 export interface CalibrationOverrides {
   vehicleKerbKg?: number;
   caravanTareKg?: number;
+  /**
+   * Per-model kerb-CoG wheelbase fraction (P3): overrides the engine's default
+   * VEHICLE_KERB_COG_FRACTION when the community regression has a gated,
+   * signed-off correction for this variant. See calibration-contribution.ts.
+   */
+  vehicleKerbCogFraction?: number;
   /** Weighbridge static offsets applied to the vehicle metrics (see above). */
   vehicleStaticOffsets?: CalibrationStaticOffsets;
 }

@@ -10,6 +10,7 @@ import type {
 import type { MetricStatus } from '@/lib/physics/types';
 import { useCalculatorState } from '@/modules/calculator/context';
 import { usePhysicsView } from '@/modules/calculator/use-physics-result';
+import { contributeCalibration } from '@/modules/calculator/calibration-contribute';
 
 const ACCENT = '#7c3aed'; // violet — distinct from the blue water accent
 
@@ -104,6 +105,11 @@ export function WeighbridgeCalibrationPanel() {
   const [rl, setRl] = useState('');
   const [rr, setRr] = useState('');
   const [preferStaticOnly, setPreferStaticOnly] = useState(false);
+  // P3 contribute: opt-in ON by default; one share per calibration session.
+  const [shareCalibration, setShareCalibration] = useState(true);
+  const [shareState, setShareState] = useState<'idle' | 'sending' | 'done'>(
+    'idle',
+  );
 
   // The clean pre-calibration prediction P₀ — drives the ghost placeholders.
   const predicted = useMemo(() => {
@@ -200,6 +206,20 @@ export function WeighbridgeCalibrationPanel() {
     setRl('');
     setRr('');
     setPreferStaticOnly(false);
+    setShareCalibration(true);
+    setShareState('idle');
+  };
+
+  const onShare = async () => {
+    if (!state.vehicleVariantId || !cal) return;
+    setShareState('sending');
+    const ok = await contributeCalibration({
+      vehicleVariantId: state.vehicleVariantId,
+      measurement: cal.measurement,
+      weighedSnapshot: view.baselineInput,
+      source: 'calculator',
+    });
+    setShareState(ok ? 'done' : 'idle');
   };
 
   // ── Result view ──────────────────────────────────────────────────────────
@@ -286,6 +306,43 @@ export function WeighbridgeCalibrationPanel() {
           />
           I don&apos;t know where the extra weight sits (use a static correction)
         </label>
+
+        {state.vehicleVariantId && (
+          <div className="mb-3 rounded-md border border-violet-100 bg-violet-50/50 p-2.5">
+            {shareState === 'done' ? (
+              <p className="text-[11px] text-violet-700">
+                Thanks — shared anonymously. Contributions like yours sharpen the
+                base estimates for this model. ✓
+              </p>
+            ) : (
+              <>
+                <label className="flex cursor-pointer items-start gap-2 text-[11px] leading-relaxed text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={shareCalibration}
+                    onChange={(e) => setShareCalibration(e.target.checked)}
+                    style={{ accentColor: ACCENT }}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Share this calibration anonymously to improve the base
+                    estimates for this vehicle. No personal data — just the
+                    weights and where they sat.
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={onShare}
+                  disabled={!shareCalibration || shareState === 'sending'}
+                  className="mt-2 rounded-md px-2.5 py-1 text-[11px] font-medium text-white transition-opacity disabled:opacity-40"
+                  style={{ backgroundColor: ACCENT }}
+                >
+                  {shareState === 'sending' ? 'Sharing…' : 'Share calibration'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-2 border-t border-tb-neutral-100 pt-3">
           <button

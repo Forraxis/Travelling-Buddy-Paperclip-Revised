@@ -54,6 +54,11 @@ export const adminNavSections: NavSection[] = [
         icon: 'pending',
       },
       {
+        label: 'Calibration Queue',
+        href: '/admin/moderation/calibrations',
+        icon: 'pending',
+      },
+      {
         label: 'Approved',
         href: '/admin/submissions/approved',
         icon: 'approved',
