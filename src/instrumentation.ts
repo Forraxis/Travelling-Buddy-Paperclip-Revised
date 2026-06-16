@@ -9,6 +9,18 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+
+  // Fail fast on misconfiguration: in production a missing AUTH_SECRET / OAuth /
+  // site URL (or a half-set R2 config) aborts boot with one readable error
+  // instead of every request 500ing later. In dev this only warns.
+  const { validateEnv } = await import('@/lib/env');
+  try {
+    validateEnv();
+  } catch (err) {
+    if (process.env.NODE_ENV === 'production') throw err;
+    console.warn(`[env] ${err instanceof Error ? err.message : String(err)}`);
+  }
+
   if (process.env.WORKERS_DISABLED === 'true') return;
 
   const { startWorkers } = await import('@/lib/workers');
