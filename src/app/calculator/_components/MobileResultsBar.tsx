@@ -4,7 +4,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import SchematicViewer from '@/components/schematic/SchematicViewer';
+import RigSchematic from '@/components/schematic/RigSchematic';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
+import { useCalcMode } from '@/modules/calculator/calc-mode';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -386,16 +388,23 @@ function SheetResultsContent({
   onShare,
   saving,
 }: SheetResultsContentProps) {
+  const { mode } = useCalcMode();
+  const advanced = mode === 'advanced';
   return (
     <>
       <VerdictBanner result={result} />
-      {schematic && <SchematicViewer model={schematic} />}
+      {schematic &&
+        (advanced ? (
+          <SchematicViewer model={schematic} />
+        ) : (
+          <RigSchematic model={schematic} />
+        ))}
       <GvmBar result={result} />
       <PayloadCard result={result} />
       <TowBallCard result={result} />
       <AxleGrid result={result} />
       <RecommendationsPanel result={result} />
-      <AdvancedPanel result={result} />
+      {advanced && <AdvancedPanel result={result} />}
       <ActionBar onSave={onSave} onShare={onShare} saving={saving} />
     </>
   );

@@ -11,6 +11,7 @@ import { CatalogueRemovedBanner } from '@/components/calculator/CatalogueRemoved
 import { InlineNameEdit } from '@/components/setups/InlineNameEdit';
 import { useSetupCatalogueStatus } from '@/components/calculator/hooks/useSetupCatalogueStatus';
 import { listLocalSetups } from '@/lib/local-setups';
+import { useCalcMode } from '@/modules/calculator/calc-mode';
 import type {
   VehicleSnapshot,
   CaravanSnapshot,
@@ -74,6 +75,7 @@ export function CalculatorHeader() {
   const [hasLocalSetups, setHasLocalSetups] = useState(false);
   const [copying, setCopying] = useState(false);
   const { data: session } = useSession();
+  const { mode, setMode } = useCalcMode();
   const router = useRouter();
   const searchParams = useSearchParams();
   const setupId = searchParams.get('setupId');
@@ -173,6 +175,27 @@ export function CalculatorHeader() {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <div
+            className="border-tb-neutral-200 hidden overflow-hidden rounded-lg border text-xs font-semibold sm:inline-flex"
+            role="group"
+            aria-label="Detail level"
+          >
+            {(['simple', 'advanced'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                aria-pressed={mode === m}
+                className={`px-2.5 py-2 capitalize transition-colors ${
+                  mode === m
+                    ? 'bg-tb-primary text-white'
+                    : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
           {!session?.user && hasLocalSetups && (
             <Link
               href="/account/local-setups"

@@ -3,6 +3,8 @@
 import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import SchematicViewer from '@/components/schematic/SchematicViewer';
+import RigSchematic from '@/components/schematic/RigSchematic';
+import { useCalcMode } from '@/modules/calculator/calc-mode';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
 import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
 import { SetupVersionsPanel } from '@/components/versions/SetupVersionsPanel';
@@ -532,23 +534,36 @@ function ResultsView({
   result: PhysicsResult;
   schematic?: SchematicModel | null;
 }) {
+  const { mode } = useCalcMode();
+  const advanced = mode === 'advanced';
   return (
     <>
       <VerdictBanner result={result} />
-      {schematic && <SchematicViewer model={schematic} />}
+      {/* Advanced gets the interactive schematic (positioning, customise, top-down);
+          Simple gets a clean read-only side profile. */}
+      {schematic &&
+        (advanced ? (
+          <SchematicViewer model={schematic} />
+        ) : (
+          <RigSchematic model={schematic} />
+        ))}
       <GvmBar result={result} />
       <PayloadCard result={result} />
       <TowBallCard result={result} />
       <AxleGrid result={result} />
-      <StabilityCard result={result} />
-      <div className="mb-4">
-        <WeighbridgeCalibrationPanel />
-      </div>
-      <div className="mb-4">
-        <SetupVersionsPanel />
-      </div>
+      {advanced && (
+        <>
+          <StabilityCard result={result} />
+          <div className="mb-4">
+            <WeighbridgeCalibrationPanel />
+          </div>
+          <div className="mb-4">
+            <SetupVersionsPanel />
+          </div>
+        </>
+      )}
       <RecommendationsPanel result={result} />
-      <AdvancedPanel result={result} />
+      {advanced && <AdvancedPanel result={result} />}
       <ActionBar />
     </>
   );
