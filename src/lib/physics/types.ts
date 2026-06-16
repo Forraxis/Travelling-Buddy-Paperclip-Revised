@@ -105,6 +105,11 @@ export interface AccessoryLoad {
   cogXMm?: number | null;
   /** Lateral position from the centreline, mm. + = right (kerb side in AU). */
   cogYMm?: number | null;
+  /**
+   * Vertical CoG height above ground, mm. Defaults from the mounting location.
+   * Feeds the advisory stability estimate only — has NO effect on axle loads.
+   */
+  cogZMm?: number | null;
   fillPercent: number;
   quantity: number;
   tankCapacityL?: number | null;
@@ -221,6 +226,24 @@ export interface CaravanLateral {
   axleCount: number;
 }
 
+/**
+ * Vertical CoG height + static stability — ADVISORY and PROVISIONAL pending the
+ * Rule-11 sign-off (STABILITY_SIGNOFF.md). Height has no effect on axle loads;
+ * it drives rollover propensity via the Static Stability Factor (SSF). Never
+ * contributes to the overall pass/fail verdict until signed off.
+ */
+export interface VehicleStability {
+  /** Combined CoG height above ground, mm. */
+  cogHeightMm: number;
+  trackWidthMm: number;
+  /** Static Stability Factor = (track / 2) / CoG height. Higher = more stable. */
+  ssf: number;
+  /** Advisory status from SSF thresholds (ok ≥ 1.05, warn ≥ 0.95, else fail). */
+  status: MetricStatus;
+  /** True while the metric awaits physics sign-off (display a caveat). */
+  provisional: boolean;
+}
+
 export interface VehicleResult {
   totalWeightKg: number;
   effectiveKerbKg: number;
@@ -245,6 +268,8 @@ export interface VehicleResult {
   towBallPctStatus?: MetricStatus;
   /** Lateral (left/right) distribution — advisory. */
   lateral?: VehicleLateral;
+  /** Vertical CoG height + static stability — advisory, provisional. */
+  stability?: VehicleStability;
 }
 
 export interface CaravanAxleResult {

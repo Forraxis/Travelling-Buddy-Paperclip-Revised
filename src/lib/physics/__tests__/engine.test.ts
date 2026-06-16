@@ -714,3 +714,52 @@ describe('Caravan lateral: van left/right balance', () => {
     expect(right.imbalanceKg).toBeCloseTo(-left.imbalanceKg, 1);
   });
 });
+
+// --- Stability (advisory CoG height + SSF) ---
+describe('Stability: vertical CoG height + SSF (advisory)', () => {
+  const roofAcc = (cogZMm?: number) => ({
+    installedWeightKg: 80,
+    mountingLocation: 'ROOF_RACK' as const,
+    fillPercent: 100,
+    quantity: 1,
+    ...(cogZMm != null ? { cogZMm } : {}),
+  });
+
+  it('reports a CoG height and an SSF = halfTrack / cogHeight', () => {
+    const s = calculate(baseInput()).vehicle.stability!;
+    expect(s).toBeDefined();
+    expect(s.provisional).toBe(true);
+    expect(s.cogHeightMm).toBeGreaterThan(0);
+    expect(s.trackWidthMm).toBe(1650); // default track
+    expect(s.ssf).toBeCloseTo(s.trackWidthMm / 2 / s.cogHeightMm, 6);
+  });
+
+  it('a heavy roof load raises the CoG height and lowers the SSF', () => {
+    const bare = calculate(baseInput()).vehicle.stability!;
+    const loaded = calculate(baseInput({ vehicleAccessories: [roofAcc()] }))
+      .vehicle.stability!;
+    expect(loaded.cogHeightMm).toBeGreaterThan(bare.cogHeightMm);
+    expect(loaded.ssf).toBeLessThan(bare.ssf);
+  });
+
+  it('respects an explicit cogZMm override', () => {
+    const high = calculate(baseInput({ vehicleAccessories: [roofAcc(2200)] }))
+      .vehicle.stability!;
+    const low = calculate(baseInput({ vehicleAccessories: [roofAcc(300)] }))
+      .vehicle.stability!;
+    expect(high.cogHeightMm).toBeGreaterThan(low.cogHeightMm);
+  });
+
+  it('height is isolated: same x/y but different z leaves axle loads + verdict unchanged', () => {
+    const low = calculate(baseInput({ vehicleAccessories: [roofAcc(300)] }));
+    const high = calculate(baseInput({ vehicleAccessories: [roofAcc(2200)] }));
+    // Axle split and overall verdict depend only on mass + x/y, never height.
+    expect(high.vehicle.frontAxleKg).toBeCloseTo(low.vehicle.frontAxleKg, 6);
+    expect(high.vehicle.rearAxleKg).toBeCloseTo(low.vehicle.rearAxleKg, 6);
+    expect(high.overallStatus).toBe(low.overallStatus);
+    // …but the stability estimate does differ.
+    expect(high.vehicle.stability!.cogHeightMm).toBeGreaterThan(
+      low.vehicle.stability!.cogHeightMm,
+    );
+  });
+});

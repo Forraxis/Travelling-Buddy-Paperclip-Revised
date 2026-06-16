@@ -30,6 +30,8 @@ export interface AccessorySelection {
   cogXMm?: number | null;
   /** User-positioned lateral CoG (mm from centreline, + = right). */
   cogYMm?: number | null;
+  /** Vertical CoG height (mm above ground). Defaults from mounting location. */
+  cogZMm?: number | null;
   /** Real top-down image (R2) — overrides the category icon. */
   topDownImageUrl?: string | null;
 }
@@ -42,6 +44,7 @@ export interface CustomLoad {
   side: 'vehicle' | 'caravan';
   cogXMm?: number | null;
   cogYMm?: number | null;
+  cogZMm?: number | null;
   footprintLengthMm?: number | null;
   footprintWidthMm?: number | null;
   /** The weighbridge-calibration residual mass, rendered/labelled distinctly. */

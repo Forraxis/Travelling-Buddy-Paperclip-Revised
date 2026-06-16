@@ -33,6 +33,66 @@ export function resolveVehicleLateralMm(
   return 0;
 }
 
+/** Default vehicle CoG height above ground (mm) when a load's height is unknown. */
+export const DEFAULT_VEHICLE_COG_HEIGHT_MM = 700;
+
+// Vertical CoG height above ground, mm, per mounting location — feeds the
+// (advisory) combined CoG-height / static-stability estimate. PROVISIONAL:
+// typical 4WD/ute estimates pending the Rule-11 sign-off in STABILITY_SIGNOFF.md.
+// A user-supplied cogZMm overrides this. Height does NOT affect axle loads.
+export function resolveVehicleHeightMm(location: MountingLocation): number {
+  switch (location) {
+    case 'ROOF_RACK':
+    case 'ROOF_RAILS':
+    case 'CABIN_ROOF':
+    case 'CANOPY_ROOF':
+      return 1950;
+    case 'SNORKEL':
+      return 1700;
+    case 'WINDSCREEN':
+    case 'A_PILLAR_LEFT':
+    case 'A_PILLAR_RIGHT':
+      return 1500;
+    case 'CANOPY_INTERIOR':
+    case 'CANOPY_EXTERIOR':
+      return 1300;
+    case 'BONNET':
+      return 1100;
+    case 'CABIN_INTERIOR':
+    case 'CABIN_DASH':
+    case 'DOOR_LEFT':
+    case 'DOOR_RIGHT':
+    case 'TRAY_FLOOR':
+    case 'TRAY_SIDE_LEFT':
+    case 'TRAY_SIDE_RIGHT':
+    case 'TRAY_HEADBOARD':
+    case 'TRAY_TAILGATE':
+    case 'TUB_INTERIOR':
+    case 'TUB_EXTERIOR':
+      return 950;
+    case 'FENDER_LEFT':
+    case 'FENDER_RIGHT':
+    case 'WHEEL_ARCH_LEFT':
+    case 'WHEEL_ARCH_RIGHT':
+      return 850;
+    case 'BULL_BAR':
+      return 650;
+    case 'CHASSIS_FRONT':
+    case 'CHASSIS_MID':
+    case 'CHASSIS_REAR':
+      return 600;
+    case 'REAR_BAR':
+    case 'TOW_HITCH':
+      return 500;
+    case 'UNDERBODY_FRONT':
+    case 'UNDERBODY_MID':
+    case 'UNDERBODY_REAR':
+      return 350;
+    default:
+      return DEFAULT_VEHICLE_COG_HEIGHT_MM;
+  }
+}
+
 // Vehicle: x=0 at rear axle, positive forward toward front axle.
 // Returns mm from rear axle.
 export function resolveVehiclePositionMm(

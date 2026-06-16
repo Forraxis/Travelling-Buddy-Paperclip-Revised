@@ -472,6 +472,57 @@ function ActionBar() {
   );
 }
 
+// ── Stability (advisory CoG height + SSF) ───────────────────────────────────────
+
+function StabilityCard({ result }: { result: PhysicsResult }) {
+  const s = result.vehicle.stability;
+  if (!s) return null;
+  const label =
+    s.status === 'ok'
+      ? 'Stable'
+      : s.status === 'warn'
+        ? 'Tall — take it easy'
+        : 'Top-heavy — high rollover risk';
+  return (
+    <div className="border-tb-neutral-200 mb-4 rounded-lg border bg-white p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
+          Stability
+        </p>
+        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-gray-500 uppercase">
+          Advisory
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span
+          className={`h-3 w-3 shrink-0 rounded-full ${statusColor(s.status)}`}
+          aria-hidden="true"
+        />
+        <p className="text-sm font-semibold text-gray-800">{label}</p>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+        <span className="text-gray-600">
+          CoG height:{' '}
+          <span className="font-mono font-semibold text-gray-800">
+            {(s.cogHeightMm / 1000).toFixed(2)} m
+          </span>
+        </span>
+        <span className="text-gray-600">
+          Stability factor:{' '}
+          <span className="font-mono font-semibold text-gray-800">
+            {s.ssf.toFixed(2)}
+          </span>
+        </span>
+      </div>
+      <p className="mt-2 text-[11px] text-gray-400">
+        Static Stability Factor = half-track ÷ centre-of-gravity height; higher
+        is more rollover-resistant. Provisional estimate from load heights — it
+        does not change the pass/fail verdict (pending physics sign-off).
+      </p>
+    </div>
+  );
+}
+
 // ── Results view ───────────────────────────────────────────────────────────────
 
 function ResultsView({
@@ -489,6 +540,7 @@ function ResultsView({
       <PayloadCard result={result} />
       <TowBallCard result={result} />
       <AxleGrid result={result} />
+      <StabilityCard result={result} />
       <div className="mb-4">
         <WeighbridgeCalibrationPanel />
       </div>

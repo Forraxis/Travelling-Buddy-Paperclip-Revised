@@ -14,10 +14,16 @@ import {
   resolveCaravanPositionMm,
   resolveVehicleLateralMm,
   resolveCaravanLateralMm,
+  resolveVehicleHeightMm,
   DEFAULT_TRACK_WIDTH_MM,
   DEFAULT_CARAVAN_TRACK_WIDTH_MM,
 } from './position-map';
-import type { VehicleLateral, CaravanLateral, CornerKey } from './types';
+import type {
+  VehicleLateral,
+  CaravanLateral,
+  CornerKey,
+  VehicleStability,
+} from './types';
 import { getRegulations, weightStatus, tbmPctStatus } from './regulations';
 import { generateRecommendations } from './recommendations';
 
@@ -38,6 +44,18 @@ export const VEHICLE_KERB_COG_FRACTION = 0.45;
 const FUEL_COG_FRACTION = 0.45;
 const PASSENGER_COG_FRACTION = 0.6;
 const CARGO_COG_FRACTION = 0.3;
+
+// Vertical CoG heights above ground, mm — for the ADVISORY static-stability
+// estimate only (no effect on axle loads). PROVISIONAL: typical 4WD/ute values
+// pending the Rule-11 sign-off in STABILITY_SIGNOFF.md.
+const KERB_COG_HEIGHT_MM = 700; // base vehicle CoG height
+const FUEL_COG_HEIGHT_MM = 350; // tank below the floor
+const PASSENGER_COG_HEIGHT_MM = 750; // seated occupant CoG
+const CARGO_COG_HEIGHT_MM = 700; // loose cargo in tub/boot
+const TOW_BALL_COG_HEIGHT_MM = 450; // download acts at hitch height
+// SSF (= halfTrack / cogHeight) advisory bands.
+const SSF_OK = 1.05;
+const SSF_WARN = 0.95;
 
 // Caravan CoG estimates — fractions of couplingToAxleMm from coupling.
 // 0.86 produces bare-van TBM within ~4% of typical manufacturer figures.
@@ -273,20 +291,35 @@ function computeVehicleAxles(
   towBallDownloadKg: number,
   totalVehicleWeightKg: number,
   kerbCogFraction: number = VEHICLE_KERB_COG_FRACTION,
-): { frontAxleKg: number; rearAxleKg: number; lateral: VehicleLateral } {
+): {
+  frontAxleKg: number;
+  rearAxleKg: number;
+  lateral: VehicleLateral;
+  stability: VehicleStability;
+} {
   const wb = vehicle.wheelbaseMm;
   const rearOverhang = vehicle.rearOverhangMm ?? 400;
   const track = vehicle.trackWidthMm ?? DEFAULT_TRACK_WIDTH_MM;
 
-  // Every load as { weight, x (from rear axle, +forward), y (lateral, +right) }.
-  // Base loads sit on the centreline (y = 0); accessories carry a lateral
-  // position (explicit cogY, else a default for side-specific mounts).
-  const loads: Array<{ w: number; x: number; y: number }> = [
-    { w: effectiveKerbKg, x: wb * kerbCogFraction, y: 0 },
-    { w: fuelMassKg, x: wb * FUEL_COG_FRACTION, y: 0 },
-    { w: passengerMassKg, x: wb * PASSENGER_COG_FRACTION, y: 0 },
-    { w: cargoKg, x: wb * CARGO_COG_FRACTION, y: 0 },
-    { w: towBallDownloadKg, x: -rearOverhang, y: 0 },
+  // Every load as { weight, x (from rear axle, +forward), y (lateral, +right),
+  // z (height above ground) }. Base loads sit on the centreline (y = 0) at
+  // assumed heights; accessories carry explicit cogY/cogZ, else mounting defaults.
+  const loads: Array<{ w: number; x: number; y: number; z: number }> = [
+    {
+      w: effectiveKerbKg,
+      x: wb * kerbCogFraction,
+      y: 0,
+      z: KERB_COG_HEIGHT_MM,
+    },
+    { w: fuelMassKg, x: wb * FUEL_COG_FRACTION, y: 0, z: FUEL_COG_HEIGHT_MM },
+    {
+      w: passengerMassKg,
+      x: wb * PASSENGER_COG_FRACTION,
+      y: 0,
+      z: PASSENGER_COG_HEIGHT_MM,
+    },
+    { w: cargoKg, x: wb * CARGO_COG_FRACTION, y: 0, z: CARGO_COG_HEIGHT_MM },
+    { w: towBallDownloadKg, x: -rearOverhang, y: 0, z: TOW_BALL_COG_HEIGHT_MM },
   ];
   for (const acc of vehicleAccessories) {
     const weight = resolvedAccessoryWeight(acc);
@@ -298,19 +331,26 @@ function computeVehicleAxles(
       acc.cogYMm != null
         ? acc.cogYMm
         : resolveVehicleLateralMm(acc.mountingLocation, vehicle);
-    loads.push({ w: weight, x, y });
+    const z =
+      acc.cogZMm != null
+        ? acc.cogZMm
+        : resolveVehicleHeightMm(acc.mountingLocation);
+    loads.push({ w: weight, x, y, z });
   }
 
   // Longitudinal front/rear split (existing) + lateral left/right split (new),
   // accumulated into 4 corners. Each load's front share = w·x/wheelbase; its
-  // right share = (track/2 + y)/track.
+  // right share = (track/2 + y)/track. Height moment (Σ w·z) feeds the advisory
+  // combined CoG height — it does NOT influence the axle split.
   let momentSum = 0;
+  let heightMomentSum = 0;
   let fl = 0;
   let fr = 0;
   let rl = 0;
   let rr = 0;
-  for (const { w, x, y } of loads) {
+  for (const { w, x, y, z } of loads) {
     momentSum += w * x;
+    heightMomentSum += w * z;
     const frontContrib = (w * x) / wb;
     const rearContrib = w - frontContrib;
     const rightFrac = Math.min(1, Math.max(0, (track / 2 + y) / track));
@@ -359,7 +399,23 @@ function computeVehicleAxles(
     trackWidthMm: track,
   };
 
-  return { frontAxleKg, rearAxleKg, lateral };
+  // ── Vertical CoG height + static stability (ADVISORY / PROVISIONAL) ──────────
+  // Combined CoG height = Σ(w·z) / Σw; SSF = (track/2) / CoG height. Higher SSF =
+  // more resistant to rollover. Mass-weighted, so a heavy roof load hurts most.
+  const cogHeightMm =
+    totalVehicleWeightKg > 0 ? heightMomentSum / totalVehicleWeightKg : 0;
+  const ssf = cogHeightMm > 0 ? track / 2 / cogHeightMm : 0;
+  const stabilityStatus: MetricStatus =
+    ssf >= SSF_OK ? 'ok' : ssf >= SSF_WARN ? 'warn' : 'fail';
+  const stability: VehicleStability = {
+    cogHeightMm,
+    trackWidthMm: track,
+    ssf,
+    status: stabilityStatus,
+    provisional: true,
+  };
+
+  return { frontAxleKg, rearAxleKg, lateral, stability };
 }
 
 // Apply weighbridge static offsets (the "mop-up" half of calibration) to the
@@ -593,6 +649,9 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     towBallPctOfAtm,
     towBallPctStatus,
     lateral,
+    // Advisory + provisional — unaffected by weighbridge static offsets, so it
+    // comes from the base axle computation. NOT added to the overall verdict.
+    stability: rawAxles.stability,
   };
 
   // Collect all statuses to determine overall
