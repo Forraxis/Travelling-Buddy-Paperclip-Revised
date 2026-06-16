@@ -2,6 +2,7 @@
 
 import type { AccessoryItem } from './types';
 import { useAccessorySearch } from './hooks/useAccessorySearch';
+import { accessoryDisplayName } from '@/lib/accessory-name';
 
 function mountingLabel(location: string) {
   return location.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -33,7 +34,7 @@ function AccessoryRow({ item, onAdd }: AccessoryRowProps) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-gray-900">
-          {item.brandName} {item.name}
+          {accessoryDisplayName(item.brandName, item.name)}
         </p>
         <p className="text-xs text-gray-400">
           {item.categoryName} · {mountingLabel(item.mountingLocation)}
@@ -73,7 +74,7 @@ function RecentRow({ item, onAdd }: RecentRowProps) {
         />
       </svg>
       <span className="min-w-0 flex-1 truncate text-sm text-gray-700">
-        {item.brandName} {item.name}
+        {accessoryDisplayName(item.brandName, item.name)}
       </span>
       {isCommunity && (
         <span className="flex-none rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">

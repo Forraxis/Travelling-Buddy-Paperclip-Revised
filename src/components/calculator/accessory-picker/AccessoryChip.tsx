@@ -1,6 +1,7 @@
 'use client';
 
 import type { AccessoryItem } from './types';
+import { accessoryDisplayName } from '@/lib/accessory-name';
 
 function mountingLabel(location: string) {
   return location.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -22,7 +23,7 @@ export function AccessoryChip({ item, onRemove }: AccessoryChipProps) {
     >
       <div className="min-w-0 flex-1">
         <span className="truncate text-xs font-medium text-gray-800">
-          {item.brandName} {item.name}
+          {accessoryDisplayName(item.brandName, item.name)}
         </span>
         {isCommunity && (
           <span className="ml-1.5 text-[10px] font-medium text-amber-600">

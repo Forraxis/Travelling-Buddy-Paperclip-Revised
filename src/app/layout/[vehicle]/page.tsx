@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
+import { accessoryDisplayName } from '@/lib/accessory-name';
 import { LayoutEditor } from './LayoutEditor';
 
 interface PageProps {
@@ -129,7 +130,10 @@ export default async function LayoutPlannerPage({
                 {popular.map((p, i) => (
                   <li key={i} className="flex justify-between gap-3">
                     <span>
-                      {p.accessory.brand.name} {p.accessory.name}
+                      {accessoryDisplayName(
+                        p.accessory.brand.name,
+                        p.accessory.name,
+                      )}
                     </span>
                     <span className="shrink-0 text-gray-400">
                       {Number(p.installedWeightKg)} kg
