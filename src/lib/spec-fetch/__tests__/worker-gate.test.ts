@@ -10,7 +10,11 @@ vi.mock('@/lib/db', () => ({
 
 import { runSpecFetchJob } from '../../workers/spec-fetch.worker';
 
-const INPUT = { makeName: 'Toyota', modelName: 'LandCruiser 100', yearFrom: 2005 };
+const INPUT = {
+  makeName: 'Toyota',
+  modelName: 'LandCruiser 100',
+  yearFrom: 2005,
+};
 
 describe('runSpecFetchJob safety gate', () => {
   beforeEach(() => {
