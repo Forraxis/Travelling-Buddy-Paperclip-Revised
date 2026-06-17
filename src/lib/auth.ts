@@ -38,6 +38,12 @@ declare module '@auth/core/jwt' {
 export const { auth, handlers, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
+  // Auth.js derives `useSecureCookies` from the (https) AUTH_URL, so it sets
+  // `__Secure-`/`Secure` session cookies even in local dev. Browsers silently
+  // DROP those over plain http://localhost — the server "logs you in" but the
+  // cookie never sticks, so you appear logged out. Force non-secure cookies in
+  // dev (works over http localhost AND the https proxy); keep secure in prod.
+  useSecureCookies: process.env.NODE_ENV === 'production',
   session: { strategy: 'jwt' },
   pages: {
     signIn: '/auth/signin',

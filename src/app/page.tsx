@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getAllGuides } from '@/lib/content/guides';
+import { AccountMenu } from '@/components/AccountMenu';
 
 export const revalidate = 86400;
 
@@ -216,12 +217,15 @@ export default async function Home() {
               </Link>
             ))}
           </nav>
-          <Link
-            href="/calculator"
-            className="bg-tb-accent hover:bg-tb-accent-dark rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors"
-          >
-            Check your rig
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/calculator"
+              className="bg-tb-accent hover:bg-tb-accent-dark rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors"
+            >
+              Check your rig
+            </Link>
+            <AccountMenu tone="dark" />
+          </div>
         </div>
       </header>
 

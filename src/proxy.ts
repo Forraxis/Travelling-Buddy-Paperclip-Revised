@@ -12,13 +12,6 @@ const DEV_AUTH_BYPASS =
 
 const PROTECTED_PAGES = [/^\/account(\/|$)/];
 
-function hasSessionCookie(request: NextRequest): boolean {
-  return (
-    request.cookies.has('__Secure-next-auth.session-token') ||
-    request.cookies.has('next-auth.session-token')
-  );
-}
-
 function proxyHandler(request: AuthedRequest) {
   const { pathname } = request.nextUrl;
   const session = request.auth;
@@ -42,10 +35,7 @@ function proxyHandler(request: AuthedRequest) {
     }
   }
 
-  if (
-    PROTECTED_PAGES.some((p) => p.test(pathname)) &&
-    !hasSessionCookie(request)
-  ) {
+  if (PROTECTED_PAGES.some((p) => p.test(pathname)) && !session?.user) {
     const signIn = new URL('/auth/signin', request.url);
     signIn.searchParams.set('callbackUrl', request.url);
     return NextResponse.redirect(signIn);

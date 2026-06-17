@@ -41,6 +41,11 @@ export const adminNavSections: NavSection[] = [
         href: '/admin/catalogue/top-down-images',
         icon: 'accessory',
       },
+      {
+        label: 'Silhouettes',
+        href: '/admin/catalogue/silhouettes',
+        icon: 'accessory',
+      },
     ],
   },
   {

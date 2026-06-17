@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 const tabs = [
   { label: 'My Setups', href: '/account/setups' },
@@ -15,6 +16,14 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const role = session?.user?.role;
+  const isAdmin = role === 'ADMIN' || role === 'MODERATOR';
+
+  // Admins/moderators get a tab through to the admin dashboard.
+  const navTabs = isAdmin
+    ? [...tabs, { label: 'Admin', href: '/admin' } as const]
+    : tabs;
 
   return (
     <div className="bg-tb-neutral-50 min-h-screen">
@@ -28,7 +37,7 @@ export default function AccountLayout({
           </Link>
         </div>
         <nav className="mx-auto flex max-w-5xl gap-6 px-4">
-          {tabs.map((tab) => {
+          {navTabs.map((tab) => {
             const active = pathname.startsWith(tab.href);
             return (
               <Link

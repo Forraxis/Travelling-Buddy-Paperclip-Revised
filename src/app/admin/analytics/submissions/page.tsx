@@ -1,18 +1,9 @@
 import { redirect } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { getAdminUser } from '@/modules/admin/lib/auth';
 import { AnalyticsTabs } from '../_components/AnalyticsTabs';
-
-// recharts 3.x imports victory-vendor via wildcard exports (./d3-*) which
-// Turbopack cannot resolve at compile time, hanging the dev server. Load
-// client-side only to keep recharts out of the server compilation graph.
-const SubmissionStatsView = dynamic(
-  () =>
-    import('./_components/SubmissionStatsView').then(
-      (m) => m.SubmissionStatsView,
-    ),
-  { ssr: false },
-);
+// recharts is loaded client-side only (ssr: false) via this client wrapper —
+// `ssr: false` with next/dynamic is not allowed in a Server Component.
+import { SubmissionStatsClient } from './_components/SubmissionStatsClient';
 import {
   getSubmissionsOverTime,
   getApprovalRates,
@@ -84,7 +75,7 @@ export default async function SubmissionStatsPage({
         </p>
       </div>
       <AnalyticsTabs active="submissions" />
-      <SubmissionStatsView
+      <SubmissionStatsClient
         data={{
           overTime,
           approvalRates,

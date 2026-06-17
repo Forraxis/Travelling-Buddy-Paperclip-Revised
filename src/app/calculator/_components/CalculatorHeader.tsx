@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { AccountMenu } from '@/components/AccountMenu';
 import { SaveSetupButton } from '@/components/calculator/SaveSetupButton';
 import { useSetupSave } from '@/components/calculator/hooks/useSetupSave';
 import { AnonymousSaveBanner } from '@/components/calculator/AnonymousSaveBanner';
@@ -17,56 +18,6 @@ import type {
   CaravanSnapshot,
   AccessoryFitmentSnapshot,
 } from '@/lib/setup-snapshots';
-
-function AccountIcon() {
-  const { data: session, status } = useSession();
-  if (status === 'loading') return null;
-
-  if (session?.user) {
-    const name = session.user.name ?? session.user.email ?? '';
-    const initials = name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0].toUpperCase())
-      .join('');
-
-    return (
-      <Link
-        href="/account"
-        aria-label="My account"
-        className="bg-tb-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white hover:opacity-90"
-        title={name}
-      >
-        {initials || '?'}
-      </Link>
-    );
-  }
-
-  return (
-    <Link
-      href="/auth/signin"
-      aria-label="Sign in"
-      className="border-tb-neutral-300 text-tb-neutral-500 hover:bg-tb-neutral-100 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border"
-      title="Sign in"
-    >
-      <svg
-        className="h-4 w-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-        />
-      </svg>
-    </Link>
-  );
-}
 
 export function CalculatorHeader() {
   const [toast, setToast] = useState<string | null>(null);
@@ -231,7 +182,7 @@ export function CalculatorHeader() {
             onToast={showToast}
             onNewSetupSaved={handleNewSetupSaved}
           />
-          <AccountIcon />
+          <AccountMenu />
         </div>
       </header>
       <AnonymousSaveBanner />
