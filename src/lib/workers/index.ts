@@ -1,13 +1,18 @@
 import type { Worker } from 'bullmq';
 import { createSubmissionVlmWorker } from './submission-vlm.worker';
 import { createPhotoPostprocessWorker } from './photo-postprocess.worker';
+import { createSpecFetchWorker } from './spec-fetch.worker';
 
 let workers: Worker[] = [];
 
 export function startWorkers(): Worker[] {
   if (workers.length > 0) return workers;
 
-  workers = [createSubmissionVlmWorker(), createPhotoPostprocessWorker()];
+  workers = [
+    createSubmissionVlmWorker(),
+    createPhotoPostprocessWorker(),
+    createSpecFetchWorker(),
+  ];
 
   console.log(`[workers] Started ${workers.length} workers`);
   return workers;

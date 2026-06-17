@@ -184,7 +184,10 @@ export function createVehicleService(prisma: PrismaClient) {
   ): Promise<PaginatedResult<VehicleVariantDto>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
     const items = await prisma.vehicleVariant.findMany({
-      where: { modelId },
+      // Public API: only published CATALOGUE variants. COMMUNITY variants
+      // (user submissions + admin spec candidates) must never leak here — they
+      // are scoped to their submitter via the picker routes.
+      where: { modelId, status: 'CATALOGUE' },
       take: limit + 1,
       ...(opts.cursor ? { skip: 1, cursor: { id: opts.cursor } } : {}),
       orderBy: [{ yearFrom: 'desc' }, { name: 'asc' }],
@@ -277,6 +280,8 @@ export function createVehicleService(prisma: PrismaClient) {
       }),
       prisma.vehicleVariant.findMany({
         where: {
+          // Public search: published CATALOGUE variants only (no COMMUNITY leak).
+          status: 'CATALOGUE',
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
             {

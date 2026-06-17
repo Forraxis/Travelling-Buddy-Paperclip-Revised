@@ -106,7 +106,11 @@ export async function getComboPageData(
       include: { model: { include: { make: true } } },
     }),
   ]);
-  if (!vehicle || !caravan) return null;
+  // Public combo page (SEO surface): only published CATALOGUE variants — a
+  // COMMUNITY vehicle/caravan (user submission or admin spec candidate) must
+  // not render even via a known slug pair.
+  if (!vehicle || vehicle.status !== 'CATALOGUE') return null;
+  if (!caravan || caravan.status !== 'CATALOGUE') return null;
 
   const maxTowing = vehicle.maxTowingCapacityKg ?? 0;
   const caravanAtm = caravan.atmKg ?? 0;

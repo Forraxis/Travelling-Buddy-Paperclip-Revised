@@ -24,6 +24,12 @@ export const adminNavSections: NavSection[] = [
     icon: 'catalogue',
     items: [
       { label: 'Vehicles', href: '/admin/catalogue/vehicles', icon: 'vehicle' },
+      {
+        label: 'Spec Fetch',
+        href: '/admin/catalogue/vehicles/spec-fetch',
+        icon: 'vehicle',
+        roles: ['ADMIN'],
+      },
       { label: 'Caravans', href: '/admin/catalogue/caravans', icon: 'caravan' },
       {
         label: 'Accessories',

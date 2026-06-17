@@ -54,13 +54,16 @@ export async function getVariantProfileData(
     where: { modelId_slug: { modelId: model.id, slug: variantSlug } },
     include: { model: { include: { make: true } } },
   });
-  if (!variant) return null;
+  // Public profile page: COMMUNITY variants (user submissions + admin spec
+  // candidates) are not published — never render one even via a known slug.
+  if (!variant || variant.status !== 'CATALOGUE') return null;
 
   const [olderRaw, newerRaw, siblingsRaw] = await Promise.all([
     // Older: same name, yearTo < this.yearFrom, take max yearTo
     prisma.vehicleVariant.findFirst({
       where: {
         modelId: model.id,
+        status: 'CATALOGUE',
         name: variant.name,
         yearTo: { lt: variant.yearFrom },
       },
@@ -77,6 +80,7 @@ export async function getVariantProfileData(
     prisma.vehicleVariant.findFirst({
       where: {
         modelId: model.id,
+        status: 'CATALOGUE',
         name: variant.name,
         yearFrom: { gt: variant.yearTo },
       },
@@ -93,6 +97,7 @@ export async function getVariantProfileData(
     prisma.vehicleVariant.findMany({
       where: {
         modelId: model.id,
+        status: 'CATALOGUE',
         NOT: { name: variant.name },
         yearFrom: { lte: variant.yearTo },
         OR: [

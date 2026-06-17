@@ -30,5 +30,14 @@ export const submissionVlmQueue = new Queue('submission-vlm', { connection });
 export const photoPostprocessQueue = new Queue('photo-postprocess', {
   connection,
 });
+// Vehicle-spec fetch (qwen/claude) runs async like the VLM pipeline. The worker
+// is gated behind SPEC_FETCH_LIVE_ENABLED so it can never persist live model
+// output unless explicitly enabled (the MOCK provider runs synchronously and
+// does not use this queue).
+export const specFetchQueue = new Queue('spec-fetch', { connection });
 
-export const queues = [submissionVlmQueue, photoPostprocessQueue];
+export const queues = [
+  submissionVlmQueue,
+  photoPostprocessQueue,
+  specFetchQueue,
+];

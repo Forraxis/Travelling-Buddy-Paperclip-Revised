@@ -57,6 +57,10 @@ const envSchema = z
     QWEN_BASE_URL: z.string().url().optional(),
     QWEN_MODEL: optionalString,
     ANTHROPIC_API_KEY: optionalString,
+    // Hard gate for the live spec-fetch worker. Unset (default) = the worker
+    // refuses to call a model or persist its output. Only the MOCK provider runs
+    // until this is deliberately set to 'true' with a real provider configured.
+    SPEC_FETCH_LIVE_ENABLED: optionalString,
 
     // Email (optional — sends are skipped with a warning when absent).
     RESEND_API_KEY: optionalString,
