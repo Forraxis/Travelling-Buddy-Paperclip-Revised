@@ -200,6 +200,14 @@ export function CandidateReview({ candidate }: { candidate: CandidateView }) {
       </div>
 
       {/* Per-field table */}
+      <p className="text-xs text-gray-500">
+        “Confidence” is the model’s own self-rating — it is{' '}
+        <span className="font-medium">not</span> a trust signal (an ungrounded
+        model rates its guesses HIGH). Only the{' '}
+        <span className="font-medium">Corroborated</span> tick satisfies the
+        gate for compliance-critical fields. Amber rows still need
+        corroboration.
+      </p>
       <div className="border-tb-neutral-200 overflow-x-auto rounded-lg border">
         <table className="w-full text-left text-sm">
           <thead>
@@ -219,7 +227,7 @@ export function CandidateReview({ candidate }: { candidate: CandidateView }) {
                 <tr
                   key={f.id}
                   className={`border-tb-neutral-200 border-b last:border-0 ${
-                    isBlocking ? 'bg-rose-50/40' : ''
+                    isBlocking ? 'bg-amber-50/60' : ''
                   }`}
                 >
                   <td className="px-3 py-2.5 text-gray-900">
@@ -280,21 +288,35 @@ export function CandidateReview({ candidate }: { candidate: CandidateView }) {
                     />
                   </td>
                   <td className="px-3 py-2.5">
-                    <input
-                      type="checkbox"
-                      disabled={decided || pending}
-                      checked={f.corroborated}
-                      onChange={(e) => {
-                        patchLocal(f.id, { corroborated: e.target.checked });
-                        saveField(f, { corroborated: e.target.checked });
-                      }}
-                      className="h-4 w-4"
-                      title={
-                        f.isComplianceCritical
-                          ? 'Corroborated against an authoritative source / plate — satisfies the gate.'
-                          : 'Corroborated (optional for soft fields).'
-                      }
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        disabled={decided || pending}
+                        checked={f.corroborated}
+                        onChange={(e) => {
+                          patchLocal(f.id, { corroborated: e.target.checked });
+                          saveField(f, { corroborated: e.target.checked });
+                        }}
+                        className="h-4 w-4"
+                        title={
+                          f.isComplianceCritical
+                            ? 'Corroborated against an authoritative source / plate — satisfies the gate.'
+                            : 'Corroborated (optional for soft fields).'
+                        }
+                      />
+                      {isBlocking ? (
+                        <span
+                          className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
+                          title="Compliance-critical and not yet corroborated — blocks promotion regardless of the model's confidence. Tick the box once you've checked it against an authoritative source / plate."
+                        >
+                          needs corroboration
+                        </span>
+                      ) : f.isComplianceCritical && f.corroborated ? (
+                        <span className="text-[10px] font-medium text-emerald-700">
+                          ✓ corroborated
+                        </span>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               );
