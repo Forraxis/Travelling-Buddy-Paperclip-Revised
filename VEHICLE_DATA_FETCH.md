@@ -92,3 +92,226 @@ Promote → a CATALOGUE `VehicleVariant` is created (ModerationAction + AuditLog
       `usageRatio` + `limitEstimated`) and render a value-first, OCR-auto-fill prompt —
       never gate the calculator behind it.
 - [ ] **Caravans.** This run is vehicles only; mirror for caravan specs later.
+
+---
+
+# Design extension — multi-tier verification, GVM upgrades & regulation currency
+
+> **Status:** AGREED DIRECTION with Tim (design conversation), **NOT yet built**. This
+> supersedes the simpler "single admin tick = corroborated" model for compliance-critical
+> fields. Everything here is captured as spec; the numeric thresholds and the per-state
+> rules are **Tim's Rule-11 sign-off**.
+
+## 1. Corroboration = cross-source *agreement*, not a single tick
+
+A compliance-critical field (GVM / GCM / front+rear axle / tow-ball / braked towing) is
+**corroborated when ≥2 *independent* authoritative sources report the exact same value**
+(exact-match for nameplate figures, not a tolerance band). Agreement is far harder to fake
+than a single citation, and **disagreement is the most valuable output** — it points
+straight at the field to check. This generalises the P3 calibration moat (many independent
+weigh-ins → robust consensus) from *users* to *sources*.
+
+Refined gating policy:
+
+- A figure **parsed directly from a structured authoritative document** (a ROVER consumer
+  report, a manufacturer spec table) → **auto-corroborates** — the value came from the
+  source, with no LLM transcription step that could hallucinate it.
+- A figure **stated in LLM text** (even web-grounded) → still needs cross-source agreement
+  or an admin tick.
+- A **vendor / forum** source → **never** auto-corroborates a critical field (the
+  LandCruiser axle-limit trap: the only sources were 4×4 GVM-upgrade vendors).
+
+## 2. Evidence hierarchy (strongest → weakest)
+
+| Tier | Source | Role |
+| --- | --- | --- |
+| 1 | Compliance plate (VLM-confirmed) | Per-rig truth — the only thing correct for *this* vehicle |
+| 2 | **ROVER consumer report (factory VTA)** | Authoritative structured spine — carries all 6 critical fields incl. axle limits |
+| 2 | ROVER **second-stage** VTA | GVM/GCM upgrades, attributed to the modifier |
+| 3 | Manufacturer spec sheet | Corroborates + pre-2021 vehicles |
+| 4 | State bulletins / VSB14 | Edge cases, approvals |
+| 5 | **Claude + web search** | Locator/matcher + gap-filler + pre-2021 path — **not** the source of the number |
+| 6 | RedBook / commercial | Soft-field corroboration (scraping restricted by ToS) |
+| 7–8 | Users / vendors | Personal-only / never auto-corroborate criticals |
+
+## 3. ROVER (the "clean data" route) — locate vs. extract
+
+ROVER (the federal RVSA approvals portal; RAV is the register) publishes an **Approval
+Consumer Report** per Vehicle Type Approval (`VTA-XXXXXX`) for every variant approved for
+sale since ~mid-2021. The report is pure engineering data: **factory tare, max GVM, max GCM,
+front/rear maximum axle capacities, braked towing limit** — including the axle limits that
+are otherwise unpublished.
+
+**Architectural principle: the LLM locates the document, a deterministic parser extracts the
+figure.** Claude (grounded) finds the right VTA / consumer-report URL; a table parser
+(`pdfplumber` primary, the existing Tesseract + Qwen-VLM pipeline as fallback) pulls the
+numbers from the actual government document. **The model never *states* a compliance figure**,
+so the hallucination risk that drove the whole gating design disappears for any
+ROVER-covered vehicle.
+
+- **Category targeting** (maps to `VehicleBodyType`): **MC** = off-road passenger 4WDs
+  (LandCruiser/Patrol/Prado/Everest → wagon/SUV/troopie); **NA** = ≤3.5 t utes + light vans
+  (Hilux/Ranger/D-Max/79-series/HiAce); **NB1** = 3.5–4.5 t (RAM/Silverado/F-truck +
+  Sprinter/Crafter camper bases).
+- **Strategy shift:** this enables a **bulk authoritative import** by category, not
+  one-car-at-a-time AI fetch. AI becomes the matcher + gap-filler, not the data source —
+  cheaper and far more trustworthy.
+- **Coverage boundary (be honest about it):** ROVER ≈ **2021+**. The pre-2021 back-catalogue
+  (100-series, 80, GU Patrol — exactly the rigs people tow with) is **not** in ROVER →
+  manufacturer archives / AI / plate. Never imply ROVER authority for a vehicle it doesn't
+  cover.
+- **Hard parts:** VTA↔consumer-variant mapping (one VTA can span trims) is where false
+  corroboration lives; "disagreement" can be legitimate MY/sub-variant granularity, not
+  error.
+
+## 4. GVM upgrades — a *limit overlay*, not an accessory
+
+**Core physics point:** a GVM upgrade changes your *limits*, not your *load*. An accessory
+can only add mass; it cannot move the ceiling. Modelling an upgrade as an accessory would add
+~30 kg of springs but still test the verdict against the factory GVM → the user "fails" while
+legally rated higher. **Wrong.** The upgrade must act at the **variant-limit level**.
+
+Split the two things users conflate — they are legally opposite:
+
+| Action | Changes | Model as |
+| --- | --- | --- |
+| Heavier springs / airbags, **no certification** | Mass + ride height. **Limits unchanged.** | **Accessory** (placed load) |
+| **Certified** GVM upgrade (second-stage plate / engineer cert) | **Limits** (+ small mass) | **Limit overlay** (kit/cert) |
+
+An upgrade is **not** `GVM += delta` — each field comes from the approval independently:
+GVM (almost always ↑), axle limits (often re-rated), **GCM (only sometimes — pre-rego can,
+post-rego/engineer usually cannot)**, braked towing (sometimes constrained), plus a small
+component **mass** and a slight CoG/ride-height change (advisory stability only). The
+GCM-doesn't-move case is the headroom trap the calculator's GCM enforcement is built to
+catch.
+
+### Three upgrade pathways (ROVER only sees the first two)
+
+| Pathway | Figures from | On ROVER? | UI | GCM? | Scope |
+| --- | --- | --- | --- | --- | --- |
+| Pre-rego second-stage manufacturer | Second-stage VTA | ✅ | Dropdown | can ↑ | National |
+| Post-rego SSM kit | SSM approval | sometimes | Dropdown | usually not | mostly national |
+| **State engineer / Approved-Person** (e.g. QLD AP) | Engineer cert + **state cap rule** | ❌ never | **Custom** | usually not | **State-scoped; interstate recognition risk** |
+
+The engineer pathway is **a primary path, not an edge case** (a large chunk of the real
+fleet). For these the **cert/modification plate is the only authority** — no register to
+cross-check — so the plate prompt is most central here.
+
+- **UI:** "Have a GVM upgrade? → pick your kit (ROVER second-stage VTAs for *this* vehicle)
+  / **enter custom**." Custom = the plate path (snap the second-stage/cert plate → OCR
+  auto-fills), marked **estimated** (reusing Phase-6 plumbing) until plate-confirmed.
+- **Data model:** an upgrade table attached to the base variant —
+  `{ modifierName, vtaNumber|engineerRef, gvmKg, gcmKg, front/rearAxleLimitKg, maxTowingKg,
+  addedMassKg, isPreRego, certifiedState, pathway, sourceUrl }` (one row per approval, shared
+  CATALOGUE for kits). The **setup** (per-rig) carries `appliedGvmUpgradeId` *or* a custom
+  override → two owners of the same base vehicle differ only here (clean blast-radius fit).
+  `build-physics-input` applies the overlay's limit set + mass delta.
+- **Worked example (Tim's own rig):** QLD AP sign-off, state cap = **lower of +300 kg or
+  +10% of base GVM** → +280 kg (the 10% governed). Captured as a *custom engineer-cert
+  overlay* with `certifiedState=QLD`. The **headroom (+280 kg)** and the **actual spring mass
+  (~15–25 kg)** are *two independent fields* — don't conflate them.
+
+### State cap rules — a feature, not just validation
+
+"Lower of +X kg or +Y% of base GVM" is computable. On custom entry the app can sanity-check
+("QLD: lower of +300 kg or +10% → your +280 kg is within spec ✓") and flag implausible
+entries. Caps live as **versioned `RegulationSet` data**, advisory until Tim ticks them.
+Because the user has a `homeState`, the app can also warn on **interstate recognition** ("this
+upgrade was certified in QLD — recognition in NSW isn't guaranteed; confirm before relying on
+it"). No other AU calculator does this.
+
+## 5. Regulation source registry + currency safeguards
+
+A naive watcher (hash a known doc, diff it) only catches change *within* the current
+framework. A move to a national scheme originates *elsewhere* (a federal bill, an NTC reform
+paper, a ministers' communiqué) 1–2 years before the rule doc changes or is withdrawn. So the
+registry has **two tiers**, and the system motto is **detect automatically, apply manually,
+date everything.**
+
+### Tier A — live rule sources (extract figures + caps)
+
+| Jurisdiction | Source / certifier scheme |
+| --- | --- |
+| Federal | RVSA 2018 + Road Vehicle Standards Rules (legislation.gov.au); **VSB14** National Code of Practice; RAV/ROVER |
+| NSW | TfNSW Vehicle Standards Information (VSI); **VSCCS** certifier scheme |
+| QLD | TMR Code of Practice; **Approved-Person (AP)** scheme |
+| VIC | Dept of Transport vehicle-mod guidance; **VASS** signatory scheme |
+| SA | DIT vehicle standards |
+| WA | DoT WA vehicle standards (own GVM-upgrade stance) |
+| TAS / NT / ACT | State Growth / MVR / Access Canberra |
+
+> Watch the **certifier schemes** (VSCCS / VASS / AP) separately from the cap-rule docs — a
+> state restructuring or withdrawing a signatory scheme is itself a regime change and shows
+> up on the scheme page, not the rule page.
+
+### Tier B — horizon sources (early warning, "before it happens")
+
+- **Federal Register of Legislation** — RVSA & Rules amendments (publish with a *future*
+  effective date).
+- **Parliament bill tracker** — bills amending the RVSA.
+- **Dept of Infrastructure** consultation hub / Regulatory Impact Statements.
+- **National Transport Commission (NTC)** reform agenda — most likely origin of a national
+  scheme.
+- **Infrastructure & Transport Ministers' Meeting** communiqués.
+- **NHVR** — existing national-harmonisation precedent.
+
+### Safeguards (registry fields + watcher triggers — never auto-apply)
+
+Per source row: `tier (LIVE_RULE | HORIZON)`, `jurisdiction` (incl. first-class
+**`NATIONAL`**), `scheme`, `url`, `docType`, `contentHash`, `lastChecked/Changed`,
+`status (ACTIVE | UNDER_REVIEW | SUPERSEDED | WITHDRAWN)`, `supersededBySourceId`,
+`effectiveFrom`, `futureEffectiveFrom`, `stability (STABLE | IN_FLUX)`, `extractedRuleRef`.
+
+The scheduled watcher (reuse BullMQ) raises a **review task** on:
+
+1. **Content diff** (normal case) — AI does a grounded extract + diff with citation.
+2. **Disappearance** — URL 404 / redirect / "withdrawn" → high priority; stop showing a dead
+   rule.
+3. **Supersession language** — "replaces / superseded by…" → auto-link old→new.
+4. **Future effective date** — capture it, **pre-stage** the change, warn users "rule
+   changing on [date]," flip on the date.
+5. **Regime classifier (AI, grounded over Tier B):** *"Any proposed/announced change to how
+   light-vehicle GVM upgrades are certified in AU — national scheme, new federal instrument,
+   a state dropping its certifier pathway? Summarise with sources + timeframe."* Heads-up
+   only → tracking item.
+6. **Stability flag** — a source under active consultation is `IN_FLUX`; the app shows extra
+   caution on rules sourced from a moving target.
+
+### Designed for its own obsolescence
+
+`NATIONAL` is a valid jurisdiction from day one; a source can be **repointed** (old→new
+linked) without losing history; a framework-wide cutover is just *effective-dating a NATIONAL
+rule that supersedes the state rules* — same versioning machinery, no migration scramble.
+**Grandfathering** falls out for free: Tim's QLD 280 kg cert is evaluated against the rule in
+force on its issue date, even after a national scheme lands. The reuse: a flagged change is a
+**candidate regulation update** in the moderation queue — the same fetch → candidate → review
+→ promote → **version** pipeline as vehicle specs, on `RegulationSet` / `RegulationSetVersion`
+(already versioned with `effectiveDate` / `changeSummary` / `createdBy`).
+
+## 6. Legal disclaimer (user-facing — required)
+
+Surface near regulation-sourced figures, the GVM-upgrade entry, and the verdict:
+
+> **Compliance guidance — not legal advice.** TravellingBuddy endeavours to keep its vehicle
+> data and state/territory & federal regulation information accurate and up to date, but laws
+> vary by jurisdiction, change over time, and recognition of a modification (e.g. a GVM
+> upgrade) is **not guaranteed across state and territory borders**. This tool provides
+> general guidance only and may be out of date or incomplete. **It is your responsibility to
+> do your own research and verify your vehicle's compliance with your state or territory road
+> authority and/or a licensed certifier before relying on these results.** Your vehicle's
+> compliance plate and your certifier's documentation are the authority for your specific
+> vehicle. Figures are shown with their source and the date they were last reviewed.
+
+(Show the "current as of [date] — source: [link]" stamp alongside any regulation-derived
+figure so the disclaimer is concrete, not boilerplate.)
+
+## 7. Rule-11 items this opens for Tim
+
+- Cross-source **agreement threshold** (K sources, which tiers count) + exact-match vs
+  tolerance *per field tier*.
+- **GCM behaviour per upgrade pathway** (pre-rego vs post-rego/engineer) — the default when a
+  cert doesn't state GCM.
+- **Per-state cap rules** (seed order: Federal + QLD first, then NSW/VIC by population) and
+  whether the app *validates* against them vs only records.
+- **Interstate-recognition** wording + how strongly to warn.
+- Final **disclaimer** wording sign-off (legal).
