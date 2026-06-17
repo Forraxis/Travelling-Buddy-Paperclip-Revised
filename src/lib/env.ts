@@ -51,6 +51,13 @@ const envSchema = z
     VLM_API_KEY: optionalString,
     VLM_MODEL: optionalString,
 
+    // Vehicle-spec fetch (all optional). Qwen = Tim's local llama.cpp server
+    // (no key); ANTHROPIC_API_KEY backs the future grounded Claude path. Absent
+    // values are fine — the admin pipeline runs on the MOCK provider.
+    QWEN_BASE_URL: z.string().url().optional(),
+    QWEN_MODEL: optionalString,
+    ANTHROPIC_API_KEY: optionalString,
+
     // Email (optional — sends are skipped with a warning when absent).
     RESEND_API_KEY: optionalString,
     RESEND_FROM_EMAIL: optionalString,
