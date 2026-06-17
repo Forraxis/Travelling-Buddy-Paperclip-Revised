@@ -37,7 +37,9 @@ export type VariantSpecPatch = Partial<{
 
 function parseInt0(value: string): number | null {
   const n = Number(value);
-  if (!Number.isFinite(n)) return null;
+  // No vehicle nameplate / geometry figure is negative or non-finite — reject
+  // rather than write a nonsensical value to a typed column.
+  if (!Number.isFinite(n) || n < 0) return null;
   return Math.round(n);
 }
 

@@ -315,7 +315,10 @@ export function createVehicleService(prisma: PrismaClient) {
   ): Promise<PaginatedResult<VehicleVariantWithModel>> {
     const limit = opts.limit ?? DEFAULT_PAGE_SIZE;
 
-    const where: Record<string, unknown> = {};
+    // Public filtered listing (catalogue page + /api/v1/vehicles/variants):
+    // CATALOGUE only — never leak COMMUNITY variants (user submissions or an
+    // unpublished spec candidate).
+    const where: Record<string, unknown> = { status: 'CATALOGUE' };
     if (filter.market) where.market = filter.market;
     if (filter.fuelType) where.fuelType = filter.fuelType;
     if (filter.bodyType) where.model = { bodyType: filter.bodyType };

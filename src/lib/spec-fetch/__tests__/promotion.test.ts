@@ -32,4 +32,12 @@ describe('buildVariantPatch', () => {
       expect.arrayContaining(['gvmKg', 'fuelType', 'notARealField']),
     );
   });
+
+  it('rejects negative numbers (no nameplate figure is negative)', () => {
+    const { patch, skipped } = buildVariantPatch([
+      { field: 'gvmKg', value: '-500' },
+    ]);
+    expect('gvmKg' in patch).toBe(false);
+    expect(skipped).toContain('gvmKg');
+  });
 });

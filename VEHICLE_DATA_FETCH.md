@@ -58,6 +58,15 @@ Promote → a CATALOGUE `VehicleVariant` is created (ModerationAction + AuditLog
    fields) — physics, your call.
 5. **API key for real data.** `ANTHROPIC_API_KEY` (grounded Claude path) — the real data
    source. `QWEN_*` is for pipeline testing only (ungrounded → hallucinates → always gated).
+6. **Pre-existing caravan leak (out of scope tonight).** While fixing the vehicle
+   COMMUNITY-leak, I found the **caravan** service (`caravan.service.ts`:
+   `listVariantsByModel` / `search` / `listVariantsFiltered`) has the same missing
+   `status: 'CATALOGUE'` filter — COMMUNITY caravans can leak on public caravan
+   listings/API. Not touched (this run is vehicles-only); worth a follow-up. The
+   public combo page is already guarded (both sides checked).
+7. **Not status-filtered, but appear unused publicly:** `findVariantByYear` /
+   `findVariantsInRange` in `vehicle.service.ts` lack a status filter. I found no public
+   route wiring them, so I left them; double-check before relying on them publicly.
 
 ## Remaining build (scaffolded, not wired)
 
