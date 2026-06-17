@@ -146,3 +146,24 @@ describe('buildPhysicsInput — P3 per-model correction', () => {
     expect(input.calibrationOverrides?.vehicleKerbCogFraction).toBeUndefined();
   });
 });
+
+describe('buildPhysicsInput — verdict honesty (estimated limits)', () => {
+  it('a CATALOGUE / verified variant has no estimated limits', () => {
+    const input = buildPhysicsInput(INITIAL_STATE, vehicle, null, 'live');
+    expect(input.vehicle.estimatedLimits).toBeUndefined();
+  });
+
+  it('a COMMUNITY variant flags all compliance limits as estimated', () => {
+    const community = { ...vehicle, status: 'COMMUNITY' };
+    const input = buildPhysicsInput(INITIAL_STATE, community, null, 'live');
+    expect(input.vehicle.estimatedLimits).toEqual(
+      expect.arrayContaining(['gvm', 'gcm', 'frontAxle', 'rearAxle']),
+    );
+  });
+
+  it('an "estimated" confidence badge also flags limits', () => {
+    const est = { ...vehicle, confidenceBadge: 'estimated' };
+    const input = buildPhysicsInput(INITIAL_STATE, est, null, 'live');
+    expect(input.vehicle.estimatedLimits).toContain('gvm');
+  });
+});

@@ -70,6 +70,28 @@ const baseInput = (overrides: Partial<PhysicsInput> = {}): PhysicsInput => ({
   ...overrides,
 });
 
+// --- Verdict honesty: estimatedLimits passes through, never affects status ---
+
+describe('verdict honesty — estimatedLimits pass-through', () => {
+  it('passes estimatedLimits through to the result without changing the verdict', () => {
+    const plain = calculate(baseInput());
+    const flagged = calculate(
+      baseInput({
+        vehicle: { ...hiluxSR5, estimatedLimits: ['gvm', 'frontAxle'] },
+      }),
+    );
+    expect(flagged.vehicle.estimatedLimits).toEqual(['gvm', 'frontAxle']);
+    // Same inputs (bar the advisory flag) → identical statuses.
+    expect(flagged.overallStatus).toBe(plain.overallStatus);
+    expect(flagged.vehicle.gvmStatus).toBe(plain.vehicle.gvmStatus);
+    expect(flagged.vehicle.frontAxleStatus).toBe(plain.vehicle.frontAxleStatus);
+  });
+
+  it('omits estimatedLimits when the input has none', () => {
+    expect(calculate(baseInput()).vehicle.estimatedLimits).toBeUndefined();
+  });
+});
+
 // --- Scenario 1: Solo vehicle, no caravan, all within limits ---
 describe('Scenario 1: solo vehicle, typical touring load, all within limits', () => {
   const result = calculate(

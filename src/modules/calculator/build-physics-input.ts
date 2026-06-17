@@ -2,6 +2,7 @@ import type {
   PhysicsInput,
   MountingLocation,
   CalibrationOverrides,
+  ComplianceLimitKey,
 } from '@/lib/physics/types';
 import {
   mergeModelCorrection,
@@ -16,6 +17,36 @@ import {
 import type { CalculatorState } from './types';
 
 type AnyVariant = Record<string, unknown>;
+
+const ALL_COMPLIANCE_LIMITS: ComplianceLimitKey[] = [
+  'gvm',
+  'gcm',
+  'frontAxle',
+  'rearAxle',
+  'towBall',
+  'towing',
+];
+
+/**
+ * Verdict honesty: decide which compliance limits to flag as estimated. The
+ * only post-promotion signal a variant carries today is its status / confidence
+ * badge — a COMMUNITY (or AI-estimated) variant has not been verified against a
+ * compliance plate, so ALL its nameplate limits are estimated. Returns undefined
+ * for a verified CATALOGUE variant.
+ *
+ * TODO(spec-fetch): once promoted variants carry per-field provenance (a
+ * follow-up to the VehicleSpecCandidate pipeline), narrow this to only the
+ * fields that were actually estimated/uncorroborated rather than all six.
+ */
+function deriveEstimatedLimits(
+  vehicle: AnyVariant,
+): ComplianceLimitKey[] | undefined {
+  const status = vehicle.status;
+  const badge = vehicle.confidenceBadge;
+  const isEstimated =
+    status === 'COMMUNITY' || badge === 'community' || badge === 'estimated';
+  return isEstimated ? [...ALL_COMPLIANCE_LIMITS] : undefined;
+}
 
 /**
  * How calibration folds into the built input:
@@ -107,6 +138,7 @@ export function buildPhysicsInput(
       ).trackWidthMm,
       fuelTankCapacityL: Number(vehicle.fuelTankCapacityL),
       fuelType: vehicle.fuelType as 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC',
+      estimatedLimits: deriveEstimatedLimits(vehicle),
     },
     caravan: caravan
       ? {

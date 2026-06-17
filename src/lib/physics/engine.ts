@@ -652,6 +652,9 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     // Advisory + provisional — unaffected by weighbridge static offsets, so it
     // comes from the base axle computation. NOT added to the overall verdict.
     stability: rawAxles.stability,
+    // Advisory pass-through — flags estimated/unverified limits in the UI. Does
+    // not affect any status above.
+    estimatedLimits: vehicle.estimatedLimits,
   };
 
   // Collect all statuses to determine overall

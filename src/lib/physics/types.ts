@@ -68,6 +68,19 @@ export type MetricStatus = 'ok' | 'warn' | 'fail';
 export type OverallStatus = 'pass' | 'warn' | 'fail';
 export type RecommendationSeverity = 'info' | 'warn' | 'critical';
 
+/**
+ * Keys for the compliance limits that drive the verdict. Used only by the
+ * advisory "verdict honesty" layer (see {@link VehicleInput.estimatedLimits}) —
+ * NOT by the pass/fail math.
+ */
+export type ComplianceLimitKey =
+  | 'gvm'
+  | 'gcm'
+  | 'frontAxle'
+  | 'rearAxle'
+  | 'towBall'
+  | 'towing';
+
 export interface VehicleInput {
   gvmKg: number;
   gcmKg: number;
@@ -83,6 +96,13 @@ export interface VehicleInput {
   trackWidthMm?: number | null;
   fuelTankCapacityL: number;
   fuelType: FuelType;
+  /**
+   * ADVISORY (verdict honesty): compliance limits whose source is unverified
+   * (e.g. a COMMUNITY variant or AI-estimated spec). The verdict math is
+   * unchanged — this only lets the UI show "estimated — confirm your compliance
+   * plate" next to an otherwise-confident PASS. Empty/undefined = all verified.
+   */
+  estimatedLimits?: ComplianceLimitKey[];
 }
 
 export interface CaravanInput {
@@ -270,6 +290,12 @@ export interface VehicleResult {
   lateral?: VehicleLateral;
   /** Vertical CoG height + static stability — advisory, provisional. */
   stability?: VehicleStability;
+  /**
+   * ADVISORY (verdict honesty): which compliance limits driving this result come
+   * from an unverified source. Pass-through of {@link VehicleInput.estimatedLimits}.
+   * The UI flags these so an estimated limit never reads as a confident PASS.
+   */
+  estimatedLimits?: ComplianceLimitKey[];
 }
 
 export interface CaravanAxleResult {

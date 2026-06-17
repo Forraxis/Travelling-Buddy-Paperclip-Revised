@@ -1,6 +1,10 @@
 'use client';
 
-import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
+import type {
+  PhysicsResult,
+  MetricStatus,
+  ComplianceLimitKey,
+} from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import SchematicViewer from '@/components/schematic/SchematicViewer';
 import RigSchematic from '@/components/schematic/RigSchematic';
@@ -182,6 +186,11 @@ function GvmBar({ result }: { result: PhysicsResult }) {
         <span>{fmt(totalWeightKg)}</span>
         <span>limit {fmt(gvmLimitKg)}</span>
       </div>
+      {isLimitEstimated(result, 'gvm') && (
+        <div className="mt-1">
+          <EstimatedNote />
+        </div>
+      )}
     </div>
   );
 }
@@ -194,15 +203,25 @@ interface MetricRowProps {
   actual: number;
   limit: number;
   status: MetricStatus;
+  /** Verdict honesty: limit comes from an unverified source — show a caveat. */
+  estimated?: boolean;
 }
 
-function MetricRow({ label, sublabel, actual, limit, status }: MetricRowProps) {
+function MetricRow({
+  label,
+  sublabel,
+  actual,
+  limit,
+  status,
+  estimated,
+}: MetricRowProps) {
   const pct = clampPct(actual, limit);
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="w-24 shrink-0">
         <p className="text-xs font-semibold text-gray-700">{label}</p>
         <p className="text-[10px] text-gray-400">{sublabel}</p>
+        {estimated && <EstimatedNote />}
       </div>
       <div className="bg-tb-neutral-200 relative h-3 flex-1 overflow-hidden rounded-full">
         <div
@@ -218,6 +237,30 @@ function MetricRow({ label, sublabel, actual, limit, status }: MetricRowProps) {
   );
 }
 
+/**
+ * Verdict honesty caveat. Rendered next to any compliance limit drawn from an
+ * unverified source (a COMMUNITY/AI-estimated variant) so an estimated figure
+ * never reads as a confident PASS. See VehicleResult.estimatedLimits.
+ */
+function EstimatedNote() {
+  return (
+    <p
+      className="mt-0.5 text-[10px] font-medium text-amber-600"
+      title="This limit is an estimate from an unverified spec. Confirm it against your vehicle's compliance plate."
+    >
+      Est. — confirm your plate
+    </p>
+  );
+}
+
+/** Is a given compliance limit flagged estimated on this result? */
+function isLimitEstimated(
+  result: PhysicsResult,
+  key: ComplianceLimitKey,
+): boolean {
+  return result.vehicle.estimatedLimits?.includes(key) ?? false;
+}
+
 // ── Axle metrics grid ──────────────────────────────────────────────────────────
 
 function AxleGrid({ result }: { result: PhysicsResult }) {
@@ -229,6 +272,7 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       actual: v.rearAxleKg,
       limit: v.rearAxleLimitKg,
       status: v.rearAxleStatus,
+      estimated: isLimitEstimated(result, 'rearAxle'),
     },
     {
       label: 'Front Axle',
@@ -236,6 +280,7 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       actual: v.frontAxleKg,
       limit: v.frontAxleLimitKg,
       status: v.frontAxleStatus,
+      estimated: isLimitEstimated(result, 'frontAxle'),
     },
   ];
   if (v.gcmKg != null && v.gcmLimitKg != null && v.gcmStatus != null) {
@@ -245,6 +290,7 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       actual: v.gcmKg,
       limit: v.gcmLimitKg,
       status: v.gcmStatus,
+      estimated: isLimitEstimated(result, 'gcm'),
     });
   }
 
