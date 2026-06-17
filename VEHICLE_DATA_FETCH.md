@@ -315,3 +315,124 @@ figure so the disclaimer is concrete, not boilerplate.)
   whether the app *validates* against them vs only records.
 - **Interstate-recognition** wording + how strongly to warn.
 - Final **disclaimer** wording sign-off (legal).
+
+---
+
+# Vehicle catalogue acquisition — initial list + staying current
+
+> **Status:** AGREED DIRECTION with Tim, **NOT yet built**. This is the practical plan for
+> *populating* the catalogue (vs the trust/verification model above).
+
+## 1. High-level decision: ROVER is the list AND the data (2021+)
+
+For ~2021-onward vehicles, ROVER solves both problems at once. We do **not** source a vehicle
+list and then go find data for each — the **Published Approvals Directory IS the enumerable
+list** (filter by category MC / NA / NB1), and each entry's **Approval Consumer Report IS the
+authoritative data** (tare / GVM / GCM / front+rear axle / braked towing). One source, list +
+figures, no LLM transcription of the numbers.
+
+### Three-layer list strategy
+
+| Layer | Vehicles | List source | Data path |
+| --- | --- | --- | --- |
+| **1. Core (2021+)** | Current / recent | **ROVER directory** by category (MC/NA/NB1) | ROVER consumer report → parse |
+| **2. Prioritisation** | *Which to do first* | Popularity — known tow rigs + new-vehicle sales (VFACTS/FCAI) | (orders layer 1; doesn't replace it) |
+| **3. Pre-2021 back-catalogue** | Older rigs (100-series, 80, GU Patrol) | **Demand-driven** — a user searches a vehicle we don't have | The grounded-Claude fetch → admin review → plate-upgrade pipeline already built |
+
+Layer 3 matters: the back-catalogue is huge and uneven, so we **let user demand be the list**
+— a search-miss triggers the candidate fetch, an admin reviews, the plate is the trust
+upgrade. (This sits alongside the catalogue's existing paths: seed, admin CSV upload, admin
+form, user submissions. ROVER is the new *bulk authoritative* one.)
+
+### Launch recommendation
+
+**Curate the popular tow-rig shortlist first, fully and accurately** (~30–50 variants: Hilux,
+Ranger, D-Max, BT-50, Triton, LandCruiser 70/300, Prado, Patrol, Everest, MU-X, RAM
+1500/2500, Silverado, F-150…), backed by ROVER data — then bulk-fill the rest of MC/NA/NB1
+behind it. A calculator where the top tow vehicles are *exactly right* beats one with 3,000
+half-matched entries.
+
+### Ingestion flow (reuses the built machine)
+
+```
+crawl ROVER directory (filter MC/NA/NB1)
+  → for each VTA: fetch Approval Consumer Report (PDF)
+    → deterministic table parser (pdfplumber; Qwen-VLM fallback)
+      → VehicleSpecCandidate (per-field, sourced; structured-parse = auto-corroborated)
+        → admin review/promote → CATALOGUE variant
+```
+
+Claude's only job here is the fuzzy part (match a VTA to a consumer-facing variant, fill
+gaps) — **never stating a compliance number.** PDF/OCR/VLM + BullMQ infra already exists (from
+compliance-plate submissions).
+
+### Immediate next step — a one-vehicle ROVER pilot
+
+Before any bulk crawl, prove the path end-to-end on **one real 2021+ vehicle** (the mock
+fixture is a 2005 100-series, which *isn't* in ROVER — use a current one, e.g. Ranger or
+LC300): find its VTA, fetch + parse the consumer report, run candidate → review → promote.
+De-risks the parser + matching before scaling. Build it as a `SpecVerifier`/ingestion source
+against a **saved sample report first** (no live scraping until the parser is proven).
+
+## 2. Staying current with ROVER
+
+A scheduled crawl is right, but it must be **incremental** and watch for **three** kinds of
+change, not just new records.
+
+### Incremental crawl — high-water mark, not full re-crawl
+
+ROVER VTAs are sequential and the directory is date-sortable, so the job keeps a **high-water
+mark per category** (last VTA / published-date seen) and only pulls what's newer. Cheap,
+polite, fast — new vehicles caught within a week of approval.
+
+### Three currency concerns
+
+| What changes | How often | Detection | Cadence |
+| --- | --- | --- | --- |
+| **New approvals** (models, MY updates, variants) | continuously | scan forward from high-water mark | **weekly** |
+| **Amended approvals** (figure corrected, variant added to a VTA) | rare | content-hash the imported consumer reports | monthly |
+| **Withdrawn / superseded** (approval revoked/replaced) | rare | a held VTA 404s / marked superseded | monthly + flag |
+
+Amendment + withdrawal are the easy-to-forget cases — a "new records only" crawl would
+silently keep showing a corrected figure or a pulled approval.
+
+### Same machine, scheduled
+
+- A **BullMQ repeatable (cron) job** — same infra as the regulation watcher.
+- New/changed records → `VehicleSpecCandidate` → review/promote → **version**. Idempotent:
+  dedupe by VTA, re-runs never duplicate.
+- Every imported variant carries its `VTA` + report URL + import date → re-verifiable, and
+  stamped "sourced from ROVER VTA-XXXX, imported [date]."
+- The same crawl picks up **new second-stage approvals**, so the GVM-upgrade dropdown stays
+  current too.
+
+### The safeguard people miss — detect when *our crawler* breaks
+
+ROVER will change its HTML/portal someday. A crawl that silently returns zero new records
+looks identical to "no new vehicles this week." So the job needs **crawl-health monitoring**:
+if a run finds zero new records for N consecutive weeks when it normally finds some, or
+parser extraction-confidence drops, **raise an alert** — the scraper is probably broken, not
+the world. (The bigger "is ROVER/RAV itself being restructured/replaced" question rides on
+the Tier-B horizon watch in the regulation section above.)
+
+## 3. Gate-level decision (working default — Tim to confirm)
+
+How much human gate on **authoritative structured ROVER imports**?
+
+- **Working default: auto-promote with audit + spot-check** for the structured ROVER parse
+  *specifically* — the figure is parsed from the government document (no LLM in the number),
+  so new records flow to CATALOGUE automatically with a full audit trail and Tim samples a
+  review. Fast, scales.
+- The **manual review gate stays** for the **Claude-grounded** path and the **user-submitted**
+  path (where a model or a person *states* a figure).
+
+Recorded as the working default; flip to "PENDING → batch-approve" if Tim wants tighter
+control on bulk imports.
+
+## 4. Rule-11 / open items for this plan
+
+- Confirm the **gate level** above (auto-promote-with-audit vs batch-approve for ROVER).
+- **Launch scope:** curated popular shortlist first (recommended) vs full MC/NA/NB1 crawl.
+- **VTA ↔ consumer-variant mapping** rules (one VTA can span trims) — where false
+  corroboration / mis-matches live; needs a matching + spot-check policy.
+- **Crawl-health alert thresholds** (N weeks of zero, extraction-confidence floor).
