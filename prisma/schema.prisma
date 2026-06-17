@@ -11,6 +11,27 @@ enum VehicleVariantStatus {
   COMMUNITY
 }
 
+/**
+ * Per-field confidence the *provider* attaches to a fetched spec value.
+ * ⚠️ NEVER a gating signal: an ungrounded local model confidently self-rates
+ * hallucinated compliance numbers "HIGH" (verified on the LandCruiser 100 —
+ * GVM/GCM/kerb/tank all wrong, all "high"). Gating trust comes only from
+ * external corroboration (source URL / plate photo / admin tick).
+ */
+enum SpecFieldConfidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/** Where a fetched vehicle-spec candidate (or one of its fields) came from. */
+enum SpecFetchProvider {
+  MOCK
+  QWEN
+  CLAUDE
+  ADMIN
+}
+
 enum VehicleBodyType {
   DUAL_CAB_UTE
   SINGLE_CAB_UTE
@@ -143,6 +164,7 @@ model VehicleVariant {
   positionSubmissions      FitmentPositionSubmission[]
   calibrationContributions CalibrationContribution[]
   calibrationCorrection    VehicleCalibrationCorrection?
+  specCandidates           VehicleSpecCandidate[]        @relation("SpecCandidateVariant")
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -350,6 +372,9 @@ model User {
   positionSubmissionDecisions      FitmentPositionSubmission[] @relation("PositionSubmissionDecisions")
   calibrationContributions         CalibrationContribution[]   @relation("CalibrationContributions")
   calibrationContributionDecisions CalibrationContribution[]   @relation("CalibrationContributionDecisions")
+  specCandidatesCreated            VehicleSpecCandidate[]      @relation("SpecCandidatesCreated")
+  specCandidateDecisions           VehicleSpecCandidate[]      @relation("SpecCandidateDecisions")
+  specCandidateOverrides           VehicleSpecCandidate[]      @relation("SpecCandidateOverrides")
 }
 
 model Account {
@@ -1133,4 +1158,98 @@ model ModerationAction {
   @@index([moderatorId])
   @@index([action])
   @@index([createdAt])
+}
+
+/**
+ * AI/admin-assisted vehicle-spec ingestion (vehicle-data-fetch). A *candidate*
+ * holding-pen — the spec equivalent of VehicleSubmission. It is NOT a
+ * VehicleVariant and never materialises one until an admin promotes it, so a
+ * candidate can never leak into public search/calculator (those query
+ * VehicleVariant). Promotion creates/updates a CATALOGUE VehicleVariant via the
+ * same transaction shape as the moderation approve path (ModerationAction +
+ * AuditLog). `rawResponse` keeps the verbatim provider output (store raw, derive
+ * later — mirrors the calibration moat). See OVERNIGHT_HANDOVER.md / RIG_LAYOUT.
+ */
+model VehicleSpecCandidate {
+  id       String           @id @default(cuid())
+  // Targeting — what the admin searched for. Free text; resolved to make/model
+  // (creating them if needed) only at promotion time.
+  makeName String
+  modelName String
+  variantName String?
+  yearFrom Int
+  yearTo   Int?
+  bodyType VehicleBodyType?
+  market   Market           @default(AU)
+
+  // Provenance of the whole fetch.
+  provider      SpecFetchProvider
+  providerModel String?
+  promptVersion String?
+  // Verbatim provider output (store raw, derive later), JSON. Null on a failed fetch.
+  rawResponse   Json?
+  fetchError    String?
+
+  // Lifecycle. PENDING once fetched, APPROVED on promote, REJECTED on discard.
+  status     SubmissionStatus @default(PENDING)
+  // BullMQ job id for the async (qwen) fetch path; null for synchronous (mock) fetches.
+  fetchJobId String?
+
+  // Gating override (Phase 4): an admin explicitly allowed promotion of one or
+  // more uncorroborated compliance-critical fields. Records who/when/why.
+  criticalOverrideById String?
+  criticalOverrideAt   DateTime?
+  criticalOverrideNote String?
+
+  // Promotion linkage + decision audit.
+  resultingVariantId String?
+  createdById        String?
+  decidedById        String?
+  decidedAt          DateTime?
+  decisionNotes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fields             VehicleSpecCandidateField[]
+  resultingVariant   VehicleVariant? @relation("SpecCandidateVariant", fields: [resultingVariantId], references: [id], onDelete: SetNull)
+  createdBy          User?           @relation("SpecCandidatesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  decidedBy          User?           @relation("SpecCandidateDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  criticalOverrideBy User?           @relation("SpecCandidateOverrides", fields: [criticalOverrideById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([resultingVariantId])
+  @@index([makeName, modelName])
+  @@index([createdById])
+}
+
+/**
+ * One fetched field of a VehicleSpecCandidate, with its own provenance. The
+ * per-field sidecar: a provider returns value + confidence + source per field,
+ * and compliance-critical fields are gated independently of soft fields.
+ * `value`/`adminValue` are canonical string form (null = "couldn't find it",
+ * never 0); the promotion mapper parses them into the typed VehicleVariant column.
+ */
+model VehicleSpecCandidateField {
+  id          String               @id @default(cuid())
+  candidateId String
+  // Canonical VehicleVariant column name, e.g. "gvmKg", "wheelbaseMm".
+  field       String
+  // Provider-suggested value (canonical string form). Null = not found, NOT zero.
+  value       String?
+  confidence  SpecFieldConfidence?
+  sourceUrl   String?
+  provider    SpecFetchProvider
+  // Whether this field gates promotion to CATALOGUE (GVM/GCM/axle/tow-ball/towing).
+  isComplianceCritical Boolean @default(false)
+  // Admin's reviewed value — overrides `value` at promotion when set.
+  adminValue  String?
+  // Admin explicitly corroborated this field (authoritative source / plate).
+  // The ONLY trust signal that satisfies the critical-field gate (never confidence).
+  corroborated Boolean @default(false)
+  notes        String?
+  candidate    VehicleSpecCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, field])
+  @@index([candidateId])
 }
