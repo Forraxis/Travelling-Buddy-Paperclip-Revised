@@ -77,16 +77,27 @@ export async function ingestRvd(
   // or flag for re-review (decision 3). A byte-identical re-import (amendment ===
   // null because the hash matched) still falls through to the idempotent
   // refresh-in-place below, which is a no-op in practice.
+  //
+  // BUT only skip when candidates already EXIST for this VTA. A first import can
+  // legitimately classify NO_FIGURE_CHANGE when its detail page (or the local
+  // corpus) carries an older RVD version that we archive first — there are no
+  // candidates yet, so "don't churn" must not mean "never create". We fall through
+  // to creation in that case.
   if (amendment && amendment.status === 'NO_FIGURE_CHANGE') {
-    return {
-      vtaNumber,
-      archivedRvdId: archivedRvd.id,
-      archivedNoticeId: archivedNotice?.id ?? null,
-      variantsCreated: 0,
-      variantsRefreshed: 0,
-      candidateIds: [],
-      amendment,
-    };
+    const existingCount = await prisma.vehicleSpecCandidate.count({
+      where: { sourceVtaNumber: vtaNumber },
+    });
+    if (existingCount > 0) {
+      return {
+        vtaNumber,
+        archivedRvdId: archivedRvd.id,
+        archivedNoticeId: archivedNotice?.id ?? null,
+        variantsCreated: 0,
+        variantsRefreshed: 0,
+        candidateIds: [],
+        amendment,
+      };
+    }
   }
 
   // Year window: prefer the Approval Notice's approval/expiry (authoritative), else
