@@ -55,3 +55,7 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# ROVER local artifacts (regenerable; real source PDFs in docs/RVD/ are kept as test fixtures)
+docs/RVD/_parsed.json
+docs/RVD/_fetched/

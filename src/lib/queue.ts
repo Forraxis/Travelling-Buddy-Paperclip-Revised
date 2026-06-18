@@ -35,9 +35,15 @@ export const photoPostprocessQueue = new Queue('photo-postprocess', {
 // output unless explicitly enabled (the MOCK provider runs synchronously and
 // does not use this queue).
 export const specFetchQueue = new Queue('spec-fetch', { connection });
+// ROVER catalogue crawl (incremental import of RVSA approval consumer reports).
+// A repeatable (cron) job whose worker is gated behind ROVER_CRAWL_ENABLED — it
+// can never crawl or persist until explicitly enabled (and the real crawler/parser
+// are slotted in). Scaffold + synthetic-proven only.
+export const roverCrawlQueue = new Queue('rover-crawl', { connection });
 
 export const queues = [
   submissionVlmQueue,
   photoPostprocessQueue,
   specFetchQueue,
+  roverCrawlQueue,
 ];

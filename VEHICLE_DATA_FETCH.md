@@ -3,27 +3,32 @@
 > ## ▶ NEXT SESSION — START HERE (resume point, 2026-06-18)
 >
 > **Branch:** `feature/vehicle-data-fetch` (all work pushed; not merged/deployed). The
-> mock-proven pipeline + verdict-honesty are built and the health gate is green (476 tests).
-> Phases 1–7 done — see "What's built" below. **Three design sections were then added with
-> Tim** (multi-tier verification, GVM-upgrade model, regulation registry + disclaimer, and the
-> ROVER acquisition + currency plan) — read those before building.
+> mock-proven pipeline + verdict-honesty are built and the health gate is green (**488 tests**).
+> Phases 1–7 done — see "What's built" below. Three design sections were added with Tim
+> (multi-tier verification, GVM-upgrade model, regulation registry + disclaimer, ROVER
+> acquisition + currency).
 >
-> **Immediate task: the ROVER pilot** (see "Vehicle catalogue acquisition" §1 below).
-> Decisions taken: build it **in this repo as a BullMQ repeatable job** (not a separate
-> service); the worker can run **standalone on Tim's beast** (recommended — has compute + the
-> local Qwen) or in-process on the VPS — deployment flag (`WORKERS_DISABLED`), not a rewrite.
-> **Parser-first:** prove "consumer-report PDF → structured fields" against a **real saved
-> sample** before any live crawl. Build only / no real data until Tim approves.
+> **ROVER pilot — scaffolding now BUILT (gated off, synthetic-proven).** Tim chose "build the
+> gated scaffolding while sourcing a real PDF". Shipped this session (see "ROVER scaffolding"
+> below): `ROVER` Prisma enum value + VTA-provenance columns on `VehicleSpecCandidate`; the
+> `src/lib/spec-fetch/rover/` module (`RoverReportParser` interface, `SyntheticRoverParser`,
+> `PdfRoverParser` **stub**, label→field map, `RoverVerifier` → auto-corroborated draft,
+> synthetic fixture); `createRoverCandidate` (provider=ROVER, structured-parse →
+> auto-corroborated, idempotent dedupe by VTA); the `roverCrawlQueue` + `rover-crawl.worker`
+> repeatable-job skeleton gated behind `ROVER_CRAWL_ENABLED`. **Proven end-to-end against the
+> real dev DB** (candidate created, all 6 critical fields auto-corroborated, the promotion gate
+> clears with NO override, re-run is idempotent) and in 12 unit tests.
 >
-> **Blocked on Tim:** (1) provide **one real ROVER consumer-report PDF** (a 2021+ vehicle —
-> Ranger/LC300 VTA) for the parser; (2) confirm beast vs VPS; (3) confirm gate level
-> (auto-promote-with-audit vs batch-approve — working default = auto-promote-with-audit for
-> the structured ROVER parse only).
+> **The one remaining blocker is the real parser** — `PdfRoverParser` throws by design until a
+> **real 2021+ consumer-report PDF** lands in `fixtures/rover/` (Ranger/LC300 VTA). Drop one in,
+> implement the deterministic table parse against its actual layout, and swap it for
+> `SyntheticRoverParser` in the worker's default deps — callers don't change.
 >
-> **Can build now without the sample:** the `RoverVerifier` ingestion module behind the
-> interface, a `ROVER` provider value, candidate-creation wiring (structured-parse →
-> auto-corroborated), the repeatable-job skeleton — all gated off, plumbing-tested vs a
-> synthetic fixture. Slot the real parser in when the sample lands.
+> **Still pending Tim:** (1) the real PDF sample (above); (2) beast vs VPS for the worker
+> (`WORKERS_DISABLED` flag, not a rewrite); (3) gate level (working default = auto-promote-
+> with-audit for the structured ROVER parse — the skeleton currently lands every candidate as
+> PENDING regardless; wire auto-promote on top once confirmed); (4) the live directory crawler
+> + cross-run high-water-mark persistence (AdminConfig) — both stubbed/TODO in the worker.
 
 AI/admin-assisted vehicle-spec ingestion. Built overnight on `feature/vehicle-data-fetch`
 (design: auto-memory `vehicle-data-fetch-design.md`; plan: repo-root `OVERNIGHT_HANDOVER.md`).
@@ -52,6 +57,34 @@ AI/admin-assisted vehicle-spec ingestion. Built overnight on `feature/vehicle-da
 LOW (vendor-only). The axle limits are compliance-critical + uncorroborated, so
 **Promote is blocked** until you tick "corroborated" on each, or record an override.
 Promote → a CATALOGUE `VehicleVariant` is created (ModerationAction + AuditLog written).
+
+## ROVER scaffolding (built 2026-06-18 — gated off, synthetic-proven)
+
+The "clean data" route's plumbing, ready for the real parser to drop in. **No live crawl, no
+real data** — `ROVER_CRAWL_ENABLED` is unset so the worker no-ops, and `PdfRoverParser` throws
+by design until a real sample exists.
+
+| Piece | Where |
+| --- | --- |
+| `ROVER` provenance enum + VTA columns (`sourceVtaNumber`/`sourceReportUrl`, indexed for dedupe) | `prisma/schema.prisma`, migration `…_rover_provenance` |
+| Parser interface + `SyntheticRoverParser` (rows) + `PdfRoverParser` **stub** | `src/lib/spec-fetch/rover/parser.ts` |
+| Label→field-key map + numeric extractor (the bit that changes vs the real doc) | `rover/field-map.ts` |
+| `RoverVerifier` → auto-corroborated candidate draft (structured-parse trust) | `rover/verifier.ts` |
+| Synthetic consumer-report fixture (clearly NOT real data) | `rover/fixtures.ts` |
+| `createRoverCandidate` — provider=ROVER, corroborated fields, idempotent dedupe by VTA | `rover/ingest.ts` |
+| Directory crawler interface + `SyntheticRoverCrawler` (no network) | `rover/crawl.ts` |
+| Repeatable-job skeleton, gated behind `ROVER_CRAWL_ENABLED` (list→fetch→parse→verify→ingest, high-water advance, crawl-health alert) | `src/lib/workers/rover-crawl.worker.ts`, `queue.ts` (`roverCrawlQueue`) |
+| Tests (12): parser/verifier/field-map + crawl safety-gate (gated=no writes; on=imports+idempotent) | `src/lib/spec-fetch/__tests__/rover.test.ts`, `rover-crawl-gate.test.ts` |
+
+**The key property, proven:** a ROVER candidate's compliance-critical fields are
+auto-corroborated (the figure was parsed from the document, not stated by a model), so it clears
+`evaluatePromotionGate` with **no admin override** — the exact opposite of the LandCruiser
+vendor-axle trap. Verified end-to-end against the real dev DB and in the unit tests.
+
+**To finish the pilot:** drop a real 2021+ consumer-report PDF in `fixtures/rover/`, implement
+`PdfRoverParser` against its layout, and swap it for `SyntheticRoverParser` in the worker's
+`defaultDeps`. Then (Tim) build the live crawler, persist the high-water mark, and decide the
+gate level before flipping `ROVER_CRAWL_ENABLED`.
 
 ## Key decisions made overnight (reversible — flag if you disagree)
 
@@ -342,6 +375,155 @@ figure so the disclaimer is concrete, not boilerplate.)
 - Final **disclaimer** wording sign-off (legal).
 
 ---
+
+# Document-boundary findings + resolved scope (2026-06-18, real samples)
+
+Tim supplied real ROVER PDFs (`docs/RVD/`). Reading them corrected the §2/§3 premise and
+settled the open scope questions. Pure-Node extraction (`unpdf`) works cleanly on all samples.
+
+## What the real documents actually contain
+
+- **Road Vehicle Descriptor (RVD)** — applicant-supplied data sheet (carries a *"not verified
+  by the department"* disclaimer). Per-variant: **GVM, tare, braked + non-braked towing,
+  dimensions, fuel/engine/brakes/tyres/suspension, VINs**. One VTA spans **many** variants
+  (Navara 25, Hilux 30), each with distinct GVM/tow.
+- **Approval Notice** — the department-issued **legal certificate**. Carries the fine-grained
+  **category** ("NA - Light Goods Vehicle" vs the RVD's broad "N - Goods Vehicles"),
+  authoritative **approval / variation / expiry dates**, variant list + codes, approval holder,
+  ADR compliance map, conditions. **No mass figures.**
+- **Neither document publishes front/rear axle limits (GAWR) or GCM.** The RVD's GCM field is
+  present-but-empty on every sample; axle limits appear only as rare free-text in "Remarks" (the
+  Trakka motorhome: `FRONT AXLE: 2100kg REAR AXLE: 2400kg`). So §2's claim that the ROVER report
+  "carries all 6 critical fields **incl. axle limits**" is **WRONG** for these docs — axle GAWR +
+  GCM are not in ROVER's per-VTA downloads; they live on the **compliance plate / manufacturer
+  spec**.
+
+## Resolved decisions (Tim, 2026-06-18)
+
+1. **Extraction:** pure-Node (`unpdf`/pdfjs), Qwen-VLM fallback only if a layout defeats it.
+2. **Per-variant + two-doc pairing:** one candidate per **(VTA, variant code)**; figures from the
+   RVD, category + authoritative dates from the Approval Notice. (`createRoverCandidate`'s current
+   dedupe-by-VTA-alone must become VTA+variant.)
+3. **Versioning:** capture **document date + content hash**; gate *re-review* on a change to the
+   **extracted figures**, not just the file hash (most re-issues are administrative — figures
+   unchanged: the Patrol/Navara/RAM pairs all kept identical masses).
+4. **Full-data capture = raw-archive-now, structure-on-demand.** Retain full extracted text + PDF
+   + hash/dates as a **source-of-truth archive** (store raw, derive later — already a codebase
+   principle); `VehicleVariant` stays a **curated projection**. Structure only the fields we use
+   today; mine the rest later.
+5. **GCM + axle gap-fill:** grounded Claude/web may *propose* them, surfaced **with a confidence
+   level as a warning** — **never auto-promoted, never driving a confident "compliant" verdict**
+   (reuse the built verdict-honesty "Est. — confirm your plate"). The **plate method is the real
+   path**; revisit if needed. Axle limits stay **diagnostic per Rule 11** — the vendor-axle trap
+   is worst exactly here (web sources = GVM-upgrade vendors quoting upgraded values).
+6. **Public vehicle page (new idea):** show the **confirmed (ROVER-sourced)** per-variant details
+   on the vehicle page, **provenance-stamped** ("sourced from ROVER VTA-XXXX, as at [date]") — as
+   trustworthy content + long-tail SEO. **Only CONFIRMED data is published**; AI estimates stay in
+   the calculator flow as flagged estimates, off the public spec sheet. *SEO caveat:* 25–30
+   near-identical variants per model would be thin/duplicate content → group/canonicalise (one
+   model page + variant table, or canonical-tag variants); disclaimer §6 surfaces near figures.
+7. **Plate-consensus publish threshold for critical fields (GCM / front+rear axle).** A plated
+   value is **confirmed for the rig it came from** (owner gets an authoritative result), but is
+   **NOT published to other users until ≥ N independent owner plates agree.** Below the
+   threshold it stays **owner-private / diagnostic** (a single or pair of plates does not become
+   a public variant figure — this is the anti-poisoning / anti-scam guard). At/above it, the
+   value publishes as **"community-confirmed (N owners)"**, clearly labelled, and the viewer's
+   **own** plate always overrides it. Confidence ladder: AI/web = estimate (warning, never green)
+   → 1–2 plates = owner-private → **≥ N agreeing = community-confirmed (public, labelled)** →
+   ROVER = authoritative-for-variant → viewer's own plate = authoritative-for-rig (top).
+   - **N = 3 — PROVISIONAL placeholder for testing, tunable, Rule-11 sign-off pending.** Lives in
+     `src/lib/spec-fetch/trust-config.ts` as a **critical-field plate-consensus `MIN_SAMPLES`**,
+     **distinct** from the soft-field `MIN_SAMPLES`. Reuse the P3 moat mechanics:
+     dedup-by-fingerprint + trust-weighting + **disputes-not-overwrites**, with VLM-confirmed
+     plate photos so the count is of *verified* sightings, not raw submissions. Tim to confirm the
+     final number (and whether it varies by field) before this is ever un-gated.
+8. **Acquisition layer = n8n + VPN (decided 2026-06-18).** n8n (on Tim's server — AU host + AU
+   VPN egress) owns the **acquisition** half: scheduled incremental crawl of the ROVER directory,
+   download new/changed RVD + Approval Notice PDFs, upload to R2, then call an **authenticated
+   ingest webhook** on the app. The app keeps the **extraction + trust** half (the built
+   deterministic parser → archive → per-variant candidates → gate). **n8n never parses figures or
+   makes trust decisions** — "n8n fetches, the parser extracts, the app gates." This **retires the
+   in-app BullMQ crawl skeleton** (`rover-crawl.worker` / `roverCrawlQueue` + the synthetic
+   crawler/parser scaffolding) and resolves the live-crawler + raw-PDF→R2 TODOs.
+   - *Access note:* ROVER is an AU gov portal; Tim's host is AU and the VPN presents an AU IP, so
+     access isn't the blocker — the VPN's role is a **stable, polite, AU-presenting egress**.
+   - *App side to build:* a `POST` ingest endpoint (bearer token in env, **inert until the token
+     is set**) → fetch PDF from R2 → `parseRvdText`/`parseApprovalNoticeText` → archive (storing a
+     new `pdfR2Key` on `RoverDocument`) → `ingestRvd` → return counts + gate status.
+   - *n8n side (built on the n8n server; app ships a written spec):* directory crawl (filter
+     category, incremental high-water mark) → download → R2 upload → webhook → crawl-health alert.
+
+## Resulting build order (supersedes the simpler §3 pilot framing)
+
+1. ✅ **RVD parser (pure-Node) — BUILT + tested vs all 11 real files.**
+   `src/lib/spec-fetch/rover/{pdf,rvd-parser}.ts` — per-variant GVM/tare/braked+non-braked
+   tow/GCM/dimensions/body-style/seating/axle-code + Remarks axle limits + `contentHash` +
+   raw-text archive. Proven on the corpus (Navara 25 variants, Hilux 30, RAM 8000 kg tow, etc.);
+   byte-identical re-issue → identical hash, amendment → different hash.
+2. ✅ **Approval Notice parser — BUILT + tested.** `rover/approval-notice-parser.ts` — fine
+   category (NA), approval/variation/expiry dates, holder, authoritative variant list. Pairs to
+   the RVD by VTA. (Local runner: `npx tsx src/jobs/rover-parse-local.ts` → `docs/RVD/_parsed.json`.)
+3. ✅ **Archive model + per-variant ingest — BUILT + run against the dev DB.**
+   `RoverDocument` table (migration `…_rover_document_archive`) holds full raw text + structured
+   parse, idempotent/versioned by `contentHash`. `rover/{archive,variant-fields,ingest-rvd}.ts`:
+   archives every doc version + creates ONE `VehicleSpecCandidate` per (VTA, variant) with
+   auto-corroborated figures (GVM/tare→kerb/tow/wheelbase/length); GCM/axle left for the plate.
+   **Local ingest run produced 11 archive rows + 67 per-variant ROVER candidates (PENDING);
+   gate clears with no override; re-run is idempotent (refresh-in-place).** Runner:
+   `DATABASE_URL=… npx tsx src/jobs/rover-ingest-local.ts`. (Raw PDF → R2 storage is still TODO;
+   today the archive holds the extracted text, not the binary.) Lands PENDING — no auto-promote.
+4. Grounded-Claude gap-fill for GCM/axle → **gated** candidates, shown as confidence-rated
+   warnings; plate is the confirmation path. *(not started)*
+5. ✅ Parser proven on all 11 files; amendment/versioning + idempotency covered by tests.
+6. (Later) public confirmed-spec vehicle page + SEO. *(not started)*
+
+### ROVER portal crawl mechanism (reverse-engineered + PROVEN, 2026-06-18)
+
+The VTA directory is a **Microsoft Power Pages** portal — **no login**, just a session + anti-forgery
+(CSRF) token. Proven end-to-end from an AU machine (single polite requests):
+
+1. `GET /PublishedApprovals/VTAApprovals/` → keep cookies (`ARRAffinity`,
+   `Dynamics365PortalAnalytics`, `__RequestVerificationToken`).
+2. `GET /_layout/tokenhtml` → the `__RequestVerificationToken` value (public, no auth).
+3. `POST /_services/entity-grid-data.json/c8825c88-ebd8-ee11-904d-000d3a7a0265` with those cookies +
+   header `__RequestVerificationToken` + `X-Requested-With: XMLHttpRequest`, JSON body
+   `{ base64SecureConfiguration, sortExpression, page, pageSize, metaFilter, … }`. The
+   `base64SecureConfiguration` blob is embedded per-list in the page and **reusable from a fresh
+   session** (verified — HTTP 200, 1.2 MB of records). Returns
+   `{ MoreRecords, Records:[{ Id, Attributes:[ rvr_approvalnumber, cv.rvr_manufacturer,
+   cv.rvr_model, cv.rvr_categorytype, rvr_approvalstatus, rvr_publishedlastupdatedate, … ] }] }`.
+
+- **Incremental crawl:** sort `rvr_publishedlastupdatedate DESC`, page until older than the
+  high-water mark (sidesteps the `metaFilter` syntax). `rvr_approvalid` GUID keys each approval.
+- **Detail page → PDFs are embedded INLINE as base64 (no separate download URL, no R2 needed to
+  fetch).** `GET /PublishedApprovals/VTADetails/?id=<approvalGuid>` returns server-rendered HTML
+  containing, per document, a button `onclick="downloadPdfFile('<base64 PDF>', '<filename>.pdf')"`.
+  The full PDF bytes are the base64 (`JVBERi0` = `%PDF-`). So "download" = regex the
+  `downloadPdfFile('…','…')` calls out of the HTML and `Buffer.from(b64,'base64')`. One detail-page
+  GET yields the **Approval Notice + every RVD version + Letter of advice**, all inline. **Proven
+  end-to-end from this machine:** grid → VTADetails → decode base64 → `parseRvdText` → structured
+  data (SHEPHARD/ATAN-315T VTA-006101, header + hash parsed).
+- **Parser-robustness finding:** that proof was a **trailer** (category TB) whose RVD layout has **no
+  "Variant information for …" blocks** → `parseRvdText` returned 0 variants (header still parsed).
+  The 11-file corpus (passenger/goods M/N) all use the variant-block layout; **trailers/other
+  categories need a widened variant splitter.** TODO before bulk import.
+- **Categories are codes** (MA = passenger car; light-vehicle MC/NA/NB1; TB = trailer; TD…) — filter
+  to the towing-relevant ones.
+
+This is exactly the n8n workflow: prime session → token → grid POST (sorted by last-updated) →
+per-new-approval GET VTADetails → **regex+decode the inline base64 PDFs** → (optionally R2 for
+archival) → webhook to the app. The fetch needs no R2; R2 becomes archival-only.
+
+### Still open after step 3 (next-session candidates)
+- **App ingest endpoint for n8n** (decision 8) — authenticated `POST` → R2 fetch → parse →
+  archive (add `pdfR2Key`) → ingest. **Retire** the BullMQ crawl skeleton + synthetic scaffolding.
+- **n8n workflow** (built on the n8n server) — crawl + download + R2 + webhook + crawl-health; app
+  ships the spec.
+- **VTA↔model-year** mapping (candidates currently use the approval window as the year, not the
+  true MY).
+- **Promotion** path: candidate (VTA+variant) → CATALOGUE `VehicleVariant` (gate level decision 5).
+- **Figure-level change detection** on amendments (decision 3) — archive keeps versions by hash;
+  the "did a *figure* change → re-review" diff isn't wired yet.
 
 # Vehicle catalogue acquisition — initial list + staying current
 

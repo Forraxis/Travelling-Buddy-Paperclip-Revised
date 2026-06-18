@@ -61,6 +61,10 @@ const envSchema = z
     // refuses to call a model or persist its output. Only the MOCK provider runs
     // until this is deliberately set to 'true' with a real provider configured.
     SPEC_FETCH_LIVE_ENABLED: optionalString,
+    // Hard gate for the ROVER catalogue-crawl worker. Unset (default) = the
+    // repeatable crawl no-ops (no fetch, no parse, no DB write). Only set 'true'
+    // once the real directory crawler + PDF parser are built and access is approved.
+    ROVER_CRAWL_ENABLED: optionalString,
 
     // Email (optional — sends are skipped with a warning when absent).
     RESEND_API_KEY: optionalString,

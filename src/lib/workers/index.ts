@@ -2,6 +2,7 @@ import type { Worker } from 'bullmq';
 import { createSubmissionVlmWorker } from './submission-vlm.worker';
 import { createPhotoPostprocessWorker } from './photo-postprocess.worker';
 import { createSpecFetchWorker } from './spec-fetch.worker';
+import { createRoverCrawlWorker } from './rover-crawl.worker';
 
 let workers: Worker[] = [];
 
@@ -12,6 +13,8 @@ export function startWorkers(): Worker[] {
     createSubmissionVlmWorker(),
     createPhotoPostprocessWorker(),
     createSpecFetchWorker(),
+    // Gated behind ROVER_CRAWL_ENABLED in its job core — listens but no-ops until enabled.
+    createRoverCrawlWorker(),
   ];
 
   console.log(`[workers] Started ${workers.length} workers`);

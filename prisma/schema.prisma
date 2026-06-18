@@ -30,6 +30,15 @@ enum SpecFetchProvider {
   QWEN
   CLAUDE
   ADMIN
+  // ROVER = a figure parsed deterministically from a federal RVSA approval
+  // consumer report (no LLM transcribed the number) → auto-corroborated.
+  ROVER
+}
+
+/** Which ROVER per-VTA document a RoverDocument archive row holds. */
+enum RoverDocType {
+  RVD
+  APPROVAL_NOTICE
 }
 
 enum VehicleBodyType {
@@ -1186,6 +1195,11 @@ model VehicleSpecCandidate {
   provider      SpecFetchProvider
   providerModel String?
   promptVersion String?
+  // ROVER provenance — the federal RVSA approval this candidate was parsed from.
+  // Null for the LLM/admin paths. sourceVtaNumber is the dedupe key for the
+  // incremental crawl (a re-run upserts the same VTA, never duplicates it).
+  sourceVtaNumber String?
+  sourceReportUrl String?
   // Verbatim provider output (store raw, derive later), JSON. Null on a failed fetch.
   rawResponse   Json?
   fetchError    String?
@@ -1221,6 +1235,7 @@ model VehicleSpecCandidate {
   @@index([resultingVariantId])
   @@index([makeName, modelName])
   @@index([createdById])
+  @@index([sourceVtaNumber])
 }
 
 /**
@@ -1252,4 +1267,49 @@ model VehicleSpecCandidateField {
 
   @@unique([candidateId, field])
   @@index([candidateId])
+}
+
+/**
+ * ROVER source-of-truth archive. One row per parsed per-VTA document (RVD or
+ * Approval Notice). Stores the FULL extracted text + full structured parse — not
+ * just the fields the calculator uses — so the data is re-mineable for future
+ * TravellingBuddy projects (the "store raw, derive later" decision in
+ * VEHICLE_DATA_FETCH.md). `VehicleVariant` stays a curated projection of this.
+ *
+ * Idempotent + versioned by `contentHash`: re-importing identical content is a
+ * no-op; an amended approval (different hash) is a NEW row, so history is kept and
+ * versions for one VTA are distinguishable.
+ */
+model RoverDocument {
+  id          String       @id @default(cuid())
+  vtaNumber   String
+  docType     RoverDocType
+  // sha256 of the raw extracted text — identity + change-detection key.
+  contentHash String
+
+  fileName    String?
+  make        String?
+  model       String?
+  // Broad category from the RVD ("N - Goods Vehicles"); fine category from the
+  // Approval Notice ("NA - Light Goods Vehicle").
+  categoryBroad String?
+  categoryFine  String?
+  // Dates as ISO strings (yyyy-mm-dd). generatedDate = RVD download date; the
+  // approval/variation/expiry come from the Approval Notice.
+  generatedDate      String?
+  validFrom          String?
+  variationValidFrom String?
+  expiresOn          String?
+
+  // Verbatim extracted text + the full structured parse (RvdDocument / ApprovalNotice).
+  rawText      String
+  parsed       Json
+  variantCount Int    @default(0)
+
+  importedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([vtaNumber, docType, contentHash])
+  @@index([vtaNumber])
+  @@index([docType])
 }
