@@ -1,5 +1,30 @@
 # Vehicle Data-Fetch — pipeline status + TODO
 
+> ## ▶ NEXT SESSION — START HERE (resume point, 2026-06-18)
+>
+> **Branch:** `feature/vehicle-data-fetch` (all work pushed; not merged/deployed). The
+> mock-proven pipeline + verdict-honesty are built and the health gate is green (476 tests).
+> Phases 1–7 done — see "What's built" below. **Three design sections were then added with
+> Tim** (multi-tier verification, GVM-upgrade model, regulation registry + disclaimer, and the
+> ROVER acquisition + currency plan) — read those before building.
+>
+> **Immediate task: the ROVER pilot** (see "Vehicle catalogue acquisition" §1 below).
+> Decisions taken: build it **in this repo as a BullMQ repeatable job** (not a separate
+> service); the worker can run **standalone on Tim's beast** (recommended — has compute + the
+> local Qwen) or in-process on the VPS — deployment flag (`WORKERS_DISABLED`), not a rewrite.
+> **Parser-first:** prove "consumer-report PDF → structured fields" against a **real saved
+> sample** before any live crawl. Build only / no real data until Tim approves.
+>
+> **Blocked on Tim:** (1) provide **one real ROVER consumer-report PDF** (a 2021+ vehicle —
+> Ranger/LC300 VTA) for the parser; (2) confirm beast vs VPS; (3) confirm gate level
+> (auto-promote-with-audit vs batch-approve — working default = auto-promote-with-audit for
+> the structured ROVER parse only).
+>
+> **Can build now without the sample:** the `RoverVerifier` ingestion module behind the
+> interface, a `ROVER` provider value, candidate-creation wiring (structured-parse →
+> auto-corroborated), the repeatable-job skeleton — all gated off, plumbing-tested vs a
+> synthetic fixture. Slot the real parser in when the sample lands.
+
 AI/admin-assisted vehicle-spec ingestion. Built overnight on `feature/vehicle-data-fetch`
 (design: auto-memory `vehicle-data-fetch-design.md`; plan: repo-root `OVERNIGHT_HANDOVER.md`).
 
