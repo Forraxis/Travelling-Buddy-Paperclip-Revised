@@ -1,34 +1,27 @@
 # Vehicle Data-Fetch — pipeline status + TODO
 
-> ## ▶ NEXT SESSION — START HERE (resume point, 2026-06-18)
+> ## ▶ NEXT SESSION — START HERE (resume point, 2026-06-18, commit `8d6b0e2`)
 >
-> **Branch:** `feature/vehicle-data-fetch` (all work pushed; not merged/deployed). The
-> mock-proven pipeline + verdict-honesty are built and the health gate is green (**488 tests**).
-> Phases 1–7 done — see "What's built" below. Three design sections were added with Tim
-> (multi-tier verification, GVM-upgrade model, regulation registry + disclaimer, ROVER
-> acquisition + currency).
+> **Branch:** `feature/vehicle-data-fetch` (all pushed; not merged/deployed). Health gate green:
+> type-check clean · **500 tests** · lint/prettier clean.
 >
-> **ROVER pilot — scaffolding now BUILT (gated off, synthetic-proven).** Tim chose "build the
-> gated scaffolding while sourcing a real PDF". Shipped this session (see "ROVER scaffolding"
-> below): `ROVER` Prisma enum value + VTA-provenance columns on `VehicleSpecCandidate`; the
-> `src/lib/spec-fetch/rover/` module (`RoverReportParser` interface, `SyntheticRoverParser`,
-> `PdfRoverParser` **stub**, label→field map, `RoverVerifier` → auto-corroborated draft,
-> synthetic fixture); `createRoverCandidate` (provider=ROVER, structured-parse →
-> auto-corroborated, idempotent dedupe by VTA); the `roverCrawlQueue` + `rover-crawl.worker`
-> repeatable-job skeleton gated behind `ROVER_CRAWL_ENABLED`. **Proven end-to-end against the
-> real dev DB** (candidate created, all 6 critical fields auto-corroborated, the promotion gate
-> clears with NO override, re-run is idempotent) and in 12 unit tests.
+> **The ROVER pilot is now BUILT + PROVEN with real documents.** The `PdfRoverParser` stub is gone
+> — real pure-Node parsers (`unpdf`) for the **Road Vehicle Descriptor (RVD)** and **Approval
+> Notice** are built and pinned to a real 11-file corpus in `docs/RVD/`. A `RoverDocument` archive
+> table + per-variant ingest produced **11 archive rows + 67 PENDING per-variant ROVER candidates**
+> in the dev DB (auto-corroborated criticals clear the gate with no override; idempotent). The
+> **entire ROVER portal crawl is reverse-engineered and proven end-to-end from this machine** (no
+> auth — session + CSRF; grid `entity-grid-data.json`; VTADetails embeds every PDF inline as
+> base64). See the "Document-boundary findings + resolved scope" section below for the 9 decisions
+> and the full crawl mechanism.
 >
-> **The one remaining blocker is the real parser** — `PdfRoverParser` throws by design until a
-> **real 2021+ consumer-report PDF** lands in `fixtures/rover/` (Ranger/LC300 VTA). Drop one in,
-> implement the deterministic table parse against its actual layout, and swap it for
-> `SyntheticRoverParser` in the worker's default deps — callers don't change.
+> **NEXT: a large overnight build — read `ROVER_OVERNIGHT_BUILD.md` (repo root) and execute it.**
+> That doc is the self-contained handover + phased plan (app ingest endpoint → promotion path →
+> amendment change-detection → retire synthetic scaffolding → n8n workflow JSON → docs), with
+> acceptance criteria and **guardrails** (no live ROVER crawl, no auto-promote, no AI gap-fill, no
+> caravans). Everything is autonomously buildable + testable against the local corpus + dev DB.
 >
-> **Still pending Tim:** (1) the real PDF sample (above); (2) beast vs VPS for the worker
-> (`WORKERS_DISABLED` flag, not a rewrite); (3) gate level (working default = auto-promote-
-> with-audit for the structured ROVER parse — the skeleton currently lands every candidate as
-> PENDING regardless; wire auto-promote on top once confirmed); (4) the live directory crawler
-> + cross-run high-water-mark persistence (AdminConfig) — both stubbed/TODO in the worker.
+> **Caravans = PARKED** (decision 9): ROVER carries no usable caravan spec data — do not build them.
 
 AI/admin-assisted vehicle-spec ingestion. Built overnight on `feature/vehicle-data-fetch`
 (design: auto-memory `vehicle-data-fetch-design.md`; plan: repo-root `OVERNIGHT_HANDOVER.md`).
@@ -452,6 +445,17 @@ settled the open scope questions. Pure-Node extraction (`unpdf`) works cleanly o
      new `pdfR2Key` on `RoverDocument`) → `ingestRvd` → return counts + gate status.
    - *n8n side (built on the n8n server; app ships a written spec):* directory crawl (filter
      category, incremental high-water mark) → download → R2 upload → webhook → crawl-health alert.
+9. **Caravans = PARKED (2026-06-18, Tim).** Empirically, **ROVER is a *vehicle* data source, not a
+   caravan one.** Three real factory caravans were checked — Condor Caravans (VTA-060043), Sunland
+   (VTA-060053), On the Move Caravans Traxx (VTA-060092), all category **TB** — and each has **only
+   an Approval Notice, NO RVD.** The caravan Approval Notice carries **zero spec data**: make +
+   category + variant *marketing names* (e.g. "Blue Heeler Pup", "21FT Bluewave") + holder + dates +
+   ADR refs, but **no Tare / ATM / GTM / tow-ball, no dimensions, and no axle/drawbar geometry**. So
+   caravan specs come from **manufacturer spec sheets/brochures + compliance plate + community (P3
+   moat) + the existing catalogue — NOT ROVER**; the axle/drawbar geometry (the CoG differentiator)
+   isn't published anywhere → measure/plate/derive (the pending caravan axle-split, Rule 11). The
+   caravan Approval Notice also uses an **older format** (`{Make} TB Variants: …`) that the current
+   parser doesn't handle. **No caravan ingestion is built or planned; parked.**
 
 ## Resulting build order (supersedes the simpler §3 pilot framing)
 
