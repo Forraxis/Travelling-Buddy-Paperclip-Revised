@@ -1,4 +1,10 @@
 /**
+ * @deprecated Superseded by the real RVD pipeline + n8n ingest path
+ *   (`rvd-parser.ts` / `variant-fields.ts` / `ingest-rvd.ts` → `POST /api/rover/ingest`).
+ *   Retained for reference only — no longer registered or run. NOTE: the
+ *   `draftGateableFields` export is still imported by `rover-variant-fields.test.ts`;
+ *   keep it until that test is migrated. See ROVER_OVERNIGHT_BUILD.md Phase 4.
+ *
  * RoverVerifier — the ingestion module behind the parser interface.
  *
  * Parses a consumer report (via whichever `RoverReportParser` it's given) and

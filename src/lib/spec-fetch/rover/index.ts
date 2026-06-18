@@ -37,3 +37,15 @@ export {
   type ArchiveResult,
 } from './archive';
 export { ingestRvd, type IngestRvdResult } from './ingest-rvd';
+export {
+  extractRoverDocuments,
+  classifyRoverDoc,
+  type RoverInlineDocument,
+  type RoverDocType,
+} from './extract-detail';
+export {
+  diffRvdFigures,
+  type RvdFigureDiff,
+  type RvdFigureChange,
+  type RvdFigureChangeStatus,
+} from './amendment';

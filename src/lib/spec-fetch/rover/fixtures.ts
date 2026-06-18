@@ -1,4 +1,8 @@
 /**
+ * @deprecated Superseded by the real RVD corpus in `docs/RVD/` + the real pipeline.
+ *   Retained for reference only — no longer registered or run. See
+ *   ROVER_OVERNIGHT_BUILD.md Phase 4.
+ *
  * SYNTHETIC ROVER fixture — NOT REAL DATA.
  *
  * These rows are an invented stand-in for a consumer report's table, shaped to

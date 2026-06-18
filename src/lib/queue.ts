@@ -36,9 +36,10 @@ export const photoPostprocessQueue = new Queue('photo-postprocess', {
 // does not use this queue).
 export const specFetchQueue = new Queue('spec-fetch', { connection });
 // ROVER catalogue crawl (incremental import of RVSA approval consumer reports).
-// A repeatable (cron) job whose worker is gated behind ROVER_CRAWL_ENABLED — it
-// can never crawl or persist until explicitly enabled (and the real crawler/parser
-// are slotted in). Scaffold + synthetic-proven only.
+// @deprecated Superseded by n8n + POST /api/rover/ingest (VEHICLE_DATA_FETCH.md
+// decision 8). Its worker is no longer registered; this queue is retained for
+// reference only (a later cleanup removes it). Kept in `queues` so any stray
+// enqueue still has a drain target, but nothing enqueues to it.
 export const roverCrawlQueue = new Queue('rover-crawl', { connection });
 
 export const queues = [

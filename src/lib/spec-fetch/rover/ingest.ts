@@ -1,4 +1,10 @@
 /**
+ * @deprecated Superseded by `ingest-rvd.ts` (`ingestRvd`), which creates ONE
+ *   candidate per (VTA, variant) from a real RVD and dedupes by VTA+variant — this
+ *   single-variant, dedupe-by-VTA-alone `createRoverCandidate` is the old shape.
+ *   Retained for reference only — no longer registered or run. See
+ *   ROVER_OVERNIGHT_BUILD.md Phase 4.
+ *
  * Persist a ROVER candidate draft → a VehicleSpecCandidate (provider = ROVER).
  *
  * The candidate-creation wiring for the structured-parse path. Two things make it

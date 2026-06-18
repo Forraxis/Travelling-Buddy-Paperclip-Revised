@@ -1,4 +1,9 @@
 /**
+ * @deprecated Superseded by the real RVD pipeline + n8n ingest path
+ *   (`rvd-parser.ts` / `ingest-rvd.ts` → `POST /api/rover/ingest`). This synthetic
+ *   scaffolding is retained for reference only — it is no longer registered or run.
+ *   A later focused cleanup removes it. See ROVER_OVERNIGHT_BUILD.md Phase 4.
+ *
  * ROVER report parsers, behind the `RoverReportParser` interface.
  *
  *  - `SyntheticRoverParser` — consumes pre-extracted label/value rows. Drives the

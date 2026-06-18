@@ -1,4 +1,8 @@
 /**
+ * @deprecated The real pipeline maps figures structurally in `variant-fields.ts`
+ *   (RvdVariant → candidate field), not by row label. Retained for reference only —
+ *   no longer registered or run. See ROVER_OVERNIGHT_BUILD.md Phase 4.
+ *
  * Map a ROVER consumer-report row label → a canonical VehicleSpecFieldKey.
  *
  * This is the single piece most likely to change once a real consumer-report

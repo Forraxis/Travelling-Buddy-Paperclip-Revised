@@ -62,12 +62,23 @@ async function main() {
     // Archive older versions for history (candidates come from latest only).
     for (const o of older) await storeRvdDocument(o.doc, o.file);
 
+    // Archive older versions FIRST so amendment detection in ingestRvd can find
+    // the prior version when it ingests the latest.
     const notice = notices.get(vta) ?? null;
     const res = await ingestRvd(latest.doc, notice, { rvd: latest.file });
     totalVariants += res.variantsCreated + res.variantsRefreshed;
+    const amend = res.amendment
+      ? `  [${res.amendment.status}${
+          res.amendment.changes.length
+            ? `: ${res.amendment.changes
+                .map((c) => `${c.variant}.${c.field} ${c.from}→${c.to}`)
+                .join(', ')}`
+            : ''
+        }]`
+      : '';
     console.log(
       `${vta}  ${latest.doc.make}/${latest.doc.model}  [${notice?.categoryFine ?? latest.doc.categoryBroad ?? '—'}]  ` +
-        `→ ${res.variantsCreated} new / ${res.variantsRefreshed} refreshed  (${older.length} older version(s) archived)`,
+        `→ ${res.variantsCreated} new / ${res.variantsRefreshed} refreshed  (${older.length} older version(s) archived)${amend}`,
     );
   }
 

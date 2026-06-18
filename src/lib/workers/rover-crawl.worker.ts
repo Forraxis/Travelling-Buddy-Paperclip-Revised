@@ -1,4 +1,10 @@
 /**
+ * @deprecated Superseded by n8n + the app ingest endpoint (VEHICLE_DATA_FETCH.md
+ *   decision 8). This worker is NO LONGER REGISTERED (see `workers/index.ts`); n8n
+ *   owns acquisition and POSTs to `POST /api/rover/ingest`. Retained for reference
+ *   only — a later focused cleanup removes it + `roverCrawlQueue`. See
+ *   ROVER_OVERNIGHT_BUILD.md Phase 4.
+ *
  * Repeatable ROVER catalogue-crawl worker — the incremental import skeleton.
  *
  * ⚠️ SAFETY GATE: gated behind ROVER_CRAWL_ENABLED === 'true'. With the flag unset

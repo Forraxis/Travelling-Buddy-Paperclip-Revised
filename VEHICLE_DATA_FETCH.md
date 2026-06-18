@@ -1,25 +1,29 @@
 # Vehicle Data-Fetch — pipeline status + TODO
 
-> ## ▶ NEXT SESSION — START HERE (resume point, 2026-06-18, commit `8d6b0e2`)
+> ## ▶ NEXT SESSION — START HERE (resume point, 2026-06-18, overnight build complete)
 >
-> **Branch:** `feature/vehicle-data-fetch` (all pushed; not merged/deployed). Health gate green:
-> type-check clean · **500 tests** · lint/prettier clean.
+> **Branch:** `feature/vehicle-data-fetch` (committed locally; **not pushed/merged** — left for
+> Tim's review). Health gate green: type-check clean · **518 tests** · lint/prettier clean.
 >
-> **The ROVER pilot is now BUILT + PROVEN with real documents.** The `PdfRoverParser` stub is gone
-> — real pure-Node parsers (`unpdf`) for the **Road Vehicle Descriptor (RVD)** and **Approval
-> Notice** are built and pinned to a real 11-file corpus in `docs/RVD/`. A `RoverDocument` archive
-> table + per-variant ingest produced **11 archive rows + 67 PENDING per-variant ROVER candidates**
-> in the dev DB (auto-corroborated criticals clear the gate with no override; idempotent). The
-> **entire ROVER portal crawl is reverse-engineered and proven end-to-end from this machine** (no
-> auth — session + CSRF; grid `entity-grid-data.json`; VTADetails embeds every PDF inline as
-> base64). See the "Document-boundary findings + resolved scope" section below for the 9 decisions
-> and the full crawl mechanism.
+> **The ROVER overnight build (`ROVER_OVERNIGHT_BUILD.md`) is DONE — all 6 phases.** On top of the
+> already-proven RVD/Approval-Notice parsers + archive + per-variant candidates, this session added:
+> 1. **App ingest endpoint** `POST /api/rover/ingest` (bearer-gated by `ROVER_INGEST_TOKEN`, **404
+>    when unset**) + `extractRoverDocuments(html)` to pull the inline base64 PDFs out of a VTADetails
+>    page — the n8n target.
+> 2. **Promotion path** — shared `promoteSpecCandidate()` (`spec-fetch/promote-candidate.ts`), the
+>    admin action delegates to it, idempotent re-promote; proven on the dev DB by
+>    `src/jobs/rover-promote-local.ts`.
+> 3. **Figure-level amendment detection** (`rover/amendment.ts` → wired into `ingestRvd`): an admin
+>    re-issue with no figure movement archives for history but doesn't churn candidates; a real
+>    figure change refreshes them + returns the diff. Pinned to the Patrol/Navara/RAM corpus pairs.
+> 4. **Retired the synthetic crawl scaffolding** (unregistered worker + `@deprecated` headers — not
+>    deleted).
+> 5. **n8n workflow authored** (`ops/n8n/rover-crawl.json` + `README.md`) — not executed.
 >
-> **NEXT: a large overnight build — read `ROVER_OVERNIGHT_BUILD.md` (repo root) and execute it.**
-> That doc is the self-contained handover + phased plan (app ingest endpoint → promotion path →
-> amendment change-detection → retire synthetic scaffolding → n8n workflow JSON → docs), with
-> acceptance criteria and **guardrails** (no live ROVER crawl, no auto-promote, no AI gap-fill, no
-> caravans). Everything is autonomously buildable + testable against the local corpus + dev DB.
+> **Still open (next):** grounded-Claude gap-fill for GCM/axle (gated, Rule 11); VTA↔model-year
+> mapping; the public confirmed-spec vehicle page + SEO; **building + running** the n8n crawl on the
+> n8n server (set `ROVER_INGEST_TOKEN` on both sides + the captured `base64SecureConfiguration`);
+> and a later focused **delete** of the deprecated synthetic files.
 >
 > **Caravans = PARKED** (decision 9): ROVER carries no usable caravan spec data — do not build them.
 
@@ -518,16 +522,29 @@ This is exactly the n8n workflow: prime session → token → grid POST (sorted 
 per-new-approval GET VTADetails → **regex+decode the inline base64 PDFs** → (optionally R2 for
 archival) → webhook to the app. The fetch needs no R2; R2 becomes archival-only.
 
-### Still open after step 3 (next-session candidates)
-- **App ingest endpoint for n8n** (decision 8) — authenticated `POST` → R2 fetch → parse →
-  archive (add `pdfR2Key`) → ingest. **Retire** the BullMQ crawl skeleton + synthetic scaffolding.
-- **n8n workflow** (built on the n8n server) — crawl + download + R2 + webhook + crawl-health; app
-  ships the spec.
+### Built in the overnight session (2026-06-18) — was "still open after step 3"
+- ✅ **App ingest endpoint for n8n** (decision 8) — `POST /api/rover/ingest`, bearer-gated by
+  `ROVER_INGEST_TOKEN` (404 when unset). Takes `{ detailHtml }`, `extractRoverDocuments` pulls the
+  inline base64 PDFs, parses + archives + `ingestRvd`. (R2 binary storage / `pdfR2Key` is still TODO
+  — the fetch needs no R2 because the PDFs are inline; R2 stays archival-only.) The BullMQ crawl
+  skeleton + synthetic scaffolding are **retired** (unregistered + `@deprecated`).
+- ✅ **n8n workflow** authored — `ops/n8n/rover-crawl.json` + `README.md` (crawl + VTADetails +
+  webhook + crawl-health). **Authored, not executed** — build/run it on the n8n server.
+- ✅ **Promotion** path — shared `promoteSpecCandidate()` (`spec-fetch/promote-candidate.ts`),
+  candidate (VTA+variant) → CATALOGUE `VehicleVariant`, idempotent re-promote; gate enforced
+  (decision 5 gate level still Tim's call — ingest stays PENDING, promotion is explicit).
+- ✅ **Figure-level change detection** on amendments (decision 3) — `rover/amendment.ts`
+  (`diffRvdFigures`) wired into `ingestRvd`: NO_FIGURE_CHANGE archives without churning candidates,
+  FIGURE_CHANGED refreshes + returns the diff. Pinned to the Patrol/Navara/RAM corpus pairs.
+
+### Still open (next-session candidates)
 - **VTA↔model-year** mapping (candidates currently use the approval window as the year, not the
   true MY).
-- **Promotion** path: candidate (VTA+variant) → CATALOGUE `VehicleVariant` (gate level decision 5).
-- **Figure-level change detection** on amendments (decision 3) — archive keeps versions by hash;
-  the "did a *figure* change → re-review" diff isn't wired yet.
+- **Raw PDF → R2** archival (`pdfR2Key` on `RoverDocument`) — optional; the archive holds the
+  extracted text today.
+- **Grounded-Claude gap-fill** for GCM/axle → gated, confidence-rated warnings (Rule 11).
+- **Public confirmed-spec vehicle page + SEO** (decision 6) — not started.
+- A later focused **delete** of the deprecated synthetic files (once the endpoint is live).
 
 # Vehicle catalogue acquisition — initial list + staying current
 

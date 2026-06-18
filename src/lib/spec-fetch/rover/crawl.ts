@@ -1,4 +1,9 @@
 /**
+ * @deprecated Superseded by n8n, which owns ROVER acquisition (crawl + download)
+ *   and POSTs VTADetails HTML to `POST /api/rover/ingest` (VEHICLE_DATA_FETCH.md
+ *   decision 8). Retained for reference only — no longer registered or run. See
+ *   ROVER_OVERNIGHT_BUILD.md Phase 4.
+ *
  * ROVER directory crawler — behind an interface so the gated repeatable job can be
  * proven against a synthetic source with no live scraping.
  *

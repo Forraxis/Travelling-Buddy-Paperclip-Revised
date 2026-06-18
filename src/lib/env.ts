@@ -65,6 +65,10 @@ const envSchema = z
     // repeatable crawl no-ops (no fetch, no parse, no DB write). Only set 'true'
     // once the real directory crawler + PDF parser are built and access is approved.
     ROVER_CRAWL_ENABLED: optionalString,
+    // Bearer token for the ROVER ingest webhook (POST /api/rover/ingest), which
+    // n8n calls with the VTADetails HTML. Unset (default) = the endpoint returns
+    // 404 and stays invisible; only set it to bring the ingest path online.
+    ROVER_INGEST_TOKEN: optionalString,
 
     // Email (optional — sends are skipped with a warning when absent).
     RESEND_API_KEY: optionalString,

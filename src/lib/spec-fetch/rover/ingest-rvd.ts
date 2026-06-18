@@ -16,6 +16,7 @@ import type { RvdDocument } from './rvd-parser';
 import type { ApprovalNotice } from './approval-notice-parser';
 import { roverVariantFields } from './variant-fields';
 import { storeApprovalNotice, storeRvdDocument } from './archive';
+import { diffRvdFigures, type RvdFigureDiff } from './amendment';
 
 export interface IngestRvdResult {
   vtaNumber: string;
@@ -24,6 +25,15 @@ export interface IngestRvdResult {
   variantsCreated: number;
   variantsRefreshed: number;
   candidateIds: string[];
+  /**
+   * Amendment classification vs the previously-archived RVD for this VTA:
+   *  - null         → no prior version (first import) or a byte-identical re-import.
+   *  - NO_FIGURE_CHANGE → admin re-issue: the new version was archived for history,
+   *    but candidates were NOT churned (figures we catalogue are unchanged).
+   *  - FIGURE_CHANGED   → a mapped figure moved: candidates were refreshed and
+   *    `amendment.changes` lists what moved (surface for re-review).
+   */
+  amendment: RvdFigureDiff | null;
 }
 
 function yearOf(iso: string | null | undefined): number | null {
@@ -40,10 +50,44 @@ export async function ingestRvd(
   if (!rvd.vtaNumber) throw new Error('RVD has no VTA number — cannot ingest.');
   const vtaNumber = rvd.vtaNumber;
 
+  // Figure-level amendment detection: find the latest PRIOR archived RVD version
+  // for this VTA (a different content hash) and diff the mapped figures. Done
+  // BEFORE archiving so the lookup can't return the version we're about to write.
+  const priorVersion = await prisma.roverDocument.findFirst({
+    where: {
+      vtaNumber,
+      docType: 'RVD',
+      NOT: { contentHash: rvd.contentHash },
+    },
+    orderBy: [{ generatedDate: 'desc' }, { importedAt: 'desc' }],
+    select: { parsed: true },
+  });
+  const amendment: RvdFigureDiff | null = priorVersion
+    ? diffRvdFigures(priorVersion.parsed as unknown as RvdDocument, rvd)
+    : null;
+
+  // Always archive the new version (idempotent / versioned by hash) — even an
+  // admin re-issue is retained for history.
   const archivedRvd = await storeRvdDocument(rvd, fileNames?.rvd);
   const archivedNotice = notice
     ? await storeApprovalNotice(notice, fileNames?.notice)
     : null;
+
+  // Admin re-issue with no figure movement: archive only, don't churn candidates
+  // or flag for re-review (decision 3). A byte-identical re-import (amendment ===
+  // null because the hash matched) still falls through to the idempotent
+  // refresh-in-place below, which is a no-op in practice.
+  if (amendment && amendment.status === 'NO_FIGURE_CHANGE') {
+    return {
+      vtaNumber,
+      archivedRvdId: archivedRvd.id,
+      archivedNoticeId: archivedNotice?.id ?? null,
+      variantsCreated: 0,
+      variantsRefreshed: 0,
+      candidateIds: [],
+      amendment,
+    };
+  }
 
   // Year window: prefer the Approval Notice's approval/expiry (authoritative), else
   // fall back to the RVD generation year. (Approval window ≈ availability, not strictly
@@ -128,5 +172,6 @@ export async function ingestRvd(
     variantsCreated,
     variantsRefreshed,
     candidateIds,
+    amendment,
   };
 }

@@ -7,6 +7,44 @@
 
 ---
 
+> ## ✅ OVERNIGHT BUILD COMPLETE (2026-06-18) — all 6 phases shipped
+>
+> Built on `feature/vehicle-data-fetch`. Health gate green: type-check clean · **518 tests** ·
+> lint + prettier clean.
+>
+> - **Phase 1 — ingest endpoint.** `rover/extract-detail.ts` (`extractRoverDocuments` — regex the
+>   inline base64 PDFs out of VTADetails HTML, dedupe desktop+mobile, classify, decode) +
+>   `POST /api/rover/ingest` (bearer-gated: **404 when `ROVER_INGEST_TOKEN` unset**, 401 on
+>   mismatch; multi-RVD → archive older, ingest latest). Env var added to `env.ts` + `.env.example`.
+>   Tests: `rover-extract-detail.test.ts`, `route.test.ts` (DB mocked).
+> - **Phase 2 — promotion.** Extracted the shared `promoteSpecCandidate()` core to
+>   `spec-fetch/promote-candidate.ts` (gate + transaction + ModerationAction + AuditLog),
+>   **idempotent re-promote** (refreshes the same variant via `resultingVariantId`). The admin
+>   action now delegates to it. Runner `src/jobs/rover-promote-local.ts` **proved end-to-end on the
+>   dev DB** (TRAKKA TORINO LWB → CATALOGUE, re-promote = same id, no duplicate). Tests:
+>   `promote-candidate.test.ts` (gate block never opens a transaction).
+> - **Phase 3 — amendment detection.** `rover/amendment.ts` (`diffRvdFigures` — compare mapped
+>   figures by variant name; a pure re-label = NO_FIGURE_CHANGE). Wired into `ingestRvd` (loads the
+>   latest prior archived version; NO_FIGURE_CHANGE → archive only, no candidate churn;
+>   FIGURE_CHANGED → refresh + return the diff). Result surfaced in the endpoint response. Tests vs
+>   the real corpus pairs: **Patrol 044896 → NO_FIGURE_CHANGE, Navara 047155 → NO_FIGURE_CHANGE,
+>   RAM 047365 → FIGURE_CHANGED** (tare→kerb); confirmed on the dev DB too.
+> - **Phase 4 — retire synthetic scaffolding.** `createRoverCrawlWorker` **unregistered** from
+>   `workers/index.ts`; `@deprecated` headers on `parser/verifier/fixtures/crawl/field-map/ingest.ts`,
+>   `rover-crawl.worker.ts`, and `roverCrawlQueue`. Not deleted; `verifier.ts` keeps
+>   `draftGateableFields` (still used by `rover-variant-fields.test.ts`).
+> - **Phase 5 — n8n workflow (authored, not run).** `ops/n8n/rover-crawl.json` (10 nodes: schedule →
+>   prime session → token → grid POST → filter → VTADetails → POST ingest → high-water + crawl-health)
+>   + `ops/n8n/README.md` (setup, the captured `base64SecureConfiguration`, the session/CSRF dance,
+>   weekly cadence, guardrails).
+> - **Phase 6 — docs** (this banner + the VEHICLE_DATA_FETCH.md resume block).
+>
+> **Not pushed/merged — left for Tim to review.** Still open (deliberately, per guardrails):
+> Claude/AI gap-fill for GCM/axle (gated, Rule 11), VTA↔model-year mapping, the public confirmed-spec
+> vehicle page + SEO, and actually *running* the n8n crawl (build it on the n8n server, set secrets).
+
+---
+
 ## 1. Where we are (commit `8d6b0e2`, branch `feature/vehicle-data-fetch`)
 
 The ROVER **vehicle** ingestion pipeline is built and proven with **real documents**. Health gate:

@@ -22,10 +22,9 @@ import {
   type SpecFetchProviderId,
 } from '@/lib/spec-fetch';
 import {
-  evaluatePromotionGate,
-  type GateableField,
-} from '@/lib/spec-fetch/gating';
-import { buildVariantPatch } from '@/lib/spec-fetch/promotion';
+  promoteSpecCandidate,
+  PromotionGateError,
+} from '@/lib/spec-fetch/promote-candidate';
 
 const BASE_PATH = '/admin/catalogue/vehicles/spec-fetch';
 
@@ -35,19 +34,6 @@ type ActionResult<T = void> =
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-}
-
-/** Short random suffix to keep generated slugs unique without Date/Math in pure code. */
-function slugSuffix(): string {
-  return Math.random().toString(36).slice(2, 6);
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────────────
@@ -224,123 +210,23 @@ export async function promoteCandidate(
   try {
     const candidate = await prisma.vehicleSpecCandidate.findUniqueOrThrow({
       where: { id: candidateId },
-      include: { fields: true },
+      select: { status: true },
     });
     if (candidate.status === 'APPROVED') {
       return { success: false, error: 'Candidate already promoted.' };
     }
 
-    const gateFields: GateableField[] = candidate.fields.map((f) => ({
-      field: f.field,
-      value: f.value,
-      adminValue: f.adminValue,
-      corroborated: f.corroborated,
-    }));
-    const hasOverride = candidate.criticalOverrideById !== null;
-    const gate = evaluatePromotionGate(gateFields, hasOverride);
-    if (!gate.allowed) {
-      return {
-        success: false,
-        error: `Blocked: uncorroborated compliance-critical field(s): ${gate.blockingFields.join(
-          ', ',
-        )}. Corroborate them or record an override.`,
-      };
-    }
-
-    const { patch } = buildVariantPatch(gateFields);
-
-    const variant = await prisma.$transaction(async (tx) => {
-      // Resolve / create make.
-      const makeSlug = toSlug(candidate.makeName);
-      const make = await tx.vehicleMake.upsert({
-        where: { slug: makeSlug },
-        update: {},
-        create: { name: candidate.makeName, slug: makeSlug },
-        select: { id: true },
-      });
-
-      // Resolve / create model.
-      const modelSlug = toSlug(candidate.modelName);
-      const model = await tx.vehicleModel.upsert({
-        where: { makeId_slug: { makeId: make.id, slug: modelSlug } },
-        update: {},
-        create: {
-          makeId: make.id,
-          name: candidate.modelName,
-          slug: modelSlug,
-          bodyType: candidate.bodyType ?? 'OTHER',
-        },
-        select: { id: true },
-      });
-
-      const variantName =
-        candidate.variantName ?? `${candidate.yearFrom} ${candidate.modelName}`;
-      const variantSlug = toSlug(
-        `${variantName}-${candidate.yearFrom}-${slugSuffix()}`,
-      );
-
-      // Admin-reviewed → promote directly to CATALOGUE (same end-state as the
-      // moderation approve path, which flips COMMUNITY→CATALOGUE).
-      const created = await tx.vehicleVariant.create({
-        data: {
-          modelId: model.id,
-          status: 'CATALOGUE',
-          yearFrom: candidate.yearFrom,
-          yearTo: candidate.yearTo ?? candidate.yearFrom,
-          isCurrentProduction: false,
-          name: variantName,
-          slug: variantSlug,
-          market: candidate.market,
-          ...patch,
-        },
-        select: { id: true },
-      });
-
-      await tx.vehicleSpecCandidate.update({
-        where: { id: candidateId },
-        data: {
-          status: 'APPROVED',
-          resultingVariantId: created.id,
-          decidedById: user.id,
-          decidedAt: new Date(),
-        },
-      });
-
-      await tx.moderationAction.create({
-        data: {
-          submissionType: 'vehicle_spec_candidate',
-          submissionId: candidateId,
-          moderatorId: user.id,
-          action: 'APPROVE',
-          notes: hasOverride
-            ? `Promoted with override: ${candidate.criticalOverrideNote ?? ''}`
-            : 'Promoted to CATALOGUE',
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          entityType: 'VehicleSpecCandidate',
-          entityId: candidateId,
-          action: 'UPDATE',
-          changedBy: user.id,
-          changes: toJson({
-            status: { from: candidate.status, to: 'APPROVED' },
-            promotedVariantId: created.id,
-            patch,
-            override: hasOverride,
-          }),
-          reason: 'Spec candidate promoted to CATALOGUE',
-        },
-      });
-
-      return created;
-    });
+    // Shared promotion core (gate + transaction + audit), reused by the ROVER
+    // runner. PromotionGateError carries the human-readable blocking message.
+    const { variantId } = await promoteSpecCandidate(candidateId, user.id);
 
     revalidatePath(BASE_PATH);
     revalidatePath(`${BASE_PATH}/${candidateId}`);
-    return { success: true, data: { variantId: variant.id } };
+    return { success: true, data: { variantId } };
   } catch (e) {
+    if (e instanceof PromotionGateError) {
+      return { success: false, error: e.message };
+    }
     return {
       success: false,
       error: e instanceof Error ? e.message : 'Promotion failed',

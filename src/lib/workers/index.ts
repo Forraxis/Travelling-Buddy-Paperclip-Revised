@@ -2,7 +2,10 @@ import type { Worker } from 'bullmq';
 import { createSubmissionVlmWorker } from './submission-vlm.worker';
 import { createPhotoPostprocessWorker } from './photo-postprocess.worker';
 import { createSpecFetchWorker } from './spec-fetch.worker';
-import { createRoverCrawlWorker } from './rover-crawl.worker';
+// NOTE: the synthetic ROVER crawl worker (createRoverCrawlWorker) is DEPRECATED and
+// intentionally NOT registered. ROVER acquisition now runs in n8n, which POSTs to
+// /api/rover/ingest; the in-app crawl skeleton is superseded (see ROVER_OVERNIGHT_BUILD.md
+// Phase 4 + VEHICLE_DATA_FETCH.md decision 8).
 
 let workers: Worker[] = [];
 
@@ -13,8 +16,6 @@ export function startWorkers(): Worker[] {
     createSubmissionVlmWorker(),
     createPhotoPostprocessWorker(),
     createSpecFetchWorker(),
-    // Gated behind ROVER_CRAWL_ENABLED in its job core — listens but no-ops until enabled.
-    createRoverCrawlWorker(),
   ];
 
   console.log(`[workers] Started ${workers.length} workers`);
