@@ -105,6 +105,13 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         approvalId: row.approvalId,
         vtaNumber: row.vtaNumber,
+        // n8n blocks $env in Code nodes, so the app supplies the config it reads from
+        // its own process.env — this keeps the n8n workflow secret-free.
+        appBaseUrl:
+          process.env.APP_BASE_URL ??
+          process.env.NEXT_PUBLIC_SITE_URL ??
+          'https://tbr.dev.ragebots.me',
+        ingestToken: process.env.ROVER_INGEST_TOKEN,
       }),
     });
     if (!res.ok) {
