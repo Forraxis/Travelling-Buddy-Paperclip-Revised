@@ -41,6 +41,13 @@ enum RoverDocType {
   APPROVAL_NOTICE
 }
 
+/** Skeleton expansion state in RoverApprovalIndex. */
+enum RoverIndexExpandState {
+  UNFETCHED // names only (from the grid) — no spec data yet
+  EXPANDED  // RVD detail fetched → variants created
+  SKIPPED   // intentionally not expanded
+}
+
 /** Where an accepted per-field spec value came from (VariantSpecProvenance). */
 enum SpecProvenanceSource {
   ROVER     // structured federal approval doc — authoritative for the fields it carries
@@ -1366,4 +1373,32 @@ model RoverDocument {
   @@unique([vtaNumber, docType, contentHash])
   @@index([vtaNumber])
   @@index([docType])
+}
+
+// ROVER skeleton index — the enumerable "names" layer of catalogue population
+// (VEHICLE_DATA_HUB.md §6.5, Layer 0). One row per VTA from the grid crawl: make /
+// model / category, browsable immediately. "Expand" (the RVD detail fetch) turns an
+// UNFETCHED skeleton into real VehicleVariants. Cheap to populate (grid only, no PDF).
+model RoverApprovalIndex {
+  id               String                @id @default(cuid())
+  vtaNumber        String                @unique
+  // The rvr_approvalid GUID — the key for the VTADetails fetch that expands this.
+  approvalId       String
+  make             String?
+  model            String?
+  // ADR category CODE as the grid states it (MA, NB1, NC, …).
+  category         String?
+  // Grid rvr_publishedlastupdatedate.
+  lastUpdated      DateTime?
+  expandState      RoverIndexExpandState  @default(UNFETCHED)
+  // Set once expanded → the resulting catalogue model.
+  resultingModelId String?
+  // Flattened grid attributes — kept raw for later mining (raw-archive-now).
+  raw              Json?
+  firstSeenAt      DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([make])
+  @@index([category])
+  @@index([expandState])
 }

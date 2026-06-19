@@ -30,6 +30,12 @@ export const adminNavSections: NavSection[] = [
         icon: 'vehicle',
         roles: ['ADMIN'],
       },
+      {
+        label: 'Data Hub',
+        href: '/admin/catalogue/vehicles/data-hub',
+        icon: 'vehicle',
+        roles: ['ADMIN'],
+      },
       { label: 'Caravans', href: '/admin/catalogue/caravans', icon: 'caravan' },
       {
         label: 'Accessories',

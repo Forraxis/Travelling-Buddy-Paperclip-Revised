@@ -54,6 +54,42 @@ over the same read-model works at **variant grain**, so you jump straight to wha
 (So "incomplete + missing AI" returns the flat list of exactly those variants → click →
 the variant. Browse and search are two lenses on one dataset.)
 
+## 3.5 Two faces of one search (client + admin)
+
+One shared query read-model over `RoverApprovalIndex` (skeletons) + `VehicleVariant`
+(curated) + `VariantSpecProvenance`; **two presentations**.
+
+### Client vehicle picker
+- Browse **make → model → variant** (or a search box). Fast — Prisma `contains`/`startsWith`
+  over the **normalized** fields (Postgres full-text later only if fuzzy matching is needed).
+- **Shows skeletons too** (decided): every 2021+ vehicle is findable from day one. Selecting
+  an `UNFETCHED` skeleton triggers **expand** (the RVD detail fetch) → a brief "loading your
+  vehicle…" → its variants appear.
+- **Expand routes through n8n / the VPN — NEVER the app or any home IP** (see memory
+  `crawl-egress-vpn-only`). Flow: picker marks the skeleton "expand requested" → app calls an
+  n8n webhook with the `approvalId` → n8n (VPN) fetches VTADetails → POSTs `/api/rover/ingest`
+  → variants created → picker shows them. No ROVER egress ever originates from the app.
+- Exposes only **CONFIRMED values + the existing "Est. — confirm your plate" flags** — never
+  raw curation internals (candidate/estimate/source plumbing stays admin-side).
+
+### Admin hub
+- The full coverage matrix + facets (status / missing-AI / source / category / `expandState`),
+  the **"Needs expand"** and **"Needs AI"** queues, and bulk actions (expand N skeletons,
+  AI-fetch across a model, promote). Both variant-grain and skeleton-grain.
+
+### Make/model normalization (decided: base + modifier overlay)
+ROVER's `make`/`model` is applicant free text; second-stage approvals **bake the modifier into
+the make** (`IRONMAN TOYOTA HILUX 8GEN 4WD`, `EXPLORER MD TOYOTA … MOTOR HOME`, `MDT TOYOTA
+HILUX 6X4`). On load/expand we resolve:
+- a **base make + base model** (Toyota / Hilux) → clean grouping + search, and
+- the **modifier** (Ironman GVM upgrade, motorhome build) captured as an **overlay** — reusing
+  the GVM-upgrade / accessory overlay model (`VEHICLE_DATA_FETCH.md` §4), so second-stage
+  approvals become first-class **upgrades**, not duplicate models.
+
+Heuristics handle the common shapes; AI assists the ambiguous ones at curation. Upshot: the
+skeleton data already **contains** the GVM upgrades + camper conversions — normalization just
+surfaces them cleanly (and feeds the upgrade dropdown).
+
 ## 4. The coverage matrix
 
 Two tiers of fields — **collected together in one fetch, gated differently**:
