@@ -50,7 +50,7 @@ export default function LocalSetupsPage() {
                 </p>
                 <p className="text-tb-neutral-500 text-xs">
                   {setup.rigIdentifier} &middot; Last edited{' '}
-                  {new Date(setup.lastEditedAt).toLocaleDateString()}
+                  {new Date(setup.lastEditedAt).toLocaleDateString('en-AU')}
                 </p>
               </div>
               <div className="ml-4 flex items-center gap-2">

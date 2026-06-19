@@ -260,7 +260,7 @@ export function SpecFetchConsole({
                       <StatusBadge status={c.status} />
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      {new Date(c.createdAt).toLocaleDateString()}
+                      {new Date(c.createdAt).toLocaleDateString('en-AU')}
                       {c.createdBy ? ` · ${c.createdBy}` : ''}
                     </td>
                     <td className="px-4 py-3 text-right">
