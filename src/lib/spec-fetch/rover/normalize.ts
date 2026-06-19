@@ -206,6 +206,114 @@ function modelTokens(model: string): string[] {
   return tokenize(model).filter((t) => !NOISE_TOKENS.has(t));
 }
 
+/**
+ * Extra noise tokens that ride along in the model column on SECOND-STAGE /
+ * coachbuilt rows: second-stage manufacture markers ("SSM"), GVM-upgrade markers
+ * ("GVM", "GVM1", "GVM+"), generic up-spec words and body/trim labels. These are
+ * not part of the base model name the hub groups by, so the cleaner drops them.
+ * (`NOISE_TOKENS` already covers drive/body/cab/category noise; this adds the
+ * second-stage-specific tail so "Hilux 8GEN SSM HIGH GVM" → "Hilux".)
+ */
+const MODEL_NOISE_TOKENS = new Set([
+  'ssm',
+  'gvm',
+  'gvm1',
+  'gvm2',
+  'high',
+  'plus',
+  'upgrade',
+  'std',
+  'wide',
+  'narrow',
+  'std1',
+  'std2',
+  'ser',
+  'sr',
+  'nb',
+  'mb',
+  'eng',
+  'superior',
+  'campervan',
+  'camper',
+  'ambulance',
+  'coach',
+  'omnibus',
+  'axle',
+  'axles',
+  'wh',
+  'wheel',
+  'ccab',
+  'low',
+  'mid',
+  'r',
+  'l',
+  'ls',
+  'od',
+]);
+
+/** True for a "platform code" — an alphanumeric token that mixes letters and
+ * digits (AN2, 8GEN, RG1, D23, Y62) or is a short letter+digit-shaped code.
+ * These are useful as a fallback key but are dropped when a real (alphabetic)
+ * model word is present, so "Hilux AN2 SSM 4x4" → "Hilux". */
+function isPlatformCode(token: string): boolean {
+  return /[a-z]/.test(token) && /[0-9]/.test(token);
+}
+
+/** A "real" model word: alphabetic (hyphens allowed for "D-Max"), length ≥ 2
+ * (Hilux, Navara, Patrol, D-Max). */
+function isModelWord(token: string): boolean {
+  return (
+    /^[a-z]+(-[a-z]+)*$/.test(token) && token.replace(/-/g, '').length >= 2
+  );
+}
+
+/**
+ * Clean the applicant `model` free text down to the base model the hub groups by.
+ *
+ * Strips drive/body/cab/category noise (`NOISE_TOKENS`) and second-stage / GVM /
+ * trim noise (`MODEL_NOISE_TOKENS`); also drops "GVM+" / "GVM1" style markers and
+ * the leading second-stage-count digits ("RANGER 3 SSM" → "Ranger"). Casing of the
+ * SURVIVING tokens is preserved from the original string.
+ *
+ * Platform-code policy ("keep platform code if useful"): an alphanumeric platform
+ * code (AN2, 8GEN, RG1) is KEPT only when no real alphabetic model word survives —
+ * so "Hilux AN2 SSM 4x4" → "Hilux" but a bare "RG1" stays "RG1" rather than
+ * collapsing to empty. Returns the original trimmed model if cleaning empties it.
+ */
+export function cleanBaseModel(
+  model: string | null | undefined,
+): string | null {
+  const trimmed = model?.trim();
+  if (!trimmed) return null;
+
+  // Split on whitespace + slashes but KEEP hyphens inside tokens so hyphenated
+  // model names ("D-Max") survive as one word rather than collapsing to "Max".
+  const rawTokens = trimmed.split(/[\s/,()]+/).filter((t) => t.length > 0);
+  const kept: { raw: string; norm: string }[] = [];
+  for (const raw of rawTokens) {
+    // Strip a trailing "+" so "GVM+" classifies as the "gvm" noise token.
+    const norm = raw.toLowerCase().replace(/\+$/, '');
+    if (norm.length < 2) continue; // single chars / stray digits
+    if (NOISE_TOKENS.has(norm)) continue;
+    if (MODEL_NOISE_TOKENS.has(norm)) continue;
+    if (/^\d+$/.test(norm)) continue; // bare counts ("RANGER 3", "2 AXLE")
+    kept.push({ raw, norm });
+  }
+
+  if (kept.length === 0) return trimmed;
+
+  const modelWords = kept.filter((t) => isModelWord(t.norm));
+  // Prefer real model words; only fall back to platform codes when there are none.
+  const chosen =
+    modelWords.length > 0 ? kept.filter((t) => !isPlatformCode(t.norm)) : kept;
+
+  const out = chosen
+    .map((t) => t.raw)
+    .join(' ')
+    .trim();
+  return out.length > 0 ? out : trimmed;
+}
+
 export interface NormalizeResult {
   baseMake: string | null;
   baseModel: string | null;
@@ -348,11 +456,14 @@ export class RoverMakeNormalizer {
     model: string | null,
     raw?: Record<string, unknown> | null,
   ): NormalizeResult {
+    // Raw-trimmed model drives make INFERENCE (platform codes like "d23" must
+    // still vote); the cleaned model is the grouping key we emit as baseModel.
     const cleanModel = model?.trim() || null;
+    const baseModel = cleanBaseModel(model);
     if (!make?.trim()) {
       return {
         baseMake: null,
-        baseModel: cleanModel,
+        baseModel,
         modifier: null,
         isSecondStage: false,
         status: 'NEEDS_REVIEW',
@@ -363,7 +474,7 @@ export class RoverMakeNormalizer {
     if (fromMake) {
       return {
         baseMake: fromMake.oem,
-        baseModel: cleanModel,
+        baseModel,
         modifier: fromMake.modifierPrefix,
         isSecondStage: fromMake.modifierPrefix !== null,
         status: 'AUTO',
@@ -381,7 +492,7 @@ export class RoverMakeNormalizer {
     if (recovered) {
       return {
         baseMake: recovered,
-        baseModel: cleanModel,
+        baseModel,
         modifier: make.trim(),
         isSecondStage: true,
         status: 'AUTO',
@@ -390,7 +501,7 @@ export class RoverMakeNormalizer {
 
     return {
       baseMake: null,
-      baseModel: cleanModel,
+      baseModel,
       modifier: make.trim(),
       isSecondStage: true,
       status: 'NEEDS_REVIEW',

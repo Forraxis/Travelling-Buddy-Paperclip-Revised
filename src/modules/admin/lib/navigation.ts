@@ -36,6 +36,18 @@ export const adminNavSections: NavSection[] = [
         icon: 'vehicle',
         roles: ['ADMIN'],
       },
+      {
+        label: 'Hub Review',
+        href: '/admin/catalogue/vehicles/data-hub/review',
+        icon: 'pending',
+        roles: ['ADMIN'],
+      },
+      {
+        label: 'GVM Upgrades',
+        href: '/admin/catalogue/gvm-upgrades',
+        icon: 'vehicle',
+        roles: ['ADMIN'],
+      },
       { label: 'Caravans', href: '/admin/catalogue/caravans', icon: 'caravan' },
       {
         label: 'Accessories',

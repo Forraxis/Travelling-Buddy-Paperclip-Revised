@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { RoverMakeNormalizer } from '../rover/normalize';
+import { RoverMakeNormalizer, cleanBaseModel } from '../rover/normalize';
 
 // The factory rows the normalizer learns from (clean OEM makes).
 const FACTORY = [
@@ -16,10 +16,11 @@ describe('RoverMakeNormalizer', () => {
     n.learnFrom(FACTORY);
   });
 
-  it('passes a clean factory make straight through', () => {
+  it('passes a clean factory make straight through (baseModel cleaned to the model word)', () => {
     expect(n.normalize('NISSAN', 'D23 Navara')).toEqual({
       baseMake: 'Nissan',
-      baseModel: 'D23 Navara',
+      // "D23" is a platform code dropped in favour of the real model word.
+      baseModel: 'Navara',
       modifier: null,
       isSecondStage: false,
       status: 'AUTO',
@@ -29,7 +30,8 @@ describe('RoverMakeNormalizer', () => {
   it('recovers base make from the MODEL when the make is a pure modifier (Premcar → Nissan)', () => {
     const r = n.normalize('PREMCAR', 'D23 Navara');
     expect(r.baseMake).toBe('Nissan');
-    expect(r.baseModel).toBe('D23 Navara');
+    // Inference still uses the raw "D23"/"Navara" tokens; the emitted baseModel is cleaned.
+    expect(r.baseModel).toBe('Navara');
     expect(r.modifier).toBe('PREMCAR');
     expect(r.isSecondStage).toBe(true);
     expect(r.status).toBe('AUTO');
@@ -149,5 +151,47 @@ describe('RoverMakeNormalizer', () => {
       baseMake: null,
       status: 'NEEDS_REVIEW',
     });
+  });
+});
+
+describe('cleanBaseModel', () => {
+  it('strips trim / drive / SSM / GVM noise down to the base model name', () => {
+    // The canonical example from the build spec.
+    expect(cleanBaseModel('Hilux AN2 SSM 4x4')).toBe('Hilux');
+    expect(cleanBaseModel('Hilux 8GEN SSM HIGH GVM')).toBe('Hilux');
+    expect(cleanBaseModel('Hilux AN2 SSM GVM+')).toBe('Hilux');
+    expect(cleanBaseModel('HILUX GVM PLUS NB MOTORHOME')).toBe('HILUX');
+    expect(cleanBaseModel('RANGER 3 SSM HIGH GVM')).toBe('RANGER');
+  });
+
+  it('drops a platform code when a real model word survives', () => {
+    expect(cleanBaseModel('D23 Navara')).toBe('Navara');
+    expect(cleanBaseModel('D27 Navara HD')).toBe('Navara');
+    expect(cleanBaseModel('Y62 PATROL NB1 WAGON')).toBe('PATROL');
+  });
+
+  it('keeps a platform code when it is the only useful signal', () => {
+    expect(cleanBaseModel('RG1')).toBe('RG1');
+    expect(cleanBaseModel('D-Max RG1 6x4 HD')).toBe('D-Max');
+  });
+
+  it('preserves a hyphenated model name rather than collapsing it', () => {
+    expect(cleanBaseModel('D-Max RG1')).toBe('D-Max');
+  });
+
+  it('preserves the original casing of surviving tokens', () => {
+    expect(cleanBaseModel('hilux 8gen ssm')).toBe('hilux');
+    expect(cleanBaseModel('HILUX 8GEN SSM')).toBe('HILUX');
+  });
+
+  it('returns null for empty / blank / nullish input', () => {
+    expect(cleanBaseModel(null)).toBeNull();
+    expect(cleanBaseModel(undefined)).toBeNull();
+    expect(cleanBaseModel('   ')).toBeNull();
+  });
+
+  it('falls back to the original model when cleaning would empty it', () => {
+    // Every token is noise → keep the original rather than returning "".
+    expect(cleanBaseModel('2 AXLE OMNIBUS')).toBe('2 AXLE OMNIBUS');
   });
 });

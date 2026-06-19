@@ -48,6 +48,32 @@ enum RoverIndexExpandState {
   SKIPPED   // intentionally not expanded
 }
 
+/**
+ * What KIND of second-stage manufacture a RoverApprovalIndex row represents, once
+ * classified (P2). NONE = not a second-stage approval (a base/OEM variant).
+ * GVM_UPGRADE = a suspension/GVM upgrade kit (Ironman, Lovells, Premcar…) that
+ * raises mass limits over the factory base — these promote to a GvmUpgrade overlay
+ * on the base variant, not a standalone variant.
+ */
+enum RoverSecondStageType {
+  NONE
+  GVM_UPGRADE
+  CONVERSION
+  MOTORHOME
+  OTHER
+}
+
+/**
+ * The regulatory pathway a GVM upgrade was certified under. A pre-rego second-stage
+ * manufacture (SSM) is recognised nationally; a post-rego SSM or state-engineer
+ * certification has state-specific recognition (see gvm-caps / interstate warning).
+ */
+enum GvmUpgradePathway {
+  PRE_REGO_SECOND_STAGE
+  POST_REGO_SSM
+  STATE_ENGINEER
+}
+
 /** Make/model normalization state in RoverApprovalIndex. */
 enum RoverNormalizationStatus {
   UNPROCESSED  // not yet normalized
@@ -206,6 +232,7 @@ model VehicleVariant {
   calibrationCorrection    VehicleCalibrationCorrection?
   specCandidates           VehicleSpecCandidate[]        @relation("SpecCandidateVariant")
   specProvenance           VariantSpecProvenance[]
+  gvmUpgrades              GvmUpgrade[]
 
   @@unique([modelId, slug])
   @@index([slug])
@@ -248,6 +275,47 @@ model VariantSpecProvenance {
   @@index([variantId])
   @@index([field])
   @@index([status])
+}
+
+/**
+ * A GVM (and optionally GCM / axle / towing) upgrade applied OVER a base
+ * VehicleVariant — a suspension/second-stage kit (Ironman, Lovells, Premcar, MRT…)
+ * or a state-engineer certification that lifts the factory mass limits. Modelled as
+ * an overlay on the base variant rather than a standalone variant: the calculator
+ * keeps the base figures and applies this delta when the user picks their kit
+ * (Setup.appliedGvmUpgradeId). Promoted from a second-stage ROVER candidate (P4).
+ *
+ * Rule 11: the physics overlay that uses these limits stays behind
+ * GVM_UPGRADE_ENABLED + advisory until signed off.
+ */
+model GvmUpgrade {
+  id               String               @id @default(cuid())
+  baseVariantId    String
+  modifierName     String
+  pathway          GvmUpgradePathway
+  vtaNumber        String?
+  engineerRef      String?
+  // Upgraded limits (kg). Only the figures the upgrade actually states are set;
+  // a null field means "the upgrade doesn't move this limit" → keep the factory value.
+  gvmKg            Int?
+  gcmKg            Int?
+  frontAxleLimitKg Int?
+  rearAxleLimitKg  Int?
+  maxTowingKg      Int?
+  // Mass the kit itself adds to the vehicle (heavier springs, etc.).
+  addedMassKg      Int?
+  isPreRego        Boolean              @default(false)
+  // For post-rego / state-engineer paths, the state the cert is recognised in.
+  certifiedState   AustralianState?
+  status           VehicleVariantStatus @default(CATALOGUE)
+  sourceUrl        String?
+  sourceVtaNumber  String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  baseVariant      VehicleVariant       @relation(fields: [baseVariantId], references: [id], onDelete: Cascade)
+  appliedSetups    Setup[]
+
+  @@index([baseVariantId])
 }
 
 model CaravanMake {
@@ -662,6 +730,12 @@ model Setup {
   freshWaterPercent       Int                      @default(100)
   greyWaterPercent        Int                      @default(0)
   calibrationOverrides    Json                     @default("{}")
+  // GVM-upgrade overlay the user applied to their vehicle. Either a catalogue
+  // GvmUpgrade kit (appliedGvmUpgradeId) or a free-form custom entry for an
+  // engineer-cert / plate path (customGvmUpgrade JSON: { gvmKg, gcmKg?, axle?,
+  // maxTowingKg?, addedMassKg, ... }). The physics overlay (P5) is gated/advisory.
+  appliedGvmUpgradeId     String?
+  customGvmUpgrade        Json?
   vehicleSnapshot         Json?
   caravanSnapshot         Json?
   accessorySnapshot       Json?
@@ -674,6 +748,7 @@ model Setup {
   user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicleVariant          VehicleVariant?          @relation(fields: [vehicleVariantId], references: [id], onDelete: SetNull)
   caravanVariant          CaravanVariant?          @relation(fields: [caravanVariantId], references: [id], onDelete: SetNull)
+  appliedGvmUpgrade       GvmUpgrade?              @relation(fields: [appliedGvmUpgradeId], references: [id], onDelete: SetNull)
   accessories             SetupAccessory[]
   caravanAccessories      SetupCaravanAccessory[]
   customLoads             SetupCustomLoad[]
@@ -683,6 +758,7 @@ model Setup {
   @@index([userId])
   @@index([vehicleVariantId])
   @@index([caravanVariantId])
+  @@index([appliedGvmUpgradeId])
   @@index([shareToken])
   @@index([deletedAt])
 }
@@ -1407,6 +1483,9 @@ model RoverApprovalIndex {
   baseModel           String?
   modifier            String?
   isSecondStage       Boolean                  @default(false)
+  // What kind of second-stage manufacture this is, once classified (P2). NONE for
+  // base/OEM variants. Drives GVM-upgrade-vs-standalone promotion routing (P4).
+  secondStageType     RoverSecondStageType     @default(NONE)
   normalizationStatus RoverNormalizationStatus @default(UNPROCESSED)
   expandState      RoverIndexExpandState  @default(UNFETCHED)
   // Set once expanded → the resulting catalogue model.
@@ -1421,4 +1500,5 @@ model RoverApprovalIndex {
   @@index([category])
   @@index([expandState])
   @@index([normalizationStatus])
+  @@index([secondStageType])
 }

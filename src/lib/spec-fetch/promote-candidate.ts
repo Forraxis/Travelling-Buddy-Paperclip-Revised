@@ -22,6 +22,7 @@ import type {
 import { prisma } from '@/lib/db';
 import { evaluatePromotionGate, type GateableField } from './gating';
 import { buildVariantPatch, type VariantSpecPatch } from './promotion';
+import { routeGvmUpgrade } from './rover/gvm-upgrade';
 
 function toSlug(text: string): string {
   return text
@@ -59,12 +60,26 @@ export class PromotionGateError extends Error {
 }
 
 export interface PromoteResult {
+  /**
+   * The resulting VehicleVariant id. For the GVM-upgrade route this is the BASE
+   * variant the upgrade attached to (empty string when the base wasn't in the
+   * catalogue and the candidate was left unattached).
+   */
   variantId: string;
-  /** False when an existing variant was refreshed (idempotent re-promote). */
+  /** False when an existing variant/upgrade was refreshed (idempotent re-promote). */
   created: boolean;
   patch: VariantSpecPatch;
   /** Fields that couldn't be mapped/parsed and were left off the variant. */
   skipped: string[];
+  /**
+   * How the candidate was routed (P4). 'VARIANT' = minted/refreshed a standalone
+   * variant (the default OEM / non-GVM second-stage path). 'GVM_UPGRADE' = attached
+   * a GvmUpgrade overlay to the base variant. 'GVM_UPGRADE_UNATTACHED' = a GVM
+   * upgrade whose base isn't in the catalogue yet — candidate left PENDING.
+   */
+  routedAs: 'VARIANT' | 'GVM_UPGRADE' | 'GVM_UPGRADE_UNATTACHED';
+  /** The created/updated GvmUpgrade id when routed as a GVM upgrade; else null. */
+  gvmUpgradeId: string | null;
 }
 
 /**
@@ -93,6 +108,27 @@ export async function promoteSpecCandidate(
   }
 
   const { patch, skipped } = buildVariantPatch(gateFields);
+
+  // P4 routing: a candidate whose ROVER index row is classified GVM_UPGRADE is an
+  // overlay on a factory base, not a standalone car. Look up the row (joined by the
+  // candidate's source VTA) to decide the route. Non-ROVER candidates (no VTA) and
+  // every non-GVM type fall through to the standard variant promotion below.
+  const indexRow = candidate.sourceVtaNumber
+    ? await prisma.roverApprovalIndex.findUnique({
+        where: { vtaNumber: candidate.sourceVtaNumber },
+        select: {
+          secondStageType: true,
+          baseMake: true,
+          baseModel: true,
+          modifier: true,
+          category: true,
+        },
+      })
+    : null;
+
+  if (indexRow?.secondStageType === 'GVM_UPGRADE') {
+    return promoteAsGvmUpgrade(candidate, indexRow, patch, skipped, userId);
+  }
 
   return prisma.$transaction(async (tx) => {
     // Resolve / create make + model from the candidate's free text.
@@ -237,6 +273,129 @@ export async function promoteSpecCandidate(
       },
     });
 
-    return { variantId, created, patch, skipped };
+    return {
+      variantId,
+      created,
+      patch,
+      skipped,
+      routedAs: 'VARIANT' as const,
+      gvmUpgradeId: null,
+    };
+  });
+}
+
+/** Index identity needed to route a GVM-upgrade promotion (from the ROVER row). */
+type GvmIndexRow = {
+  secondStageType: import('@prisma/client').RoverSecondStageType;
+  baseMake: string | null;
+  baseModel: string | null;
+  modifier: string | null;
+  category: string | null;
+};
+
+/**
+ * Route a GVM_UPGRADE candidate to a GvmUpgrade overlay on the base variant instead
+ * of minting a standalone variant (P4). Resolves the base by normalized make/model;
+ * when found, creates/refreshes the GvmUpgrade, marks the candidate APPROVED, and
+ * audits. When the base isn't in the catalogue, the candidate is left PENDING + a
+ * note is recorded — the base must be promoted first (we never fabricate the OEM
+ * base from a modifier's figures). No variant is created either way.
+ *
+ * Note: the base factory category isn't read from the candidate's row (it carries the
+ * uprated category), so the pre-rego heuristic uses a null baseCategory here and
+ * defaults to POST_REGO_SSM — the admin can refine the pathway later (P8).
+ */
+async function promoteAsGvmUpgrade(
+  candidate: {
+    id: string;
+    status: import('@prisma/client').SubmissionStatus;
+    sourceVtaNumber: string | null;
+  },
+  indexRow: GvmIndexRow,
+  patch: VariantSpecPatch,
+  skipped: string[],
+  userId: string,
+): Promise<PromoteResult> {
+  return prisma.$transaction(async (tx) => {
+    const routed = await routeGvmUpgrade(tx, patch, {
+      baseMake: indexRow.baseMake,
+      baseModel: indexRow.baseModel,
+      modifier: indexRow.modifier,
+      vtaNumber: candidate.sourceVtaNumber,
+      category: indexRow.category,
+      baseCategory: null,
+    });
+
+    if (routed.unattached) {
+      // Leave the candidate PENDING + record why; the base must land first.
+      await tx.auditLog.create({
+        data: {
+          entityType: 'VehicleSpecCandidate',
+          entityId: candidate.id,
+          action: 'UPDATE',
+          changedBy: userId,
+          changes: toJson({
+            gvmUpgradeRouting: 'UNATTACHED',
+            note: routed.note,
+          }),
+          reason: routed.note,
+        },
+      });
+      return {
+        variantId: '',
+        created: false,
+        patch,
+        skipped,
+        routedAs: 'GVM_UPGRADE_UNATTACHED' as const,
+        gvmUpgradeId: null,
+      };
+    }
+
+    await tx.vehicleSpecCandidate.update({
+      where: { id: candidate.id },
+      data: {
+        status: 'APPROVED',
+        // No resultingVariant — the candidate became an overlay, not a variant.
+        decidedById: userId,
+        decidedAt: new Date(),
+        decisionNotes: routed.note,
+      },
+    });
+
+    await tx.moderationAction.create({
+      data: {
+        submissionType: 'vehicle_spec_candidate',
+        submissionId: candidate.id,
+        moderatorId: userId,
+        action: 'APPROVE',
+        notes: routed.note,
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        entityType: 'VehicleSpecCandidate',
+        entityId: candidate.id,
+        action: 'UPDATE',
+        changedBy: userId,
+        changes: toJson({
+          status: { from: candidate.status, to: 'APPROVED' },
+          gvmUpgradeRouting: 'ATTACHED',
+          gvmUpgradeId: routed.gvmUpgradeId,
+          baseVariantId: routed.baseVariantId,
+          patch,
+        }),
+        reason: 'GVM-upgrade candidate promoted to a GvmUpgrade overlay',
+      },
+    });
+
+    return {
+      variantId: routed.baseVariantId ?? '',
+      created: true,
+      patch,
+      skipped,
+      routedAs: 'GVM_UPGRADE' as const,
+      gvmUpgradeId: routed.gvmUpgradeId,
+    };
   });
 }

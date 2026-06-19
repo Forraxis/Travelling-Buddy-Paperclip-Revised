@@ -28,24 +28,104 @@ const ALL_COMPLIANCE_LIMITS: ComplianceLimitKey[] = [
 ];
 
 /**
- * Verdict honesty: decide which compliance limits to flag as estimated. The
- * only post-promotion signal a variant carries today is its status / confidence
- * badge — a COMMUNITY (or AI-estimated) variant has not been verified against a
- * compliance plate, so ALL its nameplate limits are estimated. Returns undefined
- * for a verified CATALOGUE variant.
+ * Maps a `VariantSpecProvenance.field` key (the canonical variant column name)
+ * to the {@link ComplianceLimitKey} the verdict-honesty layer flags. Only the
+ * six compliance-critical figures appear; any other provenance field (kerb,
+ * wheelbase, Tier-B…) is irrelevant to the limit badge and is ignored here.
+ */
+const PROVENANCE_FIELD_TO_LIMIT: Record<string, ComplianceLimitKey> = {
+  gvmKg: 'gvm',
+  gcmKg: 'gcm',
+  frontAxleLimitKg: 'frontAxle',
+  rearAxleLimitKg: 'rearAxle',
+  maxTowBallDownloadKg: 'towBall',
+  maxTowingCapacityKg: 'towing',
+};
+
+/**
+ * One row of {@link VariantSpecProvenance} as the builder consumes it. A loaded
+ * variant may carry these (relation `specProvenance`) so the "Est." flag can
+ * narrow to the specific unverified fields. Only `field` + `status` are read.
+ */
+export interface VariantProvenanceField {
+  field: string;
+  status: 'CONFIRMED' | 'ESTIMATE' | 'DISPUTED';
+}
+
+/**
+ * Verdict honesty: decide which compliance limits to flag as estimated.
  *
- * TODO(spec-fetch): once promoted variants carry per-field provenance (a
- * follow-up to the VehicleSpecCandidate pipeline), narrow this to only the
- * fields that were actually estimated/uncorroborated rather than all six.
+ * When the variant carries per-field provenance (`specProvenance` —
+ * {@link VariantSpecProvenance}), narrow the flag to exactly the
+ * compliance-critical fields whose accepted value is an ESTIMATE or DISPUTED;
+ * a CONFIRMED (ROVER / plate / cross-source-agreed) field is NOT flagged. This
+ * is the open TODO from the spec-fetch pipeline — replacing the all-or-nothing
+ * variant-level signal with the precise set.
+ *
+ * Without provenance we fall back to the legacy variant-level signal: a
+ * COMMUNITY (or AI-estimated badge) variant has not been verified against a
+ * compliance plate, so ALL its nameplate limits are estimated. A verified
+ * CATALOGUE variant with no provenance and no estimate badge returns undefined.
  */
 function deriveEstimatedLimits(
   vehicle: AnyVariant,
 ): ComplianceLimitKey[] | undefined {
+  const provenance = vehicle.specProvenance;
+  if (Array.isArray(provenance) && provenance.length > 0) {
+    const flagged = new Set<ComplianceLimitKey>();
+    for (const row of provenance as VariantProvenanceField[]) {
+      const limit = PROVENANCE_FIELD_TO_LIMIT[row.field];
+      if (limit && (row.status === 'ESTIMATE' || row.status === 'DISPUTED')) {
+        flagged.add(limit);
+      }
+    }
+    // Preserve a stable, canonical ordering for deterministic output.
+    const ordered = ALL_COMPLIANCE_LIMITS.filter((k) => flagged.has(k));
+    return ordered.length > 0 ? ordered : undefined;
+  }
+
   const status = vehicle.status;
   const badge = vehicle.confidenceBadge;
   const isEstimated =
     status === 'COMMUNITY' || badge === 'community' || badge === 'estimated';
   return isEstimated ? [...ALL_COMPLIANCE_LIMITS] : undefined;
+}
+
+/**
+ * The subset of a {@link GvmUpgrade} the physics overlay applies. A loaded
+ * variant may carry the user's selected kit as `appliedGvmUpgrade` (resolved
+ * from `setup.appliedGvmUpgradeId`) or a free-form `customGvmUpgrade` (the
+ * engineer-cert / plate path). Every limit is optional: a `null`/absent field
+ * means "the upgrade does not move this limit" → keep the factory value (the
+ * GCM-doesn't-move headroom trap the GCM enforcement is built to catch).
+ */
+export interface AppliedGvmUpgrade {
+  gvmKg?: number | null;
+  gcmKg?: number | null;
+  frontAxleLimitKg?: number | null;
+  rearAxleLimitKg?: number | null;
+  maxTowingKg?: number | null;
+  /** Mass the kit itself adds (heavier springs etc.) — a placed vehicle load. */
+  addedMassKg?: number | null;
+}
+
+/**
+ * Rule 11 / advisory gate. The GVM-upgrade overlay changes a compliance VERDICT
+ * (it raises the limits the pass/fail math tests against), so it stays OFF until
+ * Tim signs it off — controlled by `GVM_UPGRADE_ENABLED` (env, `=== 'true'`).
+ * When the flag is unset the overlay is ignored and behaviour is unchanged.
+ */
+function gvmUpgradeEnabled(): boolean {
+  return process.env.GVM_UPGRADE_ENABLED === 'true';
+}
+
+/** Reads the applied overlay off the loaded variant, if the caller attached one. */
+function resolveGvmUpgrade(vehicle: AnyVariant): AppliedGvmUpgrade | null {
+  const upgrade = vehicle.appliedGvmUpgrade ?? vehicle.customGvmUpgrade;
+  if (upgrade && typeof upgrade === 'object') {
+    return upgrade as AppliedGvmUpgrade;
+  }
+  return null;
 }
 
 /**
@@ -115,14 +195,34 @@ export function buildPhysicsInput(
   const calibrationOverrides =
     mergeModelCorrection(baseOverrides, modelCorrection) ?? baseOverrides;
 
+  // GVM-upgrade overlay (Rule 11 — GATED + advisory). A certified upgrade lifts
+  // the variant LIMITS (not the load): GVM almost always rises; GCM / axle / tow
+  // move ONLY when the upgrade states them, otherwise stay at the factory value.
+  // The kit's own spring mass enters via the existing accessory-mass path below.
+  // Behind GVM_UPGRADE_ENABLED so it can't silently flip a verdict until signed off.
+  const upgrade = gvmUpgradeEnabled() ? resolveGvmUpgrade(vehicle) : null;
+  const overlay = (
+    factory: number,
+    upgraded: number | null | undefined,
+  ): number => (upgraded != null ? upgraded : factory);
+
   return {
     vehicle: {
-      gvmKg: Number(vehicle.gvmKg),
-      gcmKg: Number(vehicle.gcmKg),
+      gvmKg: overlay(Number(vehicle.gvmKg), upgrade?.gvmKg),
+      gcmKg: overlay(Number(vehicle.gcmKg), upgrade?.gcmKg),
       kerbWeightKg: Number(vehicle.kerbWeightKg),
-      maxTowingCapacityKg: Number(vehicle.maxTowingCapacityKg),
-      frontAxleLimitKg: Number(vehicle.frontAxleLimitKg),
-      rearAxleLimitKg: Number(vehicle.rearAxleLimitKg),
+      maxTowingCapacityKg: overlay(
+        Number(vehicle.maxTowingCapacityKg),
+        upgrade?.maxTowingKg,
+      ),
+      frontAxleLimitKg: overlay(
+        Number(vehicle.frontAxleLimitKg),
+        upgrade?.frontAxleLimitKg,
+      ),
+      rearAxleLimitKg: overlay(
+        Number(vehicle.rearAxleLimitKg),
+        upgrade?.rearAxleLimitKg,
+      ),
       maxTowBallDownloadKg: Number(vehicle.maxTowBallDownloadKg),
       wheelbaseMm: Number(vehicle.wheelbaseMm),
       frontOverhangMm:
@@ -168,6 +268,22 @@ export function buildPhysicsInput(
         }
       : undefined,
     vehicleAccessories: [
+      // GATED overlay mass: the upgrade kit's own added mass (springs etc.) is a
+      // real placed load on the vehicle, distinct from the lifted LIMITS above.
+      // Mid-chassis is the neutral placement until a kit carries a real CoG.
+      ...(upgrade?.addedMassKg
+        ? [
+            {
+              installedWeightKg: upgrade.addedMassKg,
+              mountingLocation: 'CHASSIS_MID' as MountingLocation,
+              cogXMm: null,
+              cogYMm: null,
+              cogZMm: null,
+              fillPercent: 100,
+              quantity: 1,
+            },
+          ]
+        : []),
       ...state.accessories.map((a) => ({
         installedWeightKg: a.massKg,
         mountingLocation: a.mountingLocation as MountingLocation,

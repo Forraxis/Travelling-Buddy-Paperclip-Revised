@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { buildPhysicsInput } from '../build-physics-input';
 import { INITIAL_STATE } from '../types';
 import type { CalculatorState } from '../types';
@@ -165,5 +165,101 @@ describe('buildPhysicsInput — verdict honesty (estimated limits)', () => {
     const est = { ...vehicle, confidenceBadge: 'estimated' };
     const input = buildPhysicsInput(INITIAL_STATE, est, null, 'live');
     expect(input.vehicle.estimatedLimits).toContain('gvm');
+  });
+
+  it('narrows to only the ESTIMATE/DISPUTED fields when provenance is present', () => {
+    const withProvenance = {
+      ...vehicle,
+      // ROVER-confirmed GVM/tow; axle limits never published → still estimated.
+      specProvenance: [
+        { field: 'gvmKg', status: 'CONFIRMED' },
+        { field: 'maxTowingCapacityKg', status: 'CONFIRMED' },
+        { field: 'frontAxleLimitKg', status: 'ESTIMATE' },
+        { field: 'rearAxleLimitKg', status: 'DISPUTED' },
+        { field: 'kerbWeightKg', status: 'ESTIMATE' }, // not a compliance limit
+      ],
+    };
+    const input = buildPhysicsInput(
+      INITIAL_STATE,
+      withProvenance,
+      null,
+      'live',
+    );
+    expect(input.vehicle.estimatedLimits).toEqual(['frontAxle', 'rearAxle']);
+  });
+
+  it('returns undefined when every provenance field is CONFIRMED', () => {
+    const allConfirmed = {
+      ...vehicle,
+      status: 'COMMUNITY', // provenance wins over the legacy variant signal
+      specProvenance: [
+        { field: 'gvmKg', status: 'CONFIRMED' },
+        { field: 'frontAxleLimitKg', status: 'CONFIRMED' },
+      ],
+    };
+    const input = buildPhysicsInput(INITIAL_STATE, allConfirmed, null, 'live');
+    expect(input.vehicle.estimatedLimits).toBeUndefined();
+  });
+});
+
+describe('buildPhysicsInput — GVM-upgrade overlay (gated, advisory)', () => {
+  afterEach(() => {
+    delete process.env.GVM_UPGRADE_ENABLED;
+  });
+
+  // A certified GVM upgrade: lifts GVM + axle limits, adds spring mass, but
+  // does NOT state GCM (the headroom trap) — GCM must stay at the factory value.
+  const upgradedVehicle = {
+    ...vehicle,
+    appliedGvmUpgrade: {
+      gvmKg: 3700,
+      frontAxleLimitKg: 1600,
+      rearAxleLimitKg: 2100,
+      addedMassKg: 20,
+      // gcmKg + maxTowingKg deliberately absent → keep factory.
+    },
+  };
+
+  it('flag OFF: the overlay is ignored — factory limits + no added mass', () => {
+    const input = buildPhysicsInput(INITIAL_STATE, upgradedVehicle, null);
+    expect(input.vehicle.gvmKg).toBe(3200);
+    expect(input.vehicle.frontAxleLimitKg).toBe(1500);
+    expect(input.vehicle.rearAxleLimitKg).toBe(1850);
+    expect(input.vehicleAccessories).toHaveLength(0);
+  });
+
+  it('flag ON: raises GVM + the stated axle limits', () => {
+    process.env.GVM_UPGRADE_ENABLED = 'true';
+    const input = buildPhysicsInput(INITIAL_STATE, upgradedVehicle, null);
+    expect(input.vehicle.gvmKg).toBe(3700);
+    expect(input.vehicle.frontAxleLimitKg).toBe(1600);
+    expect(input.vehicle.rearAxleLimitKg).toBe(2100);
+  });
+
+  it('flag ON: GCM not stated by the upgrade stays at the factory value', () => {
+    process.env.GVM_UPGRADE_ENABLED = 'true';
+    const input = buildPhysicsInput(INITIAL_STATE, upgradedVehicle, null);
+    expect(input.vehicle.gcmKg).toBe(6000);
+    expect(input.vehicle.maxTowingCapacityKg).toBe(3500);
+  });
+
+  it('flag ON: applies the added kit mass as a placed vehicle load', () => {
+    process.env.GVM_UPGRADE_ENABLED = 'true';
+    const input = buildPhysicsInput(INITIAL_STATE, upgradedVehicle, null);
+    expect(input.vehicleAccessories).toHaveLength(1);
+    expect(input.vehicleAccessories[0].installedWeightKg).toBe(20);
+    expect(input.vehicleAccessories[0].mountingLocation).toBe('CHASSIS_MID');
+  });
+
+  it('flag ON: a custom (plate-path) overlay is applied like a kit', () => {
+    process.env.GVM_UPGRADE_ENABLED = 'true';
+    const custom = {
+      ...vehicle,
+      customGvmUpgrade: { gvmKg: 3500, gcmKg: 6300, addedMassKg: 18 },
+    };
+    const input = buildPhysicsInput(INITIAL_STATE, custom, null);
+    expect(input.vehicle.gvmKg).toBe(3500);
+    expect(input.vehicle.gcmKg).toBe(6300);
+    expect(input.vehicleAccessories[0].installedWeightKg).toBe(18);
   });
 });
