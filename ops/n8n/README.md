@@ -48,6 +48,23 @@ can never go stale.
 - **AU egress confirmed**: n8n exits via `103.214.20.100` (Adelaide, AU) — a separate path
   from the rest of the network (the VPN). An AU gov portal seeing an AU IP is unremarkable.
 
+## Two workflows + the `$env` constraint
+
+This dir has two workflows:
+- **`rover-crawl.json`** — the scheduled, incremental crawl (weekly).
+- **`rover-expand.json`** — the on-demand, webhook-triggered expand (the app's
+  `/api/rover/expand` calls it when an admin clicks **Expand** in the Data Hub).
+
+> ⚠️ **This n8n instance blocks `$env` access inside Code nodes** (`access to env vars
+> denied`). So config (`APP_BASE_URL`, `ROVER_INGEST_TOKEN`) cannot be read with `$env`:
+> - **expand** receives them in the **webhook payload** (the app reads its own
+>   `process.env` and passes them) → the repo workflow is secret-free *and* runnable.
+> - **crawl** is scheduled (no caller), so its repo copy hardcodes the non-secret
+>   `APP_BASE_URL` and uses a **`'__ROVER_INGEST_TOKEN__'` sentinel** — **inject the real
+>   token when you import** (the imported n8n copy already has it; a `TOKEN === sentinel`
+>   guard fails fast if you forget). Alternatively set `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`
+>   on the n8n host and revert to `$env`.
+
 ## One-time setup
 
 1. **Already imported** into n8n as *“ROVER crawl → TravellingBuddy ingest”* (inactive).

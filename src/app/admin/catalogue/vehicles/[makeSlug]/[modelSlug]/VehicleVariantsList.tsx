@@ -108,6 +108,13 @@ export function VehicleVariantsList({
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link
+                        href={`/admin/catalogue/vehicles/data-hub/variant/${variant.id}`}
+                        className="hover:text-tb-primary text-sm text-gray-500"
+                        title="Per-field provenance / coverage matrix"
+                      >
+                        Coverage
+                      </Link>
+                      <Link
                         href={`/admin/catalogue/vehicles/${makeSlug}/${model.slug}/${variant.slug}`}
                         className="hover:text-tb-primary text-sm text-gray-500"
                       >
