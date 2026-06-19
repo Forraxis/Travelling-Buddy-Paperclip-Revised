@@ -1,7 +1,7 @@
 {
   "name": "ROVER crawl → TravellingBuddy ingest",
   "meta": {
-    "description": "Authored, not executed. Mirrors the proven ROVER portal crawl mechanism (VEHICLE_DATA_FETCH.md 'ROVER portal crawl mechanism'): prime session → CSRF token → grid POST (sorted by last-updated) → per new/changed approval, GET VTADetails → POST the page HTML to the app's /api/rover/ingest, which does the extraction + gating. n8n fetches; the app parses + gates. Set the credentials, $env vars and the captured base64SecureConfiguration before enabling (see README.md). Cadence: weekly."
+    "description": "Authored, not auto-activated. Pure-HTTP, self-priming ROVER incremental crawl (no browser, no manual secureConfig). Validated against live data 2026-06. Discovery primes the session + extracts Base64SecureConfiguration from the directory page, pages the grid (DESC by last-updated) to the high-water mark with a per-run cap, filters to towing-relevant categories; Process fetches each VTADetails page (throttled, jittered 4–10s, sequential, oldest-first) and POSTs the HTML to /api/rover/ingest, advancing the high-water mark only on success; a circuit-breaker aborts on 403/429/503; crawl-health alerts on a silent 0-found. Set ROVER_INGEST_TOKEN (and optionally APP_BASE_URL) on the n8n host. See ops/n8n/README.md."
   },
   "nodes": [
     {
@@ -24,144 +24,66 @@
       }
     },
     {
-      "id": "prime-session",
-      "name": "Prime session (cookies)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [220, 300],
-      "parameters": {
-        "url": "https://rover.infrastructure.gov.au/PublishedApprovals/VTAApprovals/",
-        "method": "GET",
-        "options": {
-          "response": {
-            "response": { "fullResponse": true, "neverError": true }
-          }
-        }
-      },
-      "notes": "GET the directory page to obtain ARRAffinity / Dynamics365PortalAnalytics / __RequestVerificationToken cookies. Enable the HTTP Request node's cookie jar so they carry into the next requests (n8n persists cookies per-execution when 'Response → Include Headers' + a shared session are configured)."
-    },
-    {
-      "id": "get-token",
-      "name": "Get CSRF token HTML",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [440, 300],
-      "parameters": {
-        "url": "https://rover.infrastructure.gov.au/_layout/tokenhtml",
-        "method": "GET",
-        "options": {}
-      },
-      "notes": "Public, no auth. Returns an HTML fragment containing the __RequestVerificationToken value."
-    },
-    {
-      "id": "extract-token",
-      "name": "Extract token",
+      "id": "discover",
+      "name": "ROVER: discover new approvals",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 300],
+      "position": [240, 300],
       "parameters": {
-        "jsCode": "// Pull the anti-forgery token out of the tokenhtml fragment.\nconst html = String($input.first().json.data ?? $input.first().json.body ?? '');\nconst m = html.match(/name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"/i)\n  || html.match(/value=\"([^\"]+)\"[^>]*name=\"__RequestVerificationToken\"/i);\nif (!m) throw new Error('Could not extract __RequestVerificationToken from tokenhtml');\nreturn [{ json: { token: m[1] } }];"
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ROVER discovery: self-prime secureConfig, run the session, page the grid\n// (DESC by last-updated) until we reach the high-water mark or the per-run cap.\n// Pure HTTP (no browser). Emits one item per NEW towing-relevant approval, plus a\n// trailing __control row (so crawl-health always runs, even on a 0-result week).\nconst HOST = 'https://www.rover.infrastructure.gov.au';\nconst GRID = 'c8825c88-ebd8-ee11-904d-000d3a7a0265';\nconst UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';\nconst MAX_NEW = 25;   // per-run cap on approvals (politeness / backfill throttle)\nconst MAX_PAGES = 10; // safety cap\nconst PAGE_SIZE = 50;\nconst KEEP = /^(M[A-E]?|N[ABC]\\d?)$/i; // towing-relevant: passenger M*, goods N*; excludes T* trailers, L*, O*\nconst helpers = this.helpers;\nconst sd = $getWorkflowStaticData('global');\nconst highWater = sd.roverHighWaterMs || 0;\nconst jar = {};\nconst cookieHeader = () => Object.entries(jar).map(([k, v]) => k + '=' + v).join('; ');\nconst absorb = (sc) => (sc || []).forEach((c) => { const p = String(c).split(';')[0]; const i = p.indexOf('='); if (i > 0) jar[p.slice(0, i).trim()] = p.slice(i + 1).trim(); });\nconst sleep = (ms) => new Promise((r) => setTimeout(r, ms));\nconst jitter = () => 2500 + Math.floor(Math.random() * 4500);\nasync function http(method, url, body, extra) {\n  const headers = { 'User-Agent': UA, Accept: '*/*', 'Accept-Language': 'en-AU,en;q=0.9', ...(extra || {}) };\n  if (Object.keys(jar).length) headers.Cookie = cookieHeader();\n  const opts = { method, url, headers, returnFullResponse: true, ignoreHttpStatusErrors: true };\n  if (body != null) { headers['Content-Type'] = 'application/json'; opts.body = body; }\n  const res = await helpers.httpRequest(opts);\n  absorb(res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie']));\n  if ([403, 429, 503].includes(res.statusCode)) throw new Error('ROVER ' + res.statusCode + ' (' + url + ') — possible rate-limit/block; aborting run');\n  if (res.statusCode >= 400) throw new Error('ROVER ' + method + ' ' + url + ' -> ' + res.statusCode);\n  return res;\n}\nconst attr = (r, n) => { const a = (r.Attributes || []).find((x) => x.Name === n); return a ? (a.Value && a.Value.Value !== undefined ? a.Value.Value : a.Value) : null; };\nconst dotnet = (s) => { const m = String(s).match(/\\/Date\\((\\d+)\\)\\//); return m ? parseInt(m[1], 10) : null; };\n// 1. directory -> secureConfig (+ session cookies)\nconst dir = await http('GET', HOST + '/PublishedApprovals/VTAApprovals/');\nconst vlm = String(dir.body).match(/data-view-layouts=([\"'])([\\s\\S]*?)\\1/);\nif (!vlm) throw new Error('data-view-layouts not found — ROVER page layout changed');\nconst layouts = JSON.parse(Buffer.from(vlm[2].replace(/&quot;/g, '\"').replace(/&amp;/g, '&'), 'base64').toString('utf8'));\nconst secureConfig = (layouts[0] || {}).Base64SecureConfiguration;\nif (!secureConfig) throw new Error('Base64SecureConfiguration missing from view-layouts');\n// 2. CSRF token\nconst tok = await http('GET', HOST + '/_layout/tokenhtml');\nconst token = (String(tok.body).match(/value=\"([^\"]+)\"/) || [])[1];\nif (!token) throw new Error('CSRF token not found');\n// 3. page the grid (newest-updated first) until older than high-water or caps hit\nconst found = [];\nlet stop = false;\nfor (let page = 1; page <= MAX_PAGES && !stop && found.length < MAX_NEW; page++) {\n  if (page > 1) await sleep(jitter());\n  const grid = await http('POST', HOST + '/_services/entity-grid-data.json/' + GRID,\n    JSON.stringify({ base64SecureConfiguration: secureConfig, sortExpression: 'rvr_publishedlastupdatedate DESC', search: null, page, pageSize: PAGE_SIZE, filter: null, metaFilter: null }),\n    { __RequestVerificationToken: token, 'X-Requested-With': 'XMLHttpRequest' });\n  const data = typeof grid.body === 'string' ? JSON.parse(grid.body) : grid.body;\n  const recs = data.Records || [];\n  if (!recs.length) break;\n  for (const r of recs) {\n    const ms = dotnet(attr(r, 'rvr_publishedlastupdatedate'));\n    if (ms != null && ms <= highWater) { stop = true; break; } // reached already-imported\n    const cat = String(attr(r, 'cv.rvr_categorytype') || '');\n    if (!KEEP.test(cat)) continue;\n    const id = attr(r, 'rvr_approvalid') || r.Id;\n    if (!id) continue;\n    found.push({ approvalId: id, vta: attr(r, 'rvr_approvalnumber'), make: attr(r, 'cv.rvr_manufacturer'), model: attr(r, 'cv.rvr_model'), category: cat, updatedMs: ms });\n    if (found.length >= MAX_NEW) { stop = true; break; }\n  }\n  if (!data.MoreRecords) break;\n}\nconst out = found.map((f) => ({ json: f }));\nout.push({ json: { __control: true, found: found.length, firstRun: highWater === 0 } });\nreturn out;\n"
       }
     },
     {
-      "id": "fetch-grid",
-      "name": "Fetch grid page",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [880, 300],
-      "parameters": {
-        "url": "https://rover.infrastructure.gov.au/_services/entity-grid-data.json/c8825c88-ebd8-ee11-904d-000d3a7a0265",
-        "method": "POST",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "__RequestVerificationToken",
-              "value": "={{ $json.token }}"
-            },
-            { "name": "X-Requested-With", "value": "XMLHttpRequest" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ base64SecureConfiguration: $env.ROVER_GRID_SECURE_CONFIG, sortExpression: 'rvr_publishedlastupdatedate DESC', search: null, page: 1, pageSize: 100, filter: null, metaFilter: null }) }}",
-        "options": {}
-      },
-      "notes": "POST the grid query. base64SecureConfiguration is the per-list blob embedded in the directory page (reusable from a fresh session). Tim captures it once and sets it as the ROVER_GRID_SECURE_CONFIG env var (see README). Page through (page: 1..n) until records are older than the high-water mark."
-    },
-    {
-      "id": "filter-new",
-      "name": "Filter: towing categories + newer than high-water mark",
-      "type": "n8n-nodes-base.code",
+      "id": "routeControl",
+      "name": "Route: control vs approvals",
+      "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1100, 300],
+      "position": [500, 300],
       "parameters": {
-        "jsCode": "// Decode the grid records, keep towing-relevant categories, and only those newer\n// than the per-workflow high-water mark (rvr_publishedlastupdatedate).\nconst staticData = $getWorkflowStaticData('global');\nconst highWater = staticData.roverHighWaterMark || '1970-01-01T00:00:00Z';\n\n// Towing-relevant ADR categories; exclude T-series trailers (TA..TD) and others.\nconst KEEP = /^(M[ABCDE]?|N[ABC]\\d?|MC|NA|NB1)$/i;\n\nconst payload = $input.first().json;\nconst records = Array.isArray(payload.Records) ? payload.Records : [];\n\nfunction attr(rec, name) {\n  const a = (rec.Attributes || []).find((x) => x.Name === name || x.AttributeName === name);\n  return a ? (a.Value && a.Value.Value !== undefined ? a.Value.Value : a.Value) : null;\n}\n\nlet maxSeen = highWater;\nconst out = [];\nfor (const rec of records) {\n  const category = String(attr(rec, 'cv.rvr_categorytype') ?? attr(rec, 'rvr_categorytype') ?? '');\n  const lastUpdated = String(attr(rec, 'rvr_publishedlastupdatedate') ?? '');\n  const approvalId = attr(rec, 'rvr_approvalid') ?? rec.Id;\n  const approvalNumber = attr(rec, 'rvr_approvalnumber');\n  if (!approvalId) continue;\n  if (!KEEP.test(category)) continue;\n  if (lastUpdated && lastUpdated <= highWater) continue; // already imported\n  if (lastUpdated > maxSeen) maxSeen = lastUpdated;\n  out.push({ json: { approvalId, approvalNumber, category, lastUpdated } });\n}\n\n// Stash the candidate high-water mark; only commit it after a successful run.\nstaticData.roverPendingHighWaterMark = maxSeen;\nstaticData.roverFoundThisRun = out.length;\nreturn out;"
-      }
-    },
-    {
-      "id": "fetch-detail",
-      "name": "Fetch VTADetails HTML",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1320, 300],
-      "parameters": {
-        "url": "=https://rover.infrastructure.gov.au/PublishedApprovals/VTADetails/?id={{ $json.approvalId }}",
-        "method": "GET",
-        "options": {}
-      },
-      "notes": "Server-rendered HTML embeds every document inline as base64 in downloadPdfFile('<b64>','<name>.pdf'). We DON'T parse it here — the app does. One GET per new/changed approval; keep it polite (one at a time)."
-    },
-    {
-      "id": "post-ingest",
-      "name": "POST → app /api/rover/ingest",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1540, 300],
-      "parameters": {
-        "url": "={{ $env.APP_BASE_URL }}/api/rover/ingest/",
-        "method": "POST",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
             {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.ROVER_INGEST_TOKEN }}"
-            },
-            { "name": "Content-Type", "value": "application/json" }
+              "leftValue": "={{ $json.__control }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ detailHtml: $json.data ?? $json.body }) }}",
-        "options": {
-          "response": {
-            "response": { "neverError": true, "fullResponse": true }
-          }
         }
-      },
-      "notes": "The app extracts the inline PDFs, parses + archives, and lands per-variant PENDING candidates. Returns { ok, vtaNumber, variantsCreated, variantsRefreshed, amendment }. Trailing slash + the bearer token are required (trailingSlash:true → a 308 hop otherwise)."
+      }
     },
     {
       "id": "health",
-      "name": "Commit high-water mark + crawl-health",
+      "name": "Crawl-health",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1760, 300],
+      "position": [760, 180],
       "parameters": {
-        "jsCode": "// Runs once all items are posted. Commit the high-water mark and raise a\n// crawl-health flag if this run found 0 new records when it usually finds some\n// (a 0-new run looks identical to 'no new approvals' — the scraper may be broken).\nconst staticData = $getWorkflowStaticData('global');\nconst found = staticData.roverFoundThisRun ?? 0;\nconst history = Array.isArray(staticData.roverRecentCounts) ? staticData.roverRecentCounts : [];\nhistory.push(found);\nwhile (history.length > 8) history.shift();\nstaticData.roverRecentCounts = history;\n\nif (staticData.roverPendingHighWaterMark) {\n  staticData.roverHighWaterMark = staticData.roverPendingHighWaterMark;\n  delete staticData.roverPendingHighWaterMark;\n}\n\nconst usuallyFinds = history.length >= 4 && history.slice(0, -1).some((n) => n > 0);\nconst alert = found === 0 && usuallyFinds;\nreturn [{ json: { found, recentCounts: history, highWaterMark: staticData.roverHighWaterMark, crawlHealthAlert: alert } }];"
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Crawl-health: always runs (off the __control row). Tracks the per-run found-count\n// history and raises crawlHealthAlert when a run finds 0 new while it normally finds\n// some — i.e. the scraper is probably broken, not the world (a 0-new run looks\n// identical to \"no new approvals\"). Structural breakage already throws upstream.\nconst sd = $getWorkflowStaticData('global');\nconst ctrl = $input.all().map((i) => i.json).find((j) => j && j.__control) || { found: 0 };\nconst hist = Array.isArray(sd.roverRecentCounts) ? sd.roverRecentCounts : [];\nhist.push(ctrl.found || 0);\nwhile (hist.length > 8) hist.shift();\nsd.roverRecentCounts = hist;\nconst usuallyFinds = hist.length >= 4 && hist.slice(0, -1).some((n) => n > 0);\nconst crawlHealthAlert = (ctrl.found || 0) === 0 && usuallyFinds;\nreturn [{ json: { found: ctrl.found || 0, recentCounts: hist, crawlHealthAlert, highWaterMs: sd.roverHighWaterMs || 0 } }];\n"
       }
     },
     {
-      "id": "alert-if-broken",
-      "name": "Alert if crawler looks broken",
+      "id": "routeAlert",
+      "name": "Alert needed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1980, 300],
+      "position": [1000, 180],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "version": 2 },
+          "options": {
+            "caseSensitive": true,
+            "version": 2
+          },
           "combinator": "and",
           "conditions": [
             {
@@ -175,73 +97,97 @@
             }
           ]
         }
-      },
-      "notes": "TRUE branch → wire to Tim's alerting (email / Slack / a webhook). Left unwired here (authored-only)."
+      }
+    },
+    {
+      "id": "alert",
+      "name": "Alert (wire to email/Slack)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1240, 180],
+      "parameters": {}
+    },
+    {
+      "id": "process",
+      "name": "Process approvals (throttled) → ingest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 420],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Process new approvals (throttled, sequential, oldest-first). For each: fetch the\n// public VTADetails page, POST its HTML to the app's /api/rover/ingest (the app\n// extracts + gates), then advance the high-water mark — but only AFTER a successful\n// ingest, processed oldest-first, so a mid-run block leaves a clean, contiguous\n// watermark (next run resumes exactly where this stopped; ingest is idempotent).\nconst HOST = 'https://www.rover.infrastructure.gov.au';\nconst UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';\nconst APP = ($env.APP_BASE_URL || 'https://tbr.dev.ragebots.me').replace(/\\/$/, '');\nconst TOKEN = $env.ROVER_INGEST_TOKEN || '';\nif (!TOKEN) throw new Error('ROVER_INGEST_TOKEN env var is not set on the n8n host');\nconst helpers = this.helpers;\nconst sd = $getWorkflowStaticData('global');\nconst sleep = (ms) => new Promise((r) => setTimeout(r, ms));\nconst jitter = () => 4000 + Math.floor(Math.random() * 6000); // 4–10s between ROVER hits\nconst items = $input.all().map((i) => i.json).filter((j) => j && !j.__control && j.approvalId);\nitems.sort((a, b) => (a.updatedMs || 0) - (b.updatedMs || 0)); // oldest-first\nconst out = [];\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i];\n  if (i > 0) await sleep(jitter());\n  // 1. fetch VTADetails (public; no cookies needed)\n  const det = await helpers.httpRequest({ method: 'GET', url: HOST + '/PublishedApprovals/VTADetails/?id=' + encodeURIComponent(j.approvalId), headers: { 'User-Agent': UA, Accept: 'text/html', 'Accept-Language': 'en-AU,en;q=0.9' }, returnFullResponse: true, ignoreHttpStatusErrors: true });\n  if ([403, 429, 503].includes(det.statusCode)) throw new Error('ROVER detail ' + det.statusCode + ' at ' + j.vta + ' — possible block; aborting (high-water not advanced past here)');\n  if (det.statusCode >= 400) { out.push({ json: { vta: j.vta, ok: false, error: 'detail ' + det.statusCode } }); continue; }\n  // 2. POST the HTML to the app — it extracts the inline PDFs, parses, archives, gates\n  const ing = await helpers.httpRequest({ method: 'POST', url: APP + '/api/rover/ingest/', headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ detailHtml: String(det.body) }), returnFullResponse: true, ignoreHttpStatusErrors: true });\n  if (ing.statusCode >= 400) { out.push({ json: { vta: j.vta, ok: false, error: 'ingest ' + ing.statusCode, detail: String(ing.body).slice(0, 200) } }); continue; }\n  // 3. success -> advance high-water monotonically\n  if (j.updatedMs) sd.roverHighWaterMs = Math.max(sd.roverHighWaterMs || 0, j.updatedMs);\n  const parsed = typeof ing.body === 'string' ? (() => { try { return JSON.parse(ing.body); } catch (e) { return {}; } })() : (ing.body || {});\n  out.push({ json: { vta: j.vta, ok: true, variantsCreated: parsed.variantsCreated, variantsRefreshed: parsed.variantsRefreshed, amendment: parsed.amendment && parsed.amendment.status } });\n}\nreturn out;\n"
+      }
     }
   ],
   "connections": {
     "Weekly schedule": {
       "main": [
-        [{ "node": "Prime session (cookies)", "type": "main", "index": 0 }]
-      ]
-    },
-    "Prime session (cookies)": {
-      "main": [[{ "node": "Get CSRF token HTML", "type": "main", "index": 0 }]]
-    },
-    "Get CSRF token HTML": {
-      "main": [[{ "node": "Extract token", "type": "main", "index": 0 }]]
-    },
-    "Extract token": {
-      "main": [[{ "node": "Fetch grid page", "type": "main", "index": 0 }]]
-    },
-    "Fetch grid page": {
-      "main": [
         [
           {
-            "node": "Filter: towing categories + newer than high-water mark",
+            "node": "ROVER: discover new approvals",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Filter: towing categories + newer than high-water mark": {
-      "main": [
-        [{ "node": "Fetch VTADetails HTML", "type": "main", "index": 0 }]
-      ]
-    },
-    "Fetch VTADetails HTML": {
-      "main": [
-        [{ "node": "POST → app /api/rover/ingest", "type": "main", "index": 0 }]
-      ]
-    },
-    "POST → app /api/rover/ingest": {
+    "ROVER: discover new approvals": {
       "main": [
         [
           {
-            "node": "Commit high-water mark + crawl-health",
+            "node": "Route: control vs approvals",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Commit high-water mark + crawl-health": {
+    "Route: control vs approvals": {
       "main": [
         [
           {
-            "node": "Alert if crawler looks broken",
+            "node": "Crawl-health",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process approvals (throttled) → ingest",
             "type": "main",
             "index": 0
           }
         ]
+      ]
+    },
+    "Crawl-health": {
+      "main": [
+        [
+          {
+            "node": "Alert needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert needed?": {
+      "main": [
+        [
+          {
+            "node": "Alert (wire to email/Slack)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },
   "settings": {
     "executionOrder": "v1",
-    "saveManualExecutions": true,
-    "timezone": "Australia/Brisbane"
+    "timezone": "Australia/Brisbane",
+    "saveManualExecutions": true
   },
   "active": false
 }

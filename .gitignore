@@ -59,3 +59,4 @@ next-env.d.ts
 # ROVER local artifacts (regenerable; real source PDFs in docs/RVD/ are kept as test fixtures)
 docs/RVD/_parsed.json
 docs/RVD/_fetched/
+ops/n8n/secureconfig.local.txt
