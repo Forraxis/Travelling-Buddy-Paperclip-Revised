@@ -60,3 +60,5 @@ next-env.d.ts
 docs/RVD/_parsed.json
 docs/RVD/_fetched/
 ops/n8n/secureconfig.local.txt
+ops/n8n/.rover-skeleton.jsonl
+ops/n8n/.rover-skeleton-status.json

@@ -41,6 +41,22 @@ enum RoverDocType {
   APPROVAL_NOTICE
 }
 
+/** Where an accepted per-field spec value came from (VariantSpecProvenance). */
+enum SpecProvenanceSource {
+  ROVER     // structured federal approval doc — authoritative for the fields it carries
+  CLAUDE    // grounded-AI estimate (gated for criticals)
+  PLATE     // compliance plate (VLM-confirmed) — per-rig truth
+  COMMUNITY // user-submitted, aggregated via the P3 moat
+  MANUAL    // admin-entered
+}
+
+/** Trust state of an accepted per-field value. */
+enum SpecProvenanceStatus {
+  CONFIRMED // authoritative (ROVER/plate) or ≥K cross-source agreement
+  ESTIMATE  // single-source AI / unconfirmed — gated for compliance-criticals
+  DISPUTED  // independent sources disagree
+}
+
 enum VehicleBodyType {
   DUAL_CAB_UTE
   SINGLE_CAB_UTE
@@ -174,11 +190,49 @@ model VehicleVariant {
   calibrationContributions CalibrationContribution[]
   calibrationCorrection    VehicleCalibrationCorrection?
   specCandidates           VehicleSpecCandidate[]        @relation("SpecCandidateVariant")
+  specProvenance           VariantSpecProvenance[]
 
   @@unique([modelId, slug])
   @@index([slug])
   @@index([modelId])
   @@index([status, communitySubmitterId])
+}
+
+// Per-field provenance — the "spine" of the Vehicle Data Hub (VEHICLE_DATA_HUB.md).
+// One row per (variant, field): the accepted value, who said so, how confident, and
+// when. Field-agnostic — `value` is a canonical string keyed by `field`, so the broad
+// Tier-B sweep (powertrain/efficiency) is stored here WITHOUT adding typed columns to
+// VehicleVariant; the calculator keeps reading the typed columns it already has, while
+// the hub + fuel app read provenance. Lets the verdict engine narrow "Est. — confirm
+// your plate" to the specific estimated fields instead of the whole variant.
+model VariantSpecProvenance {
+  id                 String               @id @default(cuid())
+  variantId          String
+  // Canonical field key — matches the spec-field catalogue / VehicleVariant column
+  // name where one exists; any key is allowed (Tier-B fields have no column).
+  field              String
+  // Canonical string value; null = "known absent" (never a guessed 0).
+  value              String?
+  source             SpecProvenanceSource
+  // Gated by default: an AI single-source value is an ESTIMATE until a plate or
+  // cross-source agreement confirms it. ROVER-carried fields promote as CONFIRMED.
+  status             SpecProvenanceStatus @default(ESTIMATE)
+  confidence         SpecFieldConfidence?
+  // Citation (grounded-Claude per-field source URL, ROVER report URL, …).
+  sourceUrl          String?
+  // Independent authoritative sources agreeing (drives the cross-source upgrade).
+  corroboratingCount Int                  @default(0)
+  // When the value was sourced / last reviewed — the "current as of [date]" stamp + staleness.
+  asOf               DateTime             @default(now())
+  notes              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  variant            VehicleVariant       @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, field])
+  @@index([variantId])
+  @@index([field])
+  @@index([status])
 }
 
 model CaravanMake {

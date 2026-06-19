@@ -15,6 +15,10 @@
  * than creating a duplicate — so a ROVER amendment that refreshed the candidate
  * can be re-promoted safely.
  */
+import type {
+  SpecProvenanceSource,
+  SpecProvenanceStatus,
+} from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { evaluatePromotionGate, type GateableField } from './gating';
 import { buildVariantPatch, type VariantSpecPatch } from './promotion';
@@ -164,6 +168,41 @@ export async function promoteSpecCandidate(
         decidedAt: new Date(),
       },
     });
+
+    // Per-field provenance — the Vehicle Data Hub spine (VEHICLE_DATA_HUB.md). Record
+    // each promoted field's accepted value + where it came from; ROVER/corroborated →
+    // CONFIRMED, else ESTIMATE (gated). Keyed by (variantId, field) so a re-promote
+    // refreshes in place.
+    for (const f of candidate.fields) {
+      const value =
+        f.adminValue && f.adminValue !== '' ? f.adminValue : f.value;
+      if (value === null) continue; // only record fields we actually promoted
+      const fieldProvider = f.provider ?? candidate.provider;
+      const source: SpecProvenanceSource =
+        fieldProvider === 'ROVER'
+          ? 'ROVER'
+          : fieldProvider === 'ADMIN'
+            ? 'MANUAL'
+            : 'CLAUDE';
+      const status: SpecProvenanceStatus = f.corroborated
+        ? 'CONFIRMED'
+        : 'ESTIMATE';
+      const provData = {
+        value,
+        source,
+        status,
+        confidence: f.confidence,
+        sourceUrl: f.sourceUrl,
+        corroboratingCount: f.corroborated ? 1 : 0,
+        asOf: new Date(),
+        notes: f.notes,
+      };
+      await tx.variantSpecProvenance.upsert({
+        where: { variantId_field: { variantId, field: f.field } },
+        update: provData,
+        create: { variantId, field: f.field, ...provData },
+      });
+    }
 
     await tx.moderationAction.create({
       data: {
