@@ -10,11 +10,13 @@ export const metadata = { title: 'Vehicle Data Hub — Admin' };
 const PAGE_SIZE = 50;
 const CATEGORIES = ['MA', 'MB', 'MC', 'MD', 'ME', 'NA', 'NB1', 'NB2', 'NC'];
 const STATES = ['UNFETCHED', 'EXPANDED', 'SKIPPED'] as const;
+const NORMS = ['AUTO', 'NEEDS_REVIEW', 'MANUAL', 'UNPROCESSED'] as const;
 
 type Search = {
   q?: string;
   category?: string;
   state?: string;
+  norm?: string;
   page?: string;
 };
 
@@ -30,6 +32,7 @@ export default async function DataHubPage({
   const q = (sp.q ?? '').trim();
   const category = sp.category ?? '';
   const state = sp.state ?? '';
+  const norm = sp.norm ?? '';
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1);
 
   const where: Prisma.RoverApprovalIndexWhereInput = {};
@@ -37,6 +40,8 @@ export default async function DataHubPage({
     where.OR = [
       { make: { contains: q, mode: 'insensitive' } },
       { model: { contains: q, mode: 'insensitive' } },
+      { baseMake: { contains: q, mode: 'insensitive' } },
+      { baseModel: { contains: q, mode: 'insensitive' } },
       { vtaNumber: { contains: q, mode: 'insensitive' } },
     ];
   }
@@ -44,6 +49,9 @@ export default async function DataHubPage({
   if (state)
     where.expandState =
       state as Prisma.RoverApprovalIndexWhereInput['expandState'];
+  if (norm)
+    where.normalizationStatus =
+      norm as Prisma.RoverApprovalIndexWhereInput['normalizationStatus'];
 
   const [rows, total, totalAll] = await Promise.all([
     prisma.roverApprovalIndex.findMany({
@@ -56,6 +64,11 @@ export default async function DataHubPage({
         vtaNumber: true,
         make: true,
         model: true,
+        baseMake: true,
+        baseModel: true,
+        modifier: true,
+        isSecondStage: true,
+        normalizationStatus: true,
         category: true,
         lastUpdated: true,
         expandState: true,
@@ -71,6 +84,7 @@ export default async function DataHubPage({
       q,
       category,
       state,
+      norm,
       page: String(page),
       ...overrides,
     };
@@ -78,6 +92,7 @@ export default async function DataHubPage({
     if (merged.q) p.set('q', merged.q);
     if (merged.category) p.set('category', merged.category);
     if (merged.state) p.set('state', merged.state);
+    if (merged.norm) p.set('norm', merged.norm);
     if (merged.page && merged.page !== '1') p.set('page', merged.page);
     const s = p.toString();
     return s ? `?${s}` : '';
@@ -135,13 +150,28 @@ export default async function DataHubPage({
             ))}
           </select>
         </label>
+        <label className="flex flex-col text-xs font-medium text-gray-600">
+          Normalization
+          <select
+            name="norm"
+            defaultValue={norm}
+            className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900"
+          >
+            <option value="">All</option>
+            {NORMS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           type="submit"
           className="rounded-md bg-gray-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-gray-700"
         >
           Search
         </button>
-        {(q || category || state) && (
+        {(q || category || state || norm) && (
           <Link
             href="/admin/catalogue/vehicles/data-hub"
             className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-700"
@@ -161,17 +191,19 @@ export default async function DataHubPage({
           <thead className="bg-gray-50 text-left text-xs font-medium tracking-wide text-gray-500 uppercase">
             <tr>
               <th className="px-4 py-2">VTA</th>
-              <th className="px-4 py-2">Make</th>
-              <th className="px-4 py-2">Model</th>
-              <th className="px-4 py-2">Category</th>
-              <th className="px-4 py-2">Last updated</th>
+              <th className="px-4 py-2">Base make</th>
+              <th className="px-4 py-2">Base model</th>
+              <th className="px-4 py-2">Modifier</th>
+              <th className="px-4 py-2">Cat</th>
+              <th className="px-4 py-2">Raw (ROVER)</th>
+              <th className="px-4 py-2">Norm</th>
               <th className="px-4 py-2">State</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
                   No vehicles match these filters.
                 </td>
               </tr>
@@ -181,17 +213,44 @@ export default async function DataHubPage({
                 <td className="px-4 py-2 font-mono text-xs text-gray-600">
                   {r.vtaNumber}
                 </td>
-                <td className="px-4 py-2 text-gray-900">{r.make ?? '—'}</td>
-                <td className="px-4 py-2 text-gray-900">{r.model ?? '—'}</td>
+                <td className="px-4 py-2 font-medium text-gray-900">
+                  {r.baseMake ?? (
+                    <span className="text-red-500">? unresolved</span>
+                  )}
+                </td>
+                <td className="px-4 py-2 text-gray-900">
+                  {r.baseModel ?? '—'}
+                </td>
+                <td className="px-4 py-2">
+                  {r.modifier ? (
+                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-xs font-medium text-indigo-700">
+                      {r.modifier}
+                      {r.isSecondStage ? ' ·2nd' : ''}
+                    </span>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-2">
                   <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
                     {r.category ?? '—'}
                   </span>
                 </td>
-                <td className="px-4 py-2 text-gray-500">
-                  {r.lastUpdated
-                    ? r.lastUpdated.toISOString().slice(0, 10)
-                    : '—'}
+                <td className="px-4 py-2 text-xs text-gray-400">
+                  {r.make} {r.model}
+                </td>
+                <td className="px-4 py-2">
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+                      r.normalizationStatus === 'AUTO'
+                        ? 'bg-green-50 text-green-700'
+                        : r.normalizationStatus === 'NEEDS_REVIEW'
+                          ? 'bg-red-50 text-red-700'
+                          : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {r.normalizationStatus}
+                  </span>
                 </td>
                 <td className="px-4 py-2">
                   <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">

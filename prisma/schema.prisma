@@ -48,6 +48,14 @@ enum RoverIndexExpandState {
   SKIPPED   // intentionally not expanded
 }
 
+/** Make/model normalization state in RoverApprovalIndex. */
+enum RoverNormalizationStatus {
+  UNPROCESSED  // not yet normalized
+  AUTO         // resolved automatically (OEM match / learned model→make map)
+  NEEDS_REVIEW // ambiguous — base make couldn't be resolved confidently (AI/human next)
+  MANUAL       // set by an admin
+}
+
 /** Where an accepted per-field spec value came from (VariantSpecProvenance). */
 enum SpecProvenanceSource {
   ROVER     // structured federal approval doc — authoritative for the fields it carries
@@ -1384,12 +1392,22 @@ model RoverApprovalIndex {
   vtaNumber        String                @unique
   // The rvr_approvalid GUID — the key for the VTADetails fetch that expands this.
   approvalId       String
+  // Applicant free text as ROVER states it — for second-stage approvals the modifier
+  // is baked into the make ("PREMCAR", "IRONMAN TOYOTA", "CAR NISSAN").
   make             String?
   model            String?
   // ADR category CODE as the grid states it (MA, NB1, NC, …).
   category         String?
   // Grid rvr_publishedlastupdatedate.
   lastUpdated      DateTime?
+  // ── Normalized identity (the normalization pass; VEHICLE_DATA_HUB.md §3.5) ──
+  // Resolved OEM make/model the hub groups by ("Nissan" / "D23 Navara"); the modifier
+  // (e.g. "Premcar") is captured separately and becomes a second-stage overlay.
+  baseMake            String?
+  baseModel           String?
+  modifier            String?
+  isSecondStage       Boolean                  @default(false)
+  normalizationStatus RoverNormalizationStatus @default(UNPROCESSED)
   expandState      RoverIndexExpandState  @default(UNFETCHED)
   // Set once expanded → the resulting catalogue model.
   resultingModelId String?
@@ -1399,6 +1417,8 @@ model RoverApprovalIndex {
   updatedAt        DateTime               @updatedAt
 
   @@index([make])
+  @@index([baseMake, baseModel])
   @@index([category])
   @@index([expandState])
+  @@index([normalizationStatus])
 }
