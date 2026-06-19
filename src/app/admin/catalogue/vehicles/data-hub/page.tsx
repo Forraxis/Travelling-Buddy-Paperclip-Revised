@@ -213,8 +213,15 @@ export default async function DataHubPage({
             )}
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 font-mono text-xs text-gray-600">
-                  {r.vtaNumber}
+                <td className="px-4 py-2 font-mono text-xs">
+                  <Link
+                    href={`/admin/catalogue/vehicles/data-hub/${encodeURIComponent(
+                      r.vtaNumber,
+                    )}`}
+                    className="text-indigo-600 hover:underline"
+                  >
+                    {r.vtaNumber}
+                  </Link>
                 </td>
                 <td className="px-4 py-2 font-medium text-gray-900">
                   {r.baseMake ?? (
