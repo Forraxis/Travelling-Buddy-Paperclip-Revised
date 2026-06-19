@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { getAdminUser } from '@/modules/admin/lib/auth';
 import { AdminPageHeader } from '@/modules/admin/components/AdminPageHeader';
 import { prisma } from '@/lib/db';
+import { ExpandButton } from './_components/ExpandButton';
 
 export const metadata = { title: 'Vehicle Data Hub — Admin' };
 
@@ -62,6 +63,7 @@ export default async function DataHubPage({
       select: {
         id: true,
         vtaNumber: true,
+        approvalId: true,
         make: true,
         model: true,
         baseMake: true,
@@ -198,12 +200,13 @@ export default async function DataHubPage({
               <th className="px-4 py-2">Raw (ROVER)</th>
               <th className="px-4 py-2">Norm</th>
               <th className="px-4 py-2">State</th>
+              <th className="px-4 py-2">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">
                   No vehicles match these filters.
                 </td>
               </tr>
@@ -256,6 +259,14 @@ export default async function DataHubPage({
                   <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700">
                     {r.expandState}
                   </span>
+                </td>
+                <td className="px-4 py-2">
+                  {r.expandState === 'UNFETCHED' && r.approvalId ? (
+                    <ExpandButton
+                      approvalId={r.approvalId}
+                      vtaNumber={r.vtaNumber}
+                    />
+                  ) : null}
                 </td>
               </tr>
             ))}

@@ -74,6 +74,51 @@ export const OEM_MAKES: readonly string[] = [
   'Ineos',
   'Cadillac',
   'Deepal',
+  // ── Added to resolve the NEEDS_REVIEW tail (small-volume but unambiguous AU
+  //    makes that were landing as second-stage NEEDS_REVIEW because they weren't
+  //    in the seed list). Each only ever appears AS the make in the ROVER grid —
+  //    none is a body/coachbuilder modifier — so they're safe to recognise.
+  'Aston Martin',
+  'Ferrari',
+  'Lamborghini',
+  'Maserati',
+  'Alfa Romeo',
+  'Rolls-Royce',
+  'Bentley',
+  'Lotus',
+  'McLaren',
+  'Mahindra',
+  'FAW',
+  'GAC',
+  'JMC',
+  'Dongfeng',
+  'Sinotruk',
+  'Shacman',
+  'Chenglong',
+  'Sany',
+  'Yutong',
+  'King Long',
+  'Zhongtong',
+  'Higer',
+  'Marcopolo',
+  'Irizar',
+  'Bonluck',
+  'Tatra',
+  'Liebherr',
+  'Rosenbauer',
+  'Jaecoo',
+  'Leapmotor',
+  'Zeekr',
+  'Denza',
+  'Omoda',
+  'Smart',
+  'Forthing',
+  'Deepway',
+  'BCI',
+  'XPeng',
+  'NIO',
+  'Aion',
+  'Skywell',
 ];
 
 /** Distinctive token → canonical OEM (handles multi-word + abbreviations). */
@@ -84,8 +129,13 @@ const OEM_TOKEN_ALIASES: Record<string, string> = {
   fuso: 'Mitsubishi Fuso',
   landrover: 'Land Rover',
   ssangyong: 'SsangYong',
-  western: 'Western Star',
   greatwall: 'GWM',
+  // KGM is SsangYong's post-2024 global rebrand (KG Mobility).
+  kgm: 'SsangYong',
+  sinotruck: 'Sinotruk',
+  // NOTE: multi-word makes (Western Star, Rolls-Royce, Aston Martin, Land Rover) are
+  // matched as phrases — we deliberately do NOT alias their generic fragments
+  // ("western"/"rolls"/"aston"/"land") to avoid false positives on coachbuilders.
 };
 
 /** Tokens that don't identify a model (body/trans/drive noise). */
@@ -165,18 +215,27 @@ export interface NormalizeResult {
 }
 
 export class RoverMakeNormalizer {
-  /** lowercased single-token → canonical OEM (seed list + aliases). */
+  /** single-word makes + distinctive aliases → canonical OEM. */
   private readonly oemToken = new Map<string, string>();
+  /** multi-word makes matched as a PHRASE, so a generic fragment ("land",
+   * "western", "martin") never resolves on its own to Land Rover / Western Star / … */
+  private readonly oemPhrases: { tokens: string[]; oem: string }[] = [];
   /** learned: model token → set of canonical OEM makes seen with it on factory rows. */
   private readonly modelTokenToMake = new Map<string, Set<string>>();
 
   constructor(oems: readonly string[] = OEM_MAKES) {
     for (const oem of oems) {
-      for (const t of tokenize(oem)) {
-        // Skip too-generic single tokens of multi-word makes ("land", "star").
-        if (t.length >= 3) this.oemToken.set(t, oem);
+      const toks = tokenize(oem);
+      if (toks.length === 1) {
+        // Single-word make (Toyota, MG, UD, RAM) → register its token, any length.
+        this.oemToken.set(toks[0], oem);
+      } else {
+        // Multi-word make → match the whole phrase, never its fragments.
+        this.oemPhrases.push({ tokens: toks, oem });
       }
     }
+    // Longest phrase first → the most specific match wins.
+    this.oemPhrases.sort((a, b) => b.tokens.length - a.tokens.length);
     for (const [token, oem] of Object.entries(OEM_TOKEN_ALIASES)) {
       this.oemToken.set(token, oem);
     }
@@ -188,6 +247,16 @@ export class RoverMakeNormalizer {
   ): { oem: string; modifierPrefix: string | null } | null {
     const toks = tokenize(make);
     for (let i = 0; i < toks.length; i++) {
+      // A multi-word make phrase starting here (longest-first) takes precedence.
+      for (const p of this.oemPhrases) {
+        if (
+          i + p.tokens.length <= toks.length &&
+          p.tokens.every((t, k) => toks[i + k] === t)
+        ) {
+          const prefix = toks.slice(0, i).join(' ').trim();
+          return { oem: p.oem, modifierPrefix: prefix.length ? prefix : null };
+        }
+      }
       const oem = this.oemToken.get(toks[i]);
       if (oem) {
         const prefix = toks.slice(0, i).join(' ').trim();
@@ -227,7 +296,58 @@ export class RoverMakeNormalizer {
     return [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0];
   }
 
-  normalize(make: string | null, model: string | null): NormalizeResult {
+  /**
+   * Conservative substring fallback for the model: a model token that *contains*
+   * a learned model token as a substring (e.g. "navarahd" → "navara"). Only fires
+   * when the learned token is long enough (>=4) to be distinctive and maps to a
+   * single OEM, so "d23" never matches inside random codes. Used only after the
+   * exact-token vote returns nothing.
+   */
+  private oemFromModelSubstring(model: string): string | null {
+    const votes = new Map<string, number>();
+    for (const t of modelTokens(model)) {
+      for (const [learned, makes] of this.modelTokenToMake) {
+        if (learned.length >= 4 && makes.size === 1 && t.includes(learned)) {
+          const oem = [...makes][0];
+          votes.set(oem, (votes.get(oem) ?? 0) + 1);
+        }
+      }
+    }
+    if (votes.size !== 1) return null; // only resolve when a SINGLE OEM is implied
+    return [...votes.keys()][0];
+  }
+
+  /**
+   * Last-resort: scan the raw grid attributes (the flattened ROVER row JSON) for
+   * an OEM token. The grid carries the manufacturer/marketing strings under keys
+   * like "cv.rvr_manufacturer" / "vt.rvr_marketingdesignation"; if any string
+   * value cleanly contains an OEM token we can recover the base make even when the
+   * applicant `make` and `model` columns don't. Conservative: requires exactly one
+   * distinct OEM across all scanned string values (ambiguous → null).
+   */
+  private oemFromRaw(raw: Record<string, unknown>): string | null {
+    const found = new Set<string>();
+    for (const v of Object.values(raw)) {
+      if (typeof v !== 'string') continue;
+      const m = this.oemInMake(v);
+      if (m) found.add(m.oem);
+    }
+    return found.size === 1 ? [...found][0] : null;
+  }
+
+  /**
+   * @param make  applicant `make` free text (may bake in a modifier).
+   * @param model applicant `model` free text.
+   * @param raw   OPTIONAL flattened ROVER grid attributes (the index `raw` JSON).
+   *              When supplied it's a last-resort signal — a make/manufacturer
+   *              string buried in the grid can recover the base OEM the make/model
+   *              columns miss. The 2-arg call path is unchanged.
+   */
+  normalize(
+    make: string | null,
+    model: string | null,
+    raw?: Record<string, unknown> | null,
+  ): NormalizeResult {
     const cleanModel = model?.trim() || null;
     if (!make?.trim()) {
       return {
@@ -251,11 +371,16 @@ export class RoverMakeNormalizer {
     }
 
     // Make has no OEM token → it's purely a modifier (e.g. "PREMCAR"). Recover the
-    // base make from the model via the learned map.
-    const fromModel = cleanModel ? this.oemFromModel(cleanModel) : null;
-    if (fromModel) {
+    // base make from the model via the learned map (exact token vote, then a
+    // conservative substring fallback), then from the raw grid attributes.
+    const fromModel = cleanModel
+      ? (this.oemFromModel(cleanModel) ??
+        this.oemFromModelSubstring(cleanModel))
+      : null;
+    const recovered = fromModel ?? (raw ? this.oemFromRaw(raw) : null);
+    if (recovered) {
       return {
-        baseMake: fromModel,
+        baseMake: recovered,
         baseModel: cleanModel,
         modifier: make.trim(),
         isSecondStage: true,

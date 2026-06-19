@@ -18,6 +18,7 @@
  * runner (src/jobs/rover-ingest-local.ts).
  */
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 import {
   extractRoverDocuments,
   extractPdfText,
@@ -105,6 +106,13 @@ export async function POST(req: Request) {
     const result = await ingestRvd(latest.doc, notice, {
       rvd: latest.filename,
       notice: noticeDoc?.filename,
+    });
+
+    // Flip the skeleton index row to EXPANDED (whether this came from the crawl or
+    // an on-demand expand) so the Data Hub reflects that its data has been fetched.
+    await prisma.roverApprovalIndex.updateMany({
+      where: { vtaNumber: result.vtaNumber },
+      data: { expandState: 'EXPANDED' },
     });
 
     return NextResponse.json({

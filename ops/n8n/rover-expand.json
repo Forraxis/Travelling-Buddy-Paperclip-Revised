@@ -1,0 +1,74 @@
+{
+  "name": "ROVER expand-on-select → TravellingBuddy ingest",
+  "meta": {
+    "description": "Authored, not auto-activated. Webhook-triggered, on-demand ROVER expand: the app's /api/rover/expand POSTs { approvalId, vtaNumber } here; this single, polite fetch pulls the public VTADetails page (browser-like UA, on the VPN / AU egress) and POSTs its HTML to {APP_BASE_URL}/api/rover/ingest/ with the bearer token — the app extracts the inline PDFs, parses, archives and gates (PENDING). The ingest result is returned to the original caller via Respond to Webhook. CRITICAL: the app never fetches ROVER itself; it only triggers this workflow. Single fetch (no paging, no grid), so no anti-bot concerns beyond the browser-like UA. Set APP_BASE_URL + ROVER_INGEST_TOKEN on the n8n host. See ops/n8n/README.md. active:false."
+  },
+  "nodes": [
+    {
+      "id": "webhook",
+      "name": "Expand request (webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "rover-expand",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rover-expand",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "expand",
+      "name": "Fetch VTADetails → ingest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// On-demand expand: fetch ONE public VTADetails page and POST its HTML to the\n// app's /api/rover/ingest (the app extracts + gates). Single, polite fetch — no\n// paging, no grid, no cookies (VTADetails is public). Mirrors the Process node in\n// rover-crawl.json but for exactly one approval driven by the webhook body.\nconst HOST = 'https://www.rover.infrastructure.gov.au';\nconst UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';\nconst APP = ($env.APP_BASE_URL || 'https://tbr.dev.ragebots.me').replace(/\\/$/, '');\nconst TOKEN = $env.ROVER_INGEST_TOKEN || '';\nif (!TOKEN) throw new Error('ROVER_INGEST_TOKEN env var is not set on the n8n host');\nconst helpers = this.helpers;\n// Webhook payload lands under .body for the n8n webhook node.\nconst payload = ($json && $json.body) ? $json.body : ($json || {});\nconst approvalId = payload.approvalId;\nconst vta = payload.vtaNumber || null;\nif (!approvalId) throw new Error('expand webhook called without approvalId');\n// 1. fetch the public VTADetails page\nconst det = await helpers.httpRequest({ method: 'GET', url: HOST + '/PublishedApprovals/VTADetails/?id=' + encodeURIComponent(approvalId), headers: { 'User-Agent': UA, Accept: 'text/html', 'Accept-Language': 'en-AU,en;q=0.9' }, returnFullResponse: true, ignoreHttpStatusErrors: true });\nif ([403, 429, 503].includes(det.statusCode)) throw new Error('ROVER detail ' + det.statusCode + ' for ' + approvalId + ' — possible block; aborting');\nif (det.statusCode >= 400) return [{ json: { ok: false, vtaNumber: vta, approvalId, error: 'detail ' + det.statusCode } }];\n// 2. POST the HTML to the app — it extracts the inline PDFs, parses, archives, gates\nconst ing = await helpers.httpRequest({ method: 'POST', url: APP + '/api/rover/ingest/', headers: { Authorization: 'Bearer ' + TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ detailHtml: String(det.body) }), returnFullResponse: true, ignoreHttpStatusErrors: true });\nconst parsed = typeof ing.body === 'string' ? (() => { try { return JSON.parse(ing.body); } catch (e) { return {}; } })() : (ing.body || {});\nif (ing.statusCode >= 400) return [{ json: { ok: false, vtaNumber: vta, approvalId, error: 'ingest ' + ing.statusCode, detail: String(ing.body).slice(0, 200) } }];\nreturn [{ json: { ok: true, vtaNumber: parsed.vtaNumber || vta, approvalId, variantsCreated: parsed.variantsCreated, variantsRefreshed: parsed.variantsRefreshed, amendment: parsed.amendment && parsed.amendment.status } }];\n"
+      }
+    },
+    {
+      "id": "respond",
+      "name": "Respond to webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [520, 300],
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Expand request (webhook)": {
+      "main": [
+        [
+          {
+            "node": "Fetch VTADetails → ingest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch VTADetails → ingest": {
+      "main": [
+        [
+          {
+            "node": "Respond to webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Australia/Brisbane",
+    "saveManualExecutions": true
+  },
+  "active": false
+}

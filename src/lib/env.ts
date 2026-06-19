@@ -69,6 +69,9 @@ const envSchema = z
     // n8n calls with the VTADetails HTML. Unset (default) = the endpoint returns
     // 404 and stays invisible; only set it to bring the ingest path online.
     ROVER_INGEST_TOKEN: optionalString,
+    // n8n webhook the app calls to expand a ROVER skeleton on demand (the app never
+    // fetches ROVER directly — n8n does, on the VPN). Unset = the expand route 503s.
+    ROVER_EXPAND_WEBHOOK_URL: optionalString,
 
     // Email (optional — sends are skipped with a warning when absent).
     RESEND_API_KEY: optionalString,
