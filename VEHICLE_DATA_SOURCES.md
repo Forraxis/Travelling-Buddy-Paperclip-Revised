@@ -109,25 +109,29 @@ Hybrid, to reconcile "every variant, going way back" with "don't pre-pay for the
 > `trim()` is **not** whitelisted in CKAN `datastore_search_sql` (Authorization Error) — normalize
 > whitespace client-side; match with `LIKE 'VALUE%'` server-side.
 
-- **No API key required.** CKAN read API is public; keys are only for writing.
-- Endpoints (the New & Transfers passenger file, resource_id `612e754f-695c-4bee-91c4-06db8e28bf51`):
-  - `https://www.data.qld.gov.au/api/3/action/datastore_search?resource_id=…&limit=&offset=&filters=`
-  - `https://www.data.qld.gov.au/api/3/action/datastore_search_sql?sql=…` (server-side `GROUP BY` —
-    build the distinct list + prevalence without downloading the file).
-- Fields: `MAKE, MODEL, BADGE, BODY_SHAPE, YEAR_OF_MANUFACTURE, FUEL_TYPE, COMPLIANCE_YEAR,
-  COMPLIANCE_MONTH, CYLINDER_OR_ROTOR_INDICATOR, OPEN_DATA_VEHICLE_IDENTIFIER` (+ record/LGA/colour
-  noise).
-- **It's transaction-level** — same `OPEN_DATA_VEHICLE_IDENTIFIER` repeats across transfers. Build the
-  identity list by `GROUP BY MAKE,MODEL,BADGE,BODY_SHAPE,YEAR` (counts = prevalence weighting).
-- **Normalize** make/model/badge like we did for ROVER (`RoverMakeNormalizer` pattern) — TMR
-  conventions are inconsistent.
-- Real top makes (verified): Toyota 82.7k · Mazda 41.4k · Hyundai 41.1k · Holden 41.0k · Mitsubishi
-  32.1k · Ford 29.0k · Nissan 29.0k …
-- QLD-only (one state) but covers essentially every common AU model; skews 4WD/ute/caravan — *good*
-  for this app. NSW/VIC publish similar if we ever broaden.
-- Egress: a published open-data CSV/API download is **not** the ROVER portal — low risk — but it
-  still leaves the home IP. For repeated/bulk pulls, prefer routing through n8n/VPN per
-  `crawl-egress-vpn-only`.
+- **No API key required.** CKAN read API is public (keys are only for *writing*).
+- **Endpoints** (base `https://www.data.qld.gov.au`): `…/api/3/action/datastore_search` (paginated) and
+  `…/api/3/action/datastore_search_sql?sql=…` (server-side `GROUP BY` — aggregate without downloading).
+- **Light Vehicles fleet = the spine the scripts use.** Resource IDs (see `LIGHT_VEHICLE_PARTS` in
+  `qld-fleet-ingest-local.ts`): Part1 `16352b55-…`, Part2 `2d5d94d7-…`, Part3 `46da194e-…`,
+  Part4 `edd505f7-…`, Part5 `f4427a2b-…`. Columns are **mixed-case, trailing-whitespace**:
+  `Make, Model, "Body Shape", "Year of Manufacture", "Fuel Type", "Number of Cylinders", "GVM Weight",
+  "TARE Weight", …`. ⚠️ The passenger *New & Transfers* file (`612e754f-…`) uses DIFFERENT **upper-case**
+  columns (`MAKE, MODEL, BADGE, BODY_SHAPE, …`) and has no weights — don't mix the two up.
+- **Gotcha:** `trim()` is blocked in CKAN SQL (Authorization Error) → match with `LIKE 'VALUE%'`
+  server-side, normalize whitespace client-side.
+- **How to run a job:** `DATABASE_URL="$(grep '^DATABASE_URL=' .env.local | cut -d= -f2-)" npx jiti
+  src/jobs/<job>.ts [flags]`. (`jiti` is the TS runner; runners build their own PrismaClient via the
+  PrismaPg adapter, so only `DATABASE_URL` is needed. Bulk pulls should go via n8n/VPN — see egress below.)
+- **Schema-change gotcha (Prisma 7):** `migrate dev` rejects `--skip-seed`/`--skip-generate` and reads the
+  URL from `prisma.config.ts`. Use `DATABASE_URL=… npx prisma migrate dev --name X --create-only --url "$DB"`
+  → `DATABASE_URL=… npx prisma migrate deploy` (no seed, no reset) → `npx prisma generate`.
+- **Normalize** make/model like ROVER (`RoverMakeNormalizer` pattern) — TMR conventions are inconsistent.
+- QLD-only (one state) but covers ~every common AU model; skews 4WD/ute/caravan — *good* for this app.
+  NSW/VIC publish similar if we broaden. Indicative prevalence: Toyota 982k · Mazda 382k · Holden 354k ·
+  Mitsubishi 330k · Ford 327k regos (light-vehicle fleet).
+- Egress: a public open-data API call is **not** the ROVER portal (low risk) — but it still leaves the home
+  IP. For repeated/bulk pulls, route through n8n/VPN per `crawl-egress-vpn-only`.
 
 ## Dead ends (do not re-research)
 
@@ -174,7 +178,10 @@ QLD fleet backbone is **ingested → normalised (deterministic + AI) → ready t
   (`/tmp/qld-canon/out-*.json`) back into staging.
 - Multi-agent workflow `qld-model-canonicalise` resolved the 1,285-pair tow residue (787→AUTO, 403→JUNK,
   95→review); ~$3–6, no web search. (Inefficiency noted: each agent re-read the full input file — next time
-  pass per-batch slices.)
+  pass per-batch slices.) **Only `qld-canon-writeback-local.ts` is committed** — the extract step
+  (NEEDS_REVIEW + GVM + tow-body distinct pairs → `/tmp/qld-canon/input.json`) was ad-hoc and the workflow
+  script lives in the session dir, NOT the repo. To re-run canonicalisation (e.g. the passenger tail), both
+  must be recreated/committed first.
 
 **Migrations applied:** `20260620015952_add_qld_fleet_vehicle`, `20260620023156_qld_normalization_fields`.
 
@@ -195,14 +202,31 @@ otherwise near-empty test data (3 makes / 2 variants), so QLD+ROVER effectively 
 **GVM-upgrade cross-source:** ROVER = the *certified kit* (Ironman HiLux SSM → upgraded GVM/GCM/axle); QLD
 `gvmUpgradeSignal` = the *same upgrades seen in registrations* (e.g. 198 Rangers at 3500 GVM). Reconcile.
 
+**Promotion mechanics to settle (open design — decide these before building the promote job):**
+- **Order matters.** Create base `VehicleVariant`s FIRST (ROVER base + QLD AUTO), THEN run the GVM-upgrade
+  routing — a `GvmUpgrade` row attaches to an *existing* base variant, so the base must exist or it orphans.
+- **QLD↔ROVER merge.** Both feed the *same* variants — join on canonical make/model (+ year) so a HiLux
+  isn't duplicated. Take GVM/kerb from QLD, GCM/badge from ROVER. Define the merge key + dedupe before insert.
+- **QLD combo → `VehicleVariant` mapping.** QLD is per (make, model, **year**, body) with **no trim**, but
+  `VehicleVariant` has `yearFrom/yearTo` + a `name`/`slug` (trim-level). Decide: collapse QLD years into
+  `yearFrom/yearTo` ranges? one variant per (make, model, body)? what `name` when there's no trim
+  (e.g. body-based: "HiLux Dual Cab")? Map QLD `Body Shape` → the `VehicleBodyType` enum
+  (`DUAL_CAB_UTE` / `WAGON` / `SUV` / `VAN` …; QLD has no SUV — wagons cover 4WD wagons).
+- **Idempotent + batched**, everything `ESTIMATE`. New job, e.g. `qld-promote-local.ts`.
+
 **Rule 11 / trust:** everything promoted lands `ESTIMATE`; plate stays the only green; axle limits still
 absent (manuals / AI / plate). Do not un-gate.
 
 ## Open items
 
 - [ ] **Promotion** (above) — AUTO + ROVER-base → variants; the 174 GVM_UPGRADE → overlays; clean the stale make.
-- [ ] **n8n refresh workflow** — wrap `qld-fleet-ingest-local.ts --write` for periodic refresh; **import inactive**.
-- [ ] **Passenger NEEDS_REVIEW tail (~15k)** — optional: run `qld-model-canonicalise` over it for full non-tow coverage.
+- [ ] **n8n refresh workflow** — periodic re-pull. n8n can't run `jiti` directly, so either (a) an exec/SSH
+      node that runs `qld-fleet-ingest-local.ts --write` on the box, or (b) replicate the CKAN queries in n8n
+      → POST to a new app ingest endpoint (the ROVER `ops/n8n/` pattern). **Import inactive.** Data refreshes
+      only when QLD republishes (~periodic), so low urgency.
+- [ ] **Passenger NEEDS_REVIEW tail (~15k)** — optional, for full non-tow coverage: first re-create the
+      extract (→ `/tmp/qld-canon/input.json`) + the `qld-model-canonicalise` workflow (neither committed —
+      see Build-status note), then run + `qld-canon-writeback-local.ts --write`.
 - [ ] **GVG licence** — email `gvg@infrastructure.gov.au` for a data extract + commercial reuse terms (Tim/ops).
 - [ ] **Owner's-manual collection** — Tim gathering; wire `OWNER_MANUAL → CONFIRMED` provenance tier.
 - [ ] **Grounded Claude provider** — tiered prompt (cheap headline, grounded axles + second-stage,
