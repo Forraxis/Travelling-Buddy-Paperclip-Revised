@@ -24,7 +24,9 @@ enum SpecFieldConfidence {
   LOW
 }
 
-/** Where a fetched vehicle-spec candidate (or one of its fields) came from. */
+/**
+ * Where a fetched vehicle-spec candidate (or one of its fields) came from.
+ */
 enum SpecFetchProvider {
   MOCK
   QWEN
@@ -35,17 +37,21 @@ enum SpecFetchProvider {
   ROVER
 }
 
-/** Which ROVER per-VTA document a RoverDocument archive row holds. */
+/**
+ * Which ROVER per-VTA document a RoverDocument archive row holds.
+ */
 enum RoverDocType {
   RVD
   APPROVAL_NOTICE
 }
 
-/** Skeleton expansion state in RoverApprovalIndex. */
+/**
+ * Skeleton expansion state in RoverApprovalIndex.
+ */
 enum RoverIndexExpandState {
   UNFETCHED // names only (from the grid) — no spec data yet
-  EXPANDED  // RVD detail fetched → variants created
-  SKIPPED   // intentionally not expanded
+  EXPANDED // RVD detail fetched → variants created
+  SKIPPED // intentionally not expanded
 }
 
 /**
@@ -74,28 +80,34 @@ enum GvmUpgradePathway {
   STATE_ENGINEER
 }
 
-/** Make/model normalization state in RoverApprovalIndex. */
+/**
+ * Make/model normalization state in RoverApprovalIndex.
+ */
 enum RoverNormalizationStatus {
-  UNPROCESSED  // not yet normalized
-  AUTO         // resolved automatically (OEM match / learned model→make map)
+  UNPROCESSED // not yet normalized
+  AUTO // resolved automatically (OEM match / learned model→make map)
   NEEDS_REVIEW // ambiguous — base make couldn't be resolved confidently (AI/human next)
-  MANUAL       // set by an admin
+  MANUAL // set by an admin
 }
 
-/** Where an accepted per-field spec value came from (VariantSpecProvenance). */
+/**
+ * Where an accepted per-field spec value came from (VariantSpecProvenance).
+ */
 enum SpecProvenanceSource {
-  ROVER     // structured federal approval doc — authoritative for the fields it carries
-  CLAUDE    // grounded-AI estimate (gated for criticals)
-  PLATE     // compliance plate (VLM-confirmed) — per-rig truth
+  ROVER // structured federal approval doc — authoritative for the fields it carries
+  CLAUDE // grounded-AI estimate (gated for criticals)
+  PLATE // compliance plate (VLM-confirmed) — per-rig truth
   COMMUNITY // user-submitted, aggregated via the P3 moat
-  MANUAL    // admin-entered
+  MANUAL // admin-entered
 }
 
-/** Trust state of an accepted per-field value. */
+/**
+ * Trust state of an accepted per-field value.
+ */
 enum SpecProvenanceStatus {
   CONFIRMED // authoritative (ROVER/plate) or ≥K cross-source agreement
-  ESTIMATE  // single-source AI / unconfirmed — gated for compliance-criticals
-  DISPUTED  // independent sources disagree
+  ESTIMATE // single-source AI / unconfirmed — gated for compliance-criticals
+  DISPUTED // independent sources disagree
 }
 
 enum VehicleBodyType {
@@ -284,7 +296,6 @@ model VariantSpecProvenance {
  * an overlay on the base variant rather than a standalone variant: the calculator
  * keeps the base figures and applies this delta when the user picks their kit
  * (Setup.appliedGvmUpgradeId). Promoted from a second-stage ROVER candidate (P4).
- *
  * Rule 11: the physics overlay that uses these limits stays behind
  * GVM_UPGRADE_ENABLED + advisory until signed off.
  */
@@ -772,9 +783,13 @@ model SetupAccessory {
   fillPercent      Int              @default(100)
   cogXMmOverride   Int?
   cogYMmOverride   Int?
-  /** Vertical CoG height override (mm). Set when the user unlocks + repositions. */
+  /**
+   * Vertical CoG height override (mm). Set when the user unlocks + repositions.
+   */
   cogZMmOverride   Int?
-  /** Catalogue accessories sit at their known position until the user unlocks them. */
+  /**
+   * Catalogue accessories sit at their known position until the user unlocks them.
+   */
   positionUnlocked Boolean          @default(false)
   notes            String?
   createdAt        DateTime         @default(now())
@@ -829,9 +844,13 @@ model SetupCustomLoad {
   side              PlacementScope? // resolved side it was actually placed on
   footprintLengthMm Int?
   footprintWidthMm  Int?
-  /** Object height (mm) — the 3rd dimension for the side view. */
+  /**
+   * Object height (mm) — the 3rd dimension for the side view.
+   */
   footprintHeightMm Int?
-  /** Basic preset silhouette: box | cylinder | drawer | toolbox | lshape. */
+  /**
+   * Basic preset silhouette: box | cylinder | drawer | toolbox | lshape.
+   */
   shape             String?
   /**
    * True when this load is the weighbridge-calibration "unaccounted mass" — the
@@ -916,57 +935,57 @@ model WeighbridgeMeasurement {
  * for anonymous contributions; moderation never exposes contributor identity.
  */
 model CalibrationContribution {
-  id               String                 @id @default(cuid())
-  submitterId      String?
-  vehicleVariantId String
-  granularity      WeighbridgeGranularity
+  id                   String                 @id @default(cuid())
+  submitterId          String?
+  vehicleVariantId     String
+  granularity          WeighbridgeGranularity
   /**
    * M₀ — the measured ticket (granularity + values), JSON.
    */
-  measurement      Json
+  measurement          Json
   /**
    * C₀ — full calculator state the rig was weighed at, JSON.
    */
-  weighedSnapshot  Json
+  weighedSnapshot      Json
   /**
    * P₀ — the model's prediction for C₀ (axles/total/corners), JSON.
    */
-  prediction       Json
+  prediction           Json
   // ── Derived cache (recomputable from the raw JSON above) ──
-  measuredTotalKg  Float
-  predictedTotalKg Float
+  measuredTotalKg      Float
+  predictedTotalKg     Float
   /**
    * ΔM = measured − predicted total: the unexplained mass.
    */
-  residualMassKg   Float
+  residualMassKg       Float
   /**
    * kerb / measuredTotal ∈ (0,1]; ~1 = stripped vehicle = pristine base read.
    */
-  barenessWeight   Float
+  barenessWeight       Float
   /**
    * Per-contribution kerb-mass signal (kg).
    */
-  kerbMassDeltaKg  Float?
+  kerbMassDeltaKg      Float?
   /**
    * Per-contribution kerb-CoG-fraction signal; null when no axle/corner data.
    */
-  cogFractionDelta Float?
+  cogFractionDelta     Float?
   /**
    * Per-contributor identity: `user:<id>` when signed in, else a content hash of
    * the ticket. Collapses one actor (or one re-submitted weigh-in) to a single
    * vote in aggregation, so MIN_SAMPLES gates on distinct contributors, not rows.
    */
   duplicateFingerprint String?
-  status           SubmissionStatus       @default(PENDING)
-  source           String?
-  decidedById      String?
-  decidedAt        DateTime?
-  decisionNotes    String?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  submitter        User?                  @relation("CalibrationContributions", fields: [submitterId], references: [id], onDelete: SetNull)
-  decidedBy        User?                  @relation("CalibrationContributionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
-  vehicleVariant   VehicleVariant         @relation(fields: [vehicleVariantId], references: [id], onDelete: Cascade)
+  status               SubmissionStatus       @default(PENDING)
+  source               String?
+  decidedById          String?
+  decidedAt            DateTime?
+  decisionNotes        String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  submitter            User?                  @relation("CalibrationContributions", fields: [submitterId], references: [id], onDelete: SetNull)
+  decidedBy            User?                  @relation("CalibrationContributionDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  vehicleVariant       VehicleVariant         @relation(fields: [vehicleVariantId], references: [id], onDelete: Cascade)
 
   @@index([status])
   @@index([vehicleVariantId, status])
@@ -1325,29 +1344,29 @@ model ModerationAction {
  * later — mirrors the calibration moat). See OVERNIGHT_HANDOVER.md / RIG_LAYOUT.
  */
 model VehicleSpecCandidate {
-  id       String           @id @default(cuid())
+  id          String           @id @default(cuid())
   // Targeting — what the admin searched for. Free text; resolved to make/model
   // (creating them if needed) only at promotion time.
-  makeName String
-  modelName String
+  makeName    String
+  modelName   String
   variantName String?
-  yearFrom Int
-  yearTo   Int?
-  bodyType VehicleBodyType?
-  market   Market           @default(AU)
+  yearFrom    Int
+  yearTo      Int?
+  bodyType    VehicleBodyType?
+  market      Market           @default(AU)
 
   // Provenance of the whole fetch.
-  provider      SpecFetchProvider
-  providerModel String?
-  promptVersion String?
+  provider        SpecFetchProvider
+  providerModel   String?
+  promptVersion   String?
   // ROVER provenance — the federal RVSA approval this candidate was parsed from.
   // Null for the LLM/admin paths. sourceVtaNumber is the dedupe key for the
   // incremental crawl (a re-run upserts the same VTA, never duplicates it).
   sourceVtaNumber String?
   sourceReportUrl String?
   // Verbatim provider output (store raw, derive later), JSON. Null on a failed fetch.
-  rawResponse   Json?
-  fetchError    String?
+  rawResponse     Json?
+  fetchError      String?
 
   // Lifecycle. PENDING once fetched, APPROVED on promote, REJECTED on discard.
   status     SubmissionStatus @default(PENDING)
@@ -1371,10 +1390,10 @@ model VehicleSpecCandidate {
   updatedAt DateTime @updatedAt
 
   fields             VehicleSpecCandidateField[]
-  resultingVariant   VehicleVariant? @relation("SpecCandidateVariant", fields: [resultingVariantId], references: [id], onDelete: SetNull)
-  createdBy          User?           @relation("SpecCandidatesCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  decidedBy          User?           @relation("SpecCandidateDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
-  criticalOverrideBy User?           @relation("SpecCandidateOverrides", fields: [criticalOverrideById], references: [id], onDelete: SetNull)
+  resultingVariant   VehicleVariant?             @relation("SpecCandidateVariant", fields: [resultingVariantId], references: [id], onDelete: SetNull)
+  createdBy          User?                       @relation("SpecCandidatesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  decidedBy          User?                       @relation("SpecCandidateDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
+  criticalOverrideBy User?                       @relation("SpecCandidateOverrides", fields: [criticalOverrideById], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([resultingVariantId])
@@ -1391,24 +1410,24 @@ model VehicleSpecCandidate {
  * never 0); the promotion mapper parses them into the typed VehicleVariant column.
  */
 model VehicleSpecCandidateField {
-  id          String               @id @default(cuid())
-  candidateId String
+  id                   String               @id @default(cuid())
+  candidateId          String
   // Canonical VehicleVariant column name, e.g. "gvmKg", "wheelbaseMm".
-  field       String
+  field                String
   // Provider-suggested value (canonical string form). Null = not found, NOT zero.
-  value       String?
-  confidence  SpecFieldConfidence?
-  sourceUrl   String?
-  provider    SpecFetchProvider
+  value                String?
+  confidence           SpecFieldConfidence?
+  sourceUrl            String?
+  provider             SpecFetchProvider
   // Whether this field gates promotion to CATALOGUE (GVM/GCM/axle/tow-ball/towing).
-  isComplianceCritical Boolean @default(false)
+  isComplianceCritical Boolean              @default(false)
   // Admin's reviewed value — overrides `value` at promotion when set.
-  adminValue  String?
+  adminValue           String?
   // Admin explicitly corroborated this field (authoritative source / plate).
   // The ONLY trust signal that satisfies the critical-field gate (never confidence).
-  corroborated Boolean @default(false)
-  notes        String?
-  candidate    VehicleSpecCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  corroborated         Boolean              @default(false)
+  notes                String?
+  candidate            VehicleSpecCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
 
   @@unique([candidateId, field])
   @@index([candidateId])
@@ -1420,7 +1439,6 @@ model VehicleSpecCandidateField {
  * just the fields the calculator uses — so the data is re-mineable for future
  * TravellingBuddy projects (the "store raw, derive later" decision in
  * VEHICLE_DATA_FETCH.md). `VehicleVariant` stays a curated projection of this.
- *
  * Idempotent + versioned by `contentHash`: re-importing identical content is a
  * no-op; an amended approval (different hash) is a NEW row, so history is kept and
  * versions for one VTA are distinguishable.
@@ -1432,13 +1450,13 @@ model RoverDocument {
   // sha256 of the raw extracted text — identity + change-detection key.
   contentHash String
 
-  fileName    String?
-  make        String?
-  model       String?
+  fileName           String?
+  make               String?
+  model              String?
   // Broad category from the RVD ("N - Goods Vehicles"); fine category from the
   // Approval Notice ("NA - Light Goods Vehicle").
-  categoryBroad String?
-  categoryFine  String?
+  categoryBroad      String?
+  categoryFine       String?
   // Dates as ISO strings (yyyy-mm-dd). generatedDate = RVD download date; the
   // approval/variation/expiry come from the Approval Notice.
   generatedDate      String?
@@ -1464,18 +1482,18 @@ model RoverDocument {
 // model / category, browsable immediately. "Expand" (the RVD detail fetch) turns an
 // UNFETCHED skeleton into real VehicleVariants. Cheap to populate (grid only, no PDF).
 model RoverApprovalIndex {
-  id               String                @id @default(cuid())
-  vtaNumber        String                @unique
+  id                  String                   @id @default(cuid())
+  vtaNumber           String                   @unique
   // The rvr_approvalid GUID — the key for the VTADetails fetch that expands this.
-  approvalId       String
+  approvalId          String
   // Applicant free text as ROVER states it — for second-stage approvals the modifier
   // is baked into the make ("PREMCAR", "IRONMAN TOYOTA", "CAR NISSAN").
-  make             String?
-  model            String?
+  make                String?
+  model               String?
   // ADR category CODE as the grid states it (MA, NB1, NC, …).
-  category         String?
+  category            String?
   // Grid rvr_publishedlastupdatedate.
-  lastUpdated      DateTime?
+  lastUpdated         DateTime?
   // ── Normalized identity (the normalization pass; VEHICLE_DATA_HUB.md §3.5) ──
   // Resolved OEM make/model the hub groups by ("Nissan" / "D23 Navara"); the modifier
   // (e.g. "Premcar") is captured separately and becomes a second-stage overlay.
@@ -1487,13 +1505,13 @@ model RoverApprovalIndex {
   // base/OEM variants. Drives GVM-upgrade-vs-standalone promotion routing (P4).
   secondStageType     RoverSecondStageType     @default(NONE)
   normalizationStatus RoverNormalizationStatus @default(UNPROCESSED)
-  expandState      RoverIndexExpandState  @default(UNFETCHED)
+  expandState         RoverIndexExpandState    @default(UNFETCHED)
   // Set once expanded → the resulting catalogue model.
-  resultingModelId String?
+  resultingModelId    String?
   // Flattened grid attributes — kept raw for later mining (raw-archive-now).
-  raw              Json?
-  firstSeenAt      DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  raw                 Json?
+  firstSeenAt         DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
 
   @@index([make])
   @@index([baseMake, baseModel])
@@ -1501,4 +1519,61 @@ model RoverApprovalIndex {
   @@index([expandState])
   @@index([normalizationStatus])
   @@index([secondStageType])
+}
+
+/**
+ * Normalization state of a QldFleetVehicle row (set by qld-normalize-local.ts).
+ * AUTO = make+model canonicalised confidently (known model or ROVER-corroborated).
+ * NEEDS_REVIEW = canonical make but ambiguous model → the multi-agent AI residue.
+ * JUNK = non-canonical make (the rare import/typo tail, <1% of registrations).
+ */
+enum QldNormStatus {
+  AUTO
+  NEEDS_REVIEW
+  JUNK
+}
+
+/**
+ * QLD "Vehicle registrations — Light Vehicles" fleet seed (data.qld.gov.au open data).
+ * Identity + plated GVM/kerb + on-road prevalence + a real-world GVM-upgrade signal,
+ * aggregated per (make, model, year, body) by `src/jobs/qld-fleet-ingest-local.ts`.
+ * STAGING ONLY — not the live catalogue and NOT verified (plate stays the only green).
+ * No badge / GCM / axle here (those come from ROVER / AI / manual — see VEHICLE_DATA_SOURCES.md).
+ */
+model QldFleetVehicle {
+  id                String        @id @default(cuid())
+  // normalized identity (the grouping key)
+  make              String
+  model             String
+  yearOfManufacture Int
+  bodyShape         String
+  // attributes
+  fuelType          String?
+  cylinders         Int?
+  // derived plated specs (mode across registrations = factory figure)
+  factoryGvmKg      Int?
+  kerbTareKg        Int?
+  // prevalence + GVM-upgrade-in-the-wild signal
+  registrationCount Int           @default(0)
+  gvmDistinctCount  Int           @default(0)
+  gvmMinKg          Int?
+  gvmMaxKg          Int?
+  gvmUpgradeSignal  Boolean       @default(false)
+  gvmDistribution   Json?
+  // normalization (qld-normalize-local.ts) — canonical names + AUTO/NEEDS_REVIEW/JUNK split
+  canonicalMake     String?
+  canonicalModel    String?
+  normStatus        QldNormStatus @default(NEEDS_REVIEW)
+  roverMatched      Boolean       @default(false)
+  // provenance
+  source            String        @default("QLD_LIGHT_VEHICLE_FLEET")
+  ingestedAt        DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([make, model, yearOfManufacture, bodyShape])
+  @@index([make, model])
+  @@index([registrationCount])
+  @@index([gvmUpgradeSignal])
+  @@index([normStatus])
+  @@index([canonicalMake, canonicalModel])
 }
