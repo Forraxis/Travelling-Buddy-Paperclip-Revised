@@ -336,3 +336,51 @@ scraping — Google CAPTCHA-bans bots):
 - **Upgrade-kit axles** — Lovells' *upgraded* figures + CPA codes → `GvmUpgrade` overlays (the moat).
 - **User plate-verify UX** — pre-fill these ESTIMATEs, prompt owners to confirm → VERIFIED.
 - **Still open from §6:** heavy-junk variant cleanup (the 928 >8t) — NOT done this session.
+
+# SESSION 3 — 2026-06-21 (overnight expansion: multi-field + dimensions + new search angles)
+
+Ran an **automated overnight pipeline** (`ops/overnight-expand.sh`, nohup) + a parallel
+**experiment job** (`ops/overnight-experiments.sh`). Result: **axle 298 → 640 variants**,
+plus the first real coverage of GCM / tow-ball / overhangs.
+
+## S3.1 What was built
+- **Extract core now pulls dimensions** (`manual/extract.ts`): `wheelbaseMm, totalLengthMm,
+  frontOverhangMm, rearOverhangMm` added to `ManualSpecs` + the Qwen prompt. Overhang is the
+  **CoG-beam geometry** the differentiator consumes — was 0% everywhere.
+- **`brave-land` generalised to multi-field** — lands axle **+ GCM/tow/tow-ball/wheelbase/
+  length/overhangs**, per-field GVM-consensus, non-clobbering (only fills gaps / refreshes
+  MANUAL-CLAUDE; never overwrites ROVER/QLD).
+- **Shared `src/lib/spec-fetch/brave-vmap.ts`** — one source of truth for search + land;
+  each dork-vehicle maps to **multiple catalogue slugs** (fixes gen-splits: `triton`+
+  `triton-lb-lc`, `bt-50`+`bt-50d`…). Added **18 next-tier rigs** (RAM, Silverado, F-150,
+  Tundra, Jeep, Land Rover, SsangYong, LDV, GWM, Sprinter, Transit).
+- **Incremental + gap-aware pipeline**: `brave-pdf-search` gained `--append` + `--dorks=alt`;
+  `brave-extract` gained `--incremental`; `brave-gaps-local.ts` prints vehicles still <N% axle
+  → feeds an **alternate-dork second pass** (different phrasings) automatically.
+- **Search EXPERIMENTS** (`brave-experiment-local.ts`) — three NEW angles:
+  - **A — source-mining** `site:<vendor> filetype:pdf` over 15 AU suspension/GVM-upgrade
+    vendors (ultimatesuspension, Pedders, Peninsula4x4, Ironman, Dobinsons…). **The winner:
+    26/101 PDFs had factory axle** — a Lovells-grade vein (LandCruiser 80/100/105/200, Prado
+    90/120/150, Patrol Y61, Fortuner, FJ Cruiser, Pathfinder).
+  - **B — GAWR terminology** (10/109) + **C — GVM-cert** (9/76) — cracked stubborn SUVs
+    (CX-5, CR-V, Tucson, Outlander, ASX) that don't print "axle" in AU brochures.
+  - `experiment-land-local.ts` lands the experiment finds via a **curated name→model rule
+    table** (generic/ambiguous names skipped, never guessed) + **nearest-GVM assignment**
+    (each variant takes only its closest-GVM source → no cross-gen overwrite on LandCruiser).
+
+## S3.2 Coverage now (source=MANUAL = this whole axle effort)
+- **frontAxleLimitKg: 640 variants** (Toyota 126 · Mercedes/Sprinter 118 · Nissan 62 · Ford 58 ·
+  Isuzu 49 · Mazda 38 · Mitsubishi 29 · Holden 14 · Dodge 12 · GWM 8 · Land Rover 7 · Jeep 5 …).
+- **GCM +317 · tow-ball +261 · towing +203** (gap-fill over ROVER) · **overhangs 0 → 69/132**
+  (front/rear) · wheelbase +94 · length +83.
+- **Gaps left: 9** — commodore, captiva, sportage, amarok, jeep gladiator/grand-cherokee,
+  ssangyong musso/rexton, ldv t60.
+- Brave spend: ~126 (main) + alt pass + 50 (experiments) — well under the $10 / 2900-call cap.
+
+## S3.3 Open / follow-ups (in addition to S2.5)
+- **Tim Rule-11 sign-off** now covers **640** axle ESTIMATEs + the new GCM/tow/overhang rows.
+- **9 gap vehicles** — most are American/wagon niche; suspension-mining + a manual pass would close.
+- **Experiment leftovers** — `.experiment-extracted.jsonl` has finds we skipped (no rule / GVM
+  out of range, e.g. LandCruiser 300 gvm 4205, D-Max RG1 gvm 3695) — land once those gens exist.
+- **Overhang yield is thin (69/132)** — spec sheets rarely tabulate the F/R split; plate-verify
+  + manual deep-dive are the realistic path to fuller CoG geometry.

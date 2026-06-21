@@ -37,6 +37,13 @@ export interface ManualSpecs {
   rearAxleLimitKg: number | null;
   maxTowingCapacityKg: number | null;
   maxTowBallDownloadKg: number | null;
+  // Dimensions (mm) — wheelbase/length fill catalogue gaps; the overhang split
+  // feeds the longitudinal-CoG beam model (the differentiator). Best-effort: spec
+  // sheets table these alongside weights; owner's manuals often page them separately.
+  wheelbaseMm: number | null;
+  frontOverhangMm: number | null;
+  rearOverhangMm: number | null;
+  totalLengthMm: number | null;
 }
 
 export type Verdict =
@@ -126,6 +133,10 @@ const SPEC_KEYS: (keyof ManualSpecs)[] = [
   'rearAxleLimitKg',
   'maxTowingCapacityKg',
   'maxTowBallDownloadKg',
+  'wheelbaseMm',
+  'frontOverhangMm',
+  'rearOverhangMm',
+  'totalLengthMm',
 ];
 
 /** Score a page by how likely it holds the weights/axle table. */
@@ -213,10 +224,13 @@ async function docling(b64: string): Promise<string> {
 /** Qwen (thinking off): document text → spec JSON. */
 async function qwenExtract(docText: string): Promise<Partial<ManualSpecs>> {
   const sys =
-    'You extract vehicle weight specifications from document text into JSON. Keys: ' +
+    'You extract vehicle specifications from document text into JSON. Weight keys (integer kg): ' +
     'gvmKg, gcmKg, kerbWeightKg, frontAxleLimitKg, rearAxleLimitKg, maxTowingCapacityKg, ' +
-    'maxTowBallDownloadKg. Use the exact integer in kg stated for that field, or null if ' +
-    'not present. Front/rear axle = the front/rear axle capacity or GAWR. Return only JSON.';
+    'maxTowBallDownloadKg. Front/rear axle = the front/rear axle capacity or GAWR. ' +
+    'Dimension keys (integer MILLIMETRES — convert metres ×1000): wheelbaseMm, totalLengthMm ' +
+    '(overall length), frontOverhangMm, rearOverhangMm (front/rear overhang — distance from ' +
+    'the axle to the body end; only if explicitly stated, do not derive). Use the exact value ' +
+    'stated, or null if not present. Return only JSON.';
   const r = await fetch(`${QWEN_URL}/v1/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -224,9 +238,9 @@ async function qwenExtract(docText: string): Promise<Partial<ManualSpecs>> {
       model: QWEN_MODEL,
       messages: [
         { role: 'system', content: sys },
-        { role: 'user', content: docText.slice(0, 6000) },
+        { role: 'user', content: docText.slice(0, 8000) },
       ],
-      max_tokens: 500,
+      max_tokens: 700,
       temperature: 0,
       response_format: { type: 'json_object' },
       chat_template_kwargs: { enable_thinking: false },
@@ -261,6 +275,10 @@ const EMPTY_SPECS: ManualSpecs = {
   rearAxleLimitKg: null,
   maxTowingCapacityKg: null,
   maxTowBallDownloadKg: null,
+  wheelbaseMm: null,
+  frontOverhangMm: null,
+  rearOverhangMm: null,
+  totalLengthMm: null,
 };
 
 /** Full pipeline: PDF → PRE-SCREEN → weights page(s) → docling/text → Qwen → validate.

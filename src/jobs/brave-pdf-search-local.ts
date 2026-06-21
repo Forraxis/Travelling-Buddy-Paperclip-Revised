@@ -20,12 +20,24 @@
  *   …--vehicles="nissan navara d40,mitsubishi triton,volkswagen amarok"
  *   …--max-queries=20      # hard cap on Brave calls (quota guard)
  */
-import { appendFileSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+} from 'node:fs';
+import { VEHICLES as ALL_VEHICLES } from '../lib/spec-fetch/brave-vmap';
 
 const args = process.argv.slice(2);
+/** --append: keep the existing candidate file, dedup against it (for a 2nd pass). */
+const APPEND = args.includes('--append');
+/** --dorks=alt: use the alternate phrasings (different sources) for a gap pass. */
+const DORKSET =
+  args.find((a) => a.startsWith('--dorks='))?.slice('--dorks='.length) ??
+  'main';
 const VEHICLES = (
   args.find((a) => a.startsWith('--vehicles='))?.slice('--vehicles='.length) ??
-  'nissan navara d40,mitsubishi triton,volkswagen amarok'
+  ALL_VEHICLES.join(',')
 )
   .split(',')
   .map((s) => s.trim())
@@ -40,11 +52,21 @@ const ENDPOINT = 'https://api.search.brave.com/res/v1/web/search';
 
 /** Generation-level dork templates — `{v}` = "make model gen". Intent terms (filetype
  * + weight keywords) do the filtering; year precision is handled downstream. */
-const DORKS = [
-  '{v} filetype:pdf gvm gcm specifications',
-  '{v} filetype:pdf "gross vehicle mass" axle',
-  '{v} owners manual filetype:pdf weights specifications',
-];
+const DORK_SETS: Record<string, string[]> = {
+  main: [
+    '{v} filetype:pdf gvm gcm specifications',
+    '{v} filetype:pdf "gross vehicle mass" axle',
+    '{v} owners manual filetype:pdf weights specifications',
+  ],
+  // Alternate phrasings for the gap pass — aim at different docs/sources: dealer
+  // towing guides, dimension brochures, tare/ADR data sheets.
+  alt: [
+    '{v} towing capacity kerb weight specifications filetype:pdf',
+    '{v} dimensions wheelbase brochure filetype:pdf',
+    '{v} tare gvm braked towing data filetype:pdf',
+  ],
+};
+const DORKS = DORK_SETS[DORKSET] ?? DORK_SETS.main;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -94,12 +116,23 @@ async function main() {
   const key = process.env.BRAVE_API_KEY;
   if (!key) throw new Error('BRAVE_API_KEY is required.');
 
-  writeFileSync(OUT, '');
+  const seen = new Set<string>();
+  if (APPEND && existsSync(OUT)) {
+    // Pre-load already-collected URLs so the 2nd pass only adds genuinely new PDFs.
+    for (const line of readFileSync(OUT, 'utf8').split('\n').filter(Boolean)) {
+      try {
+        seen.add(normUrl((JSON.parse(line) as Hit).url));
+      } catch {
+        /* skip */
+      }
+    }
+  } else {
+    writeFileSync(OUT, '');
+  }
   console.log(
-    `\n=== BRAVE DORK SEARCH · ${VEHICLES.length} vehicles × ${DORKS.length} dorks ===\n`,
+    `\n=== BRAVE DORK SEARCH [${DORKSET}${APPEND ? ', append' : ''}] · ${VEHICLES.length} vehicles × ${DORKS.length} dorks · ${seen.size} already seen ===\n`,
   );
 
-  const seen = new Set<string>();
   const hits: Hit[] = [];
   let queries = 0;
   outer: for (const v of VEHICLES) {

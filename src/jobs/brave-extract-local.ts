@@ -30,6 +30,8 @@ const args = process.argv.slice(2);
 const LIMIT = Number(
   args.find((a) => a.startsWith('--limit='))?.slice('--limit='.length) ?? '999',
 );
+/** --incremental: keep prior results, only fetch+extract candidate URLs not already done. */
+const INCREMENTAL = args.includes('--incremental');
 const IN = 'ops/n8n/.brave-pdfs.jsonl';
 const OUT = 'ops/n8n/.brave-extracted.jsonl';
 const PROGRESS = 'ops/n8n/.brave-extract-progress.log';
@@ -81,15 +83,33 @@ async function fetchPdf(
 async function main() {
   if (!existsSync(IN))
     throw new Error(`${IN} not found — run brave-pdf-search-local.ts first.`);
-  const cands = readFileSync(IN, 'utf8')
+  let cands = readFileSync(IN, 'utf8')
     .split('\n')
     .filter(Boolean)
-    .map((l) => JSON.parse(l) as Cand)
-    .slice(0, LIMIT);
+    .map((l) => JSON.parse(l) as Cand);
 
-  writeFileSync(OUT, '');
+  // Incremental: load URLs already in OUT, skip them, append the rest.
+  const doneUrls = new Set<string>();
+  if (INCREMENTAL && existsSync(OUT)) {
+    for (const line of readFileSync(OUT, 'utf8').split('\n').filter(Boolean)) {
+      try {
+        doneUrls.add((JSON.parse(line) as { url: string }).url);
+      } catch {
+        /* skip */
+      }
+    }
+    cands = cands.filter((c) => !doneUrls.has(c.url));
+  } else {
+    writeFileSync(OUT, '');
+  }
+  cands = cands.slice(0, LIMIT);
+
   writeFileSync(PROGRESS, '');
-  progress(`=== BRAVE EXTRACT · ${cands.length} candidate PDFs ===`);
+  progress(
+    `=== BRAVE EXTRACT${INCREMENTAL ? ' [incremental]' : ''} · ${cands.length} candidate PDFs` +
+      (doneUrls.size ? ` (${doneUrls.size} already done, skipped)` : '') +
+      ' ===',
+  );
 
   const seenHash = new Set<string>();
   let fetched = 0;

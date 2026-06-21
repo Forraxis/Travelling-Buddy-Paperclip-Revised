@@ -68,3 +68,10 @@ ops/n8n/.lovells.jsonl
 ops/n8n/.brave-pdfs.jsonl
 ops/n8n/.brave-extracted.jsonl
 ops/n8n/.brave-extract-progress.log
+ops/n8n/.overnight.log
+ops/n8n/.overnight.out
+ops/n8n/.experiment-pdfs.jsonl
+ops/n8n/.experiment-extracted.jsonl
+ops/n8n/.experiment.log
+ops/n8n/.experiments.log
+ops/n8n/.experiments.out
