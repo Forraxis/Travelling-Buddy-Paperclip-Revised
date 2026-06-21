@@ -65,3 +65,6 @@ ops/n8n/.rover-skeleton-status.json
 ops/n8n/.manual-discovery.jsonl
 ops/n8n/.manual-progress.log
 ops/n8n/.lovells.jsonl
+ops/n8n/.brave-pdfs.jsonl
+ops/n8n/.brave-extracted.jsonl
+ops/n8n/.brave-extract-progress.log

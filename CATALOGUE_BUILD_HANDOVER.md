@@ -300,7 +300,27 @@ The §6 differentiator. Tried four sources:
     `VariantSpecProvenance` source=MANUAL/ESTIMATE, sourceUrl=Lovells page, **Rule-11-gated**.
     Verified gen-split correct (HiLux KUN 2005-15→1340/1600, GUN 2015+→1480/1700). 424 axle rows.
 
-**Axle coverage now:** Toyota 105 · Isuzu 49 · Ford 39 · Nissan 14 · Mazda 9 variants.
+**Axle coverage after Lovells:** 215 variants (Toyota 105 · Isuzu 49 · Ford 39 · Nissan 14 · Mazda 9).
+
+### S2.3b Brave-dork PDF discovery → axle for the gap vehicles + SUVs (the general source)
+Tim's idea: search-engine "dorks" → bulk PDF pipeline. Built (Brave Web Search API, NOT Google
+scraping — Google CAPTCHA-bans bots):
+- `src/jobs/brave-pdf-search-local.ts` — per vehicle × dork template (gen-level, e.g.
+  `{v} filetype:pdf gvm gcm specifications`) → Brave API → deduped PDF URL list (`.brave-pdfs.jsonl`).
+  3 dork templates carry the load; "exact-phrase axle" dorks return ~0 (dropped).
+- `src/jobs/brave-extract-local.ts` — fetch each PDF in-here, **content-hash dedup** (same spec sheet
+  mirrored on dozens of sites), run the manual-extract pipeline (pre-screen → text/VLM → Qwen). Size
+  cap + timeout + per-PDF progress file. 21 vehicles → 540 candidates → 379 unique → **77 with axle**.
+- `src/jobs/brave-land-local.ts` — **GVM-keyed** gen-aware landing (these PDFs lack year ranges, but
+  GVM discriminates the gen): match catalogue variants by GVM ±5%, prefer AU/OEM sources, require
+  axle agreement (skip conflicts). Landed **84 variants** (gap utes Navara/Triton/Holden Colorado+Rodeo
+  + SUVs X-Trail/CX-5/Kluger/Outlander/Pajero/Forester/Tucson/ASX/CR-V), MANUAL/ESTIMATE, Rule-11-gated.
+- Domains: OEM (nissan/ford/mitsubishi/vw .com.au), dealer CDNs, spec archives. Cross-source corroboration
+  (Triton 1260/1840 from 3 sites; matches the grounding finding). Caveat: some lands from foreign/odd
+  sites (subaruport.ru etc.) — ESTIMATE/sourced/correctable. Needs `BRAVE_API_KEY` (.env.local).
+
+**TOTAL axle coverage: 298 variants** (Lovells 215 + Brave 83 net) across 10 makes — Toyota 116 · Isuzu 49
+· Ford 46 · Nissan 42 · Mitsubishi 14 · Holden 14 · Mazda 12 · Hyundai/Honda/Subaru 6. **From 0.**
 
 ## S2.4 New deps / infra notes
 - `@anthropic-ai/sdk` (grounded Claude path) + `@napi-rs/canvas` (PDF render) added to package.json.

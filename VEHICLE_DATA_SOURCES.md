@@ -63,7 +63,14 @@ The front/rear axle gap (the longitudinal-CoG differentiator) is now sourced. Fi
    gen. Harvested + gen-aware-landed → **215 variants** (`lovells-harvest-local.ts` + `lovells-land-local.ts`),
    as MANUAL/ESTIMATE, Rule-11-gated, GVM-validated. Gaps (Navara/Triton/Amarok) → Pedders/Ironman next.
 
-The realistic axle stack: **Lovells (factory) → ESTIMATE** · **user plate photo → VERIFIED** (the truth).
+5. **✅ Brave-dork PDF discovery — the GENERAL source.** Search dorks (`filetype:pdf gvm gcm
+   specifications`) via the **Brave Web Search API** → bulk fetch → the extract pipeline →
+   GVM-keyed gen-aware landing. Surfaces OEM spec PDFs (the files portals gate), dealer CDNs,
+   spec archives. Added **84 variants** incl. SUVs Lovells can't cover (X-Trail/CX-5/Kluger/…).
+   `brave-pdf-search` + `brave-extract` + `brave-land`. Needs `BRAVE_API_KEY`.
+
+**TOTAL axle coverage 2026-06-21: 298 variants** (Lovells 215 + Brave 83) across 10 makes — from 0.
+The realistic axle stack: **Lovells + Brave-dork (factory/spec) → ESTIMATE** · **user plate → VERIFIED**.
 
 ## Acquisition strategy by data tier
 
