@@ -1,0 +1,74 @@
+{
+  "name": "ROVER backfill discovery \u2192 skeleton",
+  "meta": {
+    "description": "Authored. Webhook-driven, cursor-paged FULL-SWEEP discovery of the RAV back-catalogue (ASC by approval number). Returns towing-relevant skeleton rows for a batch of grid pages; the local orchestrator paginates + upserts into RoverApprovalIndex (UNFETCHED), then the expand path fetches detail. n8n does the ROVER grid fetch on the AU VPN; discovery only, no detail. active:false until a deliberate run."
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rover-backfill",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-backfill",
+      "name": "Backfill request (webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "rover-backfill"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// ROVER backfill discovery (webhook-driven, cursor-paged, DISCOVERY ONLY).\n// Primes secureConfig + CSRF, pages the grid ASC by approval number for a batch of\n// pages, returns towing-relevant skeleton rows + a pagination cursor. No detail fetch\n// (the expand path does that). The local orchestrator drives pagination + upserts the\n// rows into RoverApprovalIndex. Honours 403/429/503 by throwing (caller backs off).\nconst HOST = 'https://www.rover.infrastructure.gov.au';\nconst GRID = 'c8825c88-ebd8-ee11-904d-000d3a7a0265';\nconst UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';\nconst KEEP = /^(M[A-E]?|N[ABC]\\d?)$/i; // towing-relevant: passenger M*, goods N* (incl. NB/NC trucks)\nconst helpers = this.helpers;\nconst payload = ($json && $json.body) ? $json.body : ($json || {});\nconst PAGE_SIZE = Number(payload.pageSize) || 50;\nconst START = Number(payload.startPage) || 1;\nconst BATCH = Math.min(Number(payload.pages) || 10, 25);\nconst SORT = payload.sort || 'rvr_approvalnumber ASC';\nconst jar = {};\nconst cookieHeader = () => Object.entries(jar).map(([k, v]) => k + '=' + v).join('; ');\nconst absorb = (sc) => (sc || []).forEach((c) => { const p = String(c).split(';')[0]; const i = p.indexOf('='); if (i > 0) jar[p.slice(0, i).trim()] = p.slice(i + 1).trim(); });\nconst sleep = (ms) => new Promise((r) => setTimeout(r, ms));\nconst jitter = () => 2500 + Math.floor(Math.random() * 4500);\nasync function http(method, url, body, extra) {\n  const headers = { 'User-Agent': UA, Accept: '*/*', 'Accept-Language': 'en-AU,en;q=0.9', ...(extra || {}) };\n  if (Object.keys(jar).length) headers.Cookie = cookieHeader();\n  const opts = { method, url, headers, returnFullResponse: true, ignoreHttpStatusErrors: true };\n  if (body != null) { headers['Content-Type'] = 'application/json'; opts.body = body; }\n  const res = await helpers.httpRequest(opts);\n  absorb(res.headers && (res.headers['set-cookie'] || res.headers['Set-Cookie']));\n  if ([403, 429, 503].includes(res.statusCode)) { const ra = res.headers && (res.headers['retry-after'] || res.headers['Retry-After']); const e = new Error('ROVER ' + res.statusCode + ' rate-limit/block'); e.statusCode = res.statusCode; e.retryAfter = ra ? parseInt(ra, 10) : undefined; throw e; }\n  if (res.statusCode >= 400) throw new Error('ROVER ' + method + ' ' + url + ' -> ' + res.statusCode);\n  return res;\n}\nconst attr = (r, n) => { const a = (r.Attributes || []).find((x) => x.Name === n); return a ? (a.Value && a.Value.Value !== undefined ? a.Value.Value : a.Value) : null; };\nconst dotnet = (s) => { const m = String(s).match(/\\/Date\\((\\d+)\\)\\//); return m ? parseInt(m[1], 10) : null; };\ntry {\n  // 1. prime: directory -> secureConfig (+ cookies), then CSRF token\n  const dir = await http('GET', HOST + '/PublishedApprovals/VTAApprovals/');\n  const vlm = String(dir.body).match(/data-view-layouts=([\"'])([\\s\\S]*?)\\1/);\n  if (!vlm) throw new Error('data-view-layouts not found \u2014 ROVER layout changed');\n  const layouts = JSON.parse(Buffer.from(vlm[2].replace(/&quot;/g, '\"').replace(/&amp;/g, '&'), 'base64').toString('utf8'));\n  const secureConfig = (layouts[0] || {}).Base64SecureConfiguration;\n  if (!secureConfig) throw new Error('Base64SecureConfiguration missing');\n  const tok = await http('GET', HOST + '/_layout/tokenhtml');\n  const token = (String(tok.body).match(/value=\"([^\"]+)\"/) || [])[1];\n  if (!token) throw new Error('CSRF token not found');\n  // 2. page the grid ASC for this batch\n  const rows = [];\n  let more = false; let lastPage = START - 1;\n  for (let p = START; p < START + BATCH; p++) {\n    if (p > START) await sleep(jitter());\n    const grid = await http('POST', HOST + '/_services/entity-grid-data.json/' + GRID,\n      JSON.stringify({ base64SecureConfiguration: secureConfig, sortExpression: SORT, search: null, page: p, pageSize: PAGE_SIZE, filter: null, metaFilter: null }),\n      { __RequestVerificationToken: token, 'X-Requested-With': 'XMLHttpRequest' });\n    const data = typeof grid.body === 'string' ? JSON.parse(grid.body) : grid.body;\n    const recs = data.Records || [];\n    lastPage = p;\n    for (const r of recs) {\n      const cat = String(attr(r, 'cv.rvr_categorytype') || '');\n      if (!KEEP.test(cat)) continue;\n      const id = attr(r, 'rvr_approvalid') || r.Id;\n      if (!id) continue;\n      rows.push({ approvalId: id, vta: attr(r, 'rvr_approvalnumber'), make: attr(r, 'cv.rvr_manufacturer'), model: attr(r, 'cv.rvr_model'), category: cat, lastUpdatedMs: dotnet(attr(r, 'rvr_publishedlastupdatedate')) });\n    }\n    more = !!data.MoreRecords;\n    if (!recs.length || !more) { more = false; break; }\n  }\n  return [{ json: { ok: true, rows, count: rows.length, lastPage, nextPage: more ? lastPage + 1 : null, done: !more } }];\n} catch (err) {\n  return [{ json: { ok: false, blocked: [403, 429, 503].includes(err.statusCode), status: err.statusCode || null, retryAfter: err.retryAfter || null, error: String(err.message || err) } }];\n}"
+      },
+      "id": "code-backfill",
+      "name": "Page grid ASC (discovery)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "respond-backfill",
+      "name": "Respond to webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Backfill request (webhook)": {
+      "main": [
+        [
+          {
+            "node": "Page grid ASC (discovery)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Page grid ASC (discovery)": {
+      "main": [
+        [
+          {
+            "node": "Respond to webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Australia/Brisbane",
+    "saveManualExecutions": true
+  },
+  "active": false
+}

@@ -99,6 +99,7 @@ enum SpecProvenanceSource {
   PLATE // compliance plate (VLM-confirmed) — per-rig truth
   COMMUNITY // user-submitted, aggregated via the P3 moat
   MANUAL // admin-entered
+  QLD_REGO // QLD TMR registration fleet aggregate (GVM/kerb mode) — ESTIMATE pre-fill
 }
 
 /**
@@ -228,6 +229,7 @@ model VehicleVariant {
   rearOverhangMm           Int?
   totalLengthMm            Int?
   maxTowBallDownloadKg     Int?
+  maxRoofLoadKg            Int? // manufacturer dynamic roof-load limit — rooftop tents/racks eat GVM + raise CoG (source: manual/AI/plate, not QLD)
   fuelTankCapacityL        Int?
   fuelType                 FuelType?
   market                   Market                        @default(AU)

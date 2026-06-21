@@ -44,12 +44,26 @@ Encode as `VariantSpecProvenance` source tiers: `AI_WEB → ESTIMATE`,
 | **ROVER / RAV** | identity + GVM/GCM/tare (2021+) | GVM/GCM yes; no axle | Free, already ingested | Headline spine for 2021+ |
 | **Wikidata** | make/model/generation/year skeleton | No | Free (CC0) | Optional identity backbone |
 | **OEM spec-sheet PDFs** (Isuzu `/Spec_Sheets/`, Toyota hubs) | GVM/GCM/kerb/tow/TBM | partial (no axle split) | open PDFs | **VLM-extract → CONFIRMED** |
-| **OEM owner's manuals** | **front/rear axle limits** + plate data | **YES** (only broad source) | per-model PDFs | **Tim collecting → CONFIRMED** |
-| **AI grounding (Claude + web_search)** | any field, on demand | yes, but **M-grade aggregator** | API key + web search | **ESTIMATE gap-filler** |
-| **Lovells / Pedders pages** (+ distributor mirrors) | base→upgraded GVM/GCM/**axle** + CPA # | **YES** — the moat | public pages (harvest) | **→ `GvmUpgrade` model** |
+| **OEM owner's manuals** | **front/rear axle limits** + plate data | **YES** (but) | per-model PDFs | ⚠️ **NOT openly downloadable** — gated/portal'd/VIN'd (2026-06-21: 5/5 verified-discovery NO_URL). Extraction works on a PDF Tim *supplies* → CONFIRMED |
+| **AI grounding (Claude + web_search)** | gcm/overhang/fuel/dims YES; **axle mostly NO** | partial | API key + web search | ESTIMATE gap-filler for headline/geometry; **does NOT yield axles** (placard-only data) |
+| **Lovells / Pedders certifier pages** | **FACTORY** front/rear axle + GVM + GCM **AND** upgraded + CPA # | **YES — the axle source** | public HTML (Lovells not bot-blocked; Pedders 403s) | ✅ **2026-06-21: harvested → 215 variants axle landed.** Factory axle → base variant; upgrade → `GvmUpgrade` |
 | **Green Vehicle Guide** | identity + **fuel L/100km** (2004+) | No | search-only, **licence unconfirmed** | Pursue by email; not turnkey |
 | **RACQ Towing Mass Guide** | kerb/GVM/GCM/tow/ball (<4.5t, back to 2000) | GVM/GCM/tow yes; no axle | PDF/web | Cross-check seed |
 | **Compliance plate (user)** | the actual vehicle's certified figures | YES | user photo upload | **VERIFIED — the only green** |
+
+### Axle limits — SETTLED 2026-06-21 (after testing all four candidate sources)
+
+The front/rear axle gap (the longitudinal-CoG differentiator) is now sourced. Findings, in order:
+1. **AI web grounding** — fills gcm/overhang/fuel/dims, **not axles** (they're placard-only). ~$7, 5 rigs.
+2. **Owner's manuals** — **not openly downloadable** (gated/portal'd/VIN'd; verified-discovery 5/5 NO_URL,
+   ~$2). The local VLM extraction pipeline (`src/lib/spec-fetch/manual/extract.ts`: pre-screen →
+   docling-VLM/text → Qwen → GVM-validate) WORKS on a supplied PDF, but there's nothing to download.
+3. **RVD remarks** — axle only for second-stage builds (169 motorhome/upgrade docs in `RoverDocument.parsed`).
+4. **✅ GVM-upgrade certifiers (LOVELLS) — the answer.** Public HTML lists FACTORY front/rear axle per
+   gen. Harvested + gen-aware-landed → **215 variants** (`lovells-harvest-local.ts` + `lovells-land-local.ts`),
+   as MANUAL/ESTIMATE, Rule-11-gated, GVM-validated. Gaps (Navara/Triton/Amarok) → Pedders/Ironman next.
+
+The realistic axle stack: **Lovells (factory) → ESTIMATE** · **user plate photo → VERIFIED** (the truth).
 
 ## Acquisition strategy by data tier
 
@@ -144,6 +158,12 @@ Hybrid, to reconcile "every variant, going way back" with "don't pre-pay for the
 - **RedBook:** quote-only, ~low-tens-of-thousands AUD/yr, and **does not itemise axle limits** —
   pays for headline data we already get free from ROVER, skips the moat. (Owner = CAR Group, **not**
   cap hpi/Solera.)
+- **Owner's manuals via web (2026-06-21):** NOT openly downloadable — OEM portals 403/JS/VIN-gate, and
+  free-floating "manuals" online are mostly *workshop/repair* manuals (no weight ratings). Verified
+  AI discovery returned 5/5 NO_URL. Don't re-chase web discovery; the manual path needs Tim-supplied
+  PDFs (then the VLM pipeline extracts them) or the plate.
+- **AI web grounding for AXLES (2026-06-21):** axle limits are placard-only; grounding returns them
+  null for most makes (Toyota/Ford/Nissan). Good for gcm/overhang/fuel, not axles. Use Lovells instead.
 
 ## Cost notes (AI grounding)
 
@@ -185,7 +205,29 @@ QLD fleet backbone is **ingested → normalised (deterministic + AI) → ready t
 
 **Migrations applied:** `20260620015952_add_qld_fleet_vehicle`, `20260620023156_qld_normalization_fields`.
 
-## Next: promotion plan (the step to do)
+## Promotion — DONE (2026-06-20)
+
+**QLD AUTO → live catalogue is promoted.** `src/jobs/qld-promote-local.ts` (gate-clean, idempotent,
+`--dry-run`/`--write`/`--make=`/`--min-regs=`/`--min-band-regs=`) wrote: **41 makes · 329 models ·
+1,149 variants · 2,255 `QLD_REGO`/ESTIMATE provenance rows.** Decisions baked in:
+- **Tow bodies only** (DUAL CAB / UTILITY / UTE CAB'N'CHASSIS / WAGON / VAN) — the sedan/hearse/bus tail is excluded.
+- **One model per nameplate** (bodyType = dominant tow body); body+spec live on the variant name ("Dual Cab 2016–2020").
+  Mixed-case `canonicalModel` dups (LANDCRUISER/LandCruiser/Landcruiser) are folded by display-slug + a
+  per-(body,year) aggregation, so the `(modelId, name, year-range)` exclusion constraint holds.
+- **Spec-generation split**: contiguous years sharing factory GVM → one yearFrom–yearTo variant.
+- **Scope/quality**: 2005 year floor; iconic rigs (HiLux/LandCruiser/Patrol/Pajero/Navara/Prado) back to 1990;
+  per-variant ≥25 regs; sanity guards drop impossible kerb/GVM. Reconcile pass deletes stale/refresh leftovers.
+- New: `QLD_REGO` `SpecProvenanceSource` + `maxRoofLoadKg` on `VehicleVariant` (migrations
+  `…061913`, `…063140`). Roof load is unpopulated by QLD (manuals/AI/plate later) — rooftop-tent load
+  eats GVM + raises CoG (stability, Rule 11).
+
+**GVM upgrades:** `src/jobs/rover-promote-gvm-upgrade-bulk-local.ts` (run with `tsx`, not jiti) sweeps EXPANDED
+`secondStageType=GVM_UPGRADE` rows → `GvmUpgrade` overlays on the resolved base. Only **1 of 174 is EXPANDED**
+(VTA-066264 Ironman HiLux → attached, GVM 3800, GCM untouched); the other **173 are UNFETCHED and need the
+ROVER RVD detail-fetch via n8n/VPN** before they can attach. Stale makes `Ironman TMCA Toyota` + `TRAKKA FIAT`
+deleted. ROVER **base** (744 NONE rows) likewise needs expansion before GCM/badge merge.
+
+### Original routing plan (for reference)
 
 Fold `QldFleetVehicle` (+ ROVER) into the **live catalogue** as ESTIMATE-pending-plate. **3-way routing:**
 
@@ -219,7 +261,19 @@ absent (manuals / AI / plate). Do not un-gate.
 
 ## Open items
 
-- [ ] **Promotion** (above) — AUTO + ROVER-base → variants; the 174 GVM_UPGRADE → overlays; clean the stale make.
+- [x] **Promotion** (above) — QLD AUTO → variants (1,149) **DONE**; stale makes cleaned; 1/174 GVM_UPGRADE attached.
+- [~] **ROVER expansion via VPN** — IN PROGRESS. `rover-expand-bulk-local.ts` drives the n8n `rover-expand`
+      webhook per UNFETCHED row (n8n fetches ROVER on the AU VPN → app `/api/rover/ingest`). Politeness: jitter
+      + escalating backoff honouring `Retry-After` + 120s request timeout + abort-on-persistent-block.
+      **Gotcha found:** large detail pages (inline PDFs) 413 at the public nginx edge (`client_max_body_size`),
+      so the run posts to the app's **internal** URL `http://172.16.1.239:3070` to bypass it (ROVER hop still
+      VPN — only the n8n→app return hop changed). Long-term: raise the edge nginx limit. After expand:
+      `rover-promote-base-local.ts` + `rover-promote-gvm-upgrade-bulk-local.ts` to land GCM/axle + overlays + trucks.
+- [ ] **ROVER full backfill (the BIG pass)** — BUILT, not yet run. `ops/n8n/rover-backfill.json` (webhook
+      `rover-backfill`, imported + active in n8n) pages the grid **ASC by approval number** (full sweep), discovery
+      only; `rover-backfill-discover-local.ts` drives pagination + upserts skeleton rows into RoverApprovalIndex.
+      We hold ~1,321 of the ~5,000 register; this discovers the rest. **Run after the expand pass finishes** (don't
+      double live-portal load), then run expand again on the new UNFETCHED rows, then promote.
 - [ ] **n8n refresh workflow** — periodic re-pull. n8n can't run `jiti` directly, so either (a) an exec/SSH
       node that runs `qld-fleet-ingest-local.ts --write` on the box, or (b) replicate the CKAN queries in n8n
       → POST to a new app ingest endpoint (the ROVER `ops/n8n/` pattern). **Import inactive.** Data refreshes

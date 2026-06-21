@@ -40,7 +40,7 @@ AI/admin-assisted vehicle-spec ingestion. Built overnight on `feature/vehicle-da
 | Area | Where |
 | --- | --- |
 | Candidate sidecar schema (per-field provenance) | `prisma` — `VehicleSpecCandidate`, `VehicleSpecCandidateField`, enums `SpecFieldConfidence`, `SpecFetchProvider` |
-| Provider layer (interface + mock + qwen + claude-stub) | `src/lib/spec-fetch/` (`providers/`, `index.ts`) |
+| Provider layer (interface + mock + qwen + claude (real, grounded)) | `src/lib/spec-fetch/` (`providers/`, `index.ts`) |
 | Field catalogue + compliance-critical set | `src/lib/spec-fetch/fields.ts` |
 | Promotion gate (uncorroborated critical → blocked w/o override) | `src/lib/spec-fetch/gating.ts` |
 | Candidate→variant mapper | `src/lib/spec-fetch/promotion.ts` |
@@ -125,9 +125,9 @@ gate level before flipping `ROVER_CRAWL_ENABLED`.
 
 ## Remaining build (scaffolded, not wired)
 
-- [ ] **Claude (grounded) provider** — `providers/claude.ts` is interface-only. Implement
-      with `@anthropic-ai/sdk` + web_search + structured outputs; map citations →
-      per-field `sourceUrl`. Needs `ANTHROPIC_API_KEY`.
+- [x] **Claude (grounded) provider** — DONE 2026-06-21. `providers/claude.ts` implemented
+      (`@anthropic-ai/sdk` + `web_search_20260209` + strict record tool; citations →
+      per-field `sourceUrl`). Driven by `ground-axle-hotset-local.ts`. Needs `ANTHROPIC_API_KEY`.
 - [ ] **Live qwen/claude fetch wiring.** Today the admin action rejects non-MOCK. To
       enable: (1) `SPEC_FETCH_LIVE_ENABLED=true`, (2) have `fetchCandidate` enqueue on
       `specFetchQueue` for QWEN/CLAUDE instead of erroring (worker `runSpecFetchJob`

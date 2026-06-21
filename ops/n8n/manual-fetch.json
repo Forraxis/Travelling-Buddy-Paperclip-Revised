@@ -1,0 +1,52 @@
+{
+  "name": "manual-fetch",
+  "meta": {},
+  "nodes": [
+    {
+      "name": "Manual fetch (webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "manual-fetch",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "name": "Fetch PDF via VPN",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Step 2 of the manual pipeline: fetch ONE manual/spec PDF by URL, egressing\n// through this box's VPN (NOT the sandbox/home IP). Returns the bytes base64 when\n// the URL is a real PDF; flags HTML/portal pages so the orchestrator can route them\n// to the headless-browser path (step 2b). Mirrors the rover-expand fetch pattern.\nconst UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';\nconst helpers = this.helpers;\nconst payload = $json && $json.body ? $json.body : ($json || {});\nconst url = payload.url;\nif (!url) throw new Error('manual-fetch called without url');\nconst res = await helpers.httpRequest({\n  method: 'GET',\n  url,\n  headers: { 'User-Agent': UA, Accept: 'application/pdf,*/*', 'Accept-Language': 'en-AU,en;q=0.9' },\n  encoding: 'arraybuffer',\n  returnFullResponse: true,\n  ignoreHttpStatusErrors: true,\n  timeout: 90000,\n});\nif ([403, 429, 503].includes(res.statusCode)) throw new Error('fetch ' + res.statusCode + ' for ' + url + ' — possible block');\nif (res.statusCode >= 400) return [{ json: { ok: false, url, error: 'http ' + res.statusCode } }];\nconst ct = String((res.headers && (res.headers['content-type'] || res.headers['Content-Type'])) || '').toLowerCase();\nconst buf = Buffer.isBuffer(res.body) ? res.body : Buffer.from(res.body);\nconst isPdf = ct.includes('pdf') || (buf.length > 4 && buf.slice(0, 5).toString('latin1') === '%PDF-');\nif (!isPdf) {\n  // Not a direct PDF — an HTML/portal/landing page. Flag for the browser path; return\n  // a small snippet so the orchestrator (or Claude) can spot a direct PDF link inside.\n  return [{ json: { ok: true, url, isPdf: false, contentType: ct, bytes: buf.length, note: 'not a direct PDF (portal/HTML) — route to the browser fetch path', htmlSnippet: buf.slice(0, 4000).toString('utf8') } }];\n}\nreturn [{ json: { ok: true, url, isPdf: true, contentType: ct, bytes: buf.length, base64: buf.toString('base64') } }];\n"
+      }
+    },
+    {
+      "name": "Respond to webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [520, 300],
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual fetch (webhook)": {
+      "main": [[{ "node": "Fetch PDF via VPN", "type": "main", "index": 0 }]]
+    },
+    "Fetch PDF via VPN": {
+      "main": [[{ "node": "Respond to webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Australia/Brisbane",
+    "saveManualExecutions": true
+  },
+  "active": false
+}

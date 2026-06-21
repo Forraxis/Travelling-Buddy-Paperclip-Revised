@@ -34,9 +34,10 @@ physics [scaffold/tim M]; state cap rules [scaffold/tim M]; admin + "your kit" U
   skeletons; the app side (ingest, EXPANDED flip) already works.
 
 ## C. AI / spec-fetch maturation  *(mostly gated scaffolding tonight)*
-- **Grounded-Claude provider** [scaffold L] — `providers/claude.ts` is a stub; implement with
-  `@anthropic-ai/sdk` + web_search + structured outputs, citations → per-field `sourceUrl`. **No live
-  calls** without `ANTHROPIC_API_KEY` + Rule 11.
+- **Grounded-Claude provider** [DONE 2026-06-21] — `providers/claude.ts` is now REAL (`@anthropic-ai/sdk`
+  + server-side `web_search_20260209` + strict record tool for structured output, citations → per-field
+  `sourceUrl`). Driven by `src/jobs/ground-axle-hotset-local.ts`. Finding: fills gcm/overhang/fuel/dims,
+  NOT axles (placard-only). Stays ESTIMATE/Rule-11. (Axles solved via Lovells — see CATALOGUE_BUILD_HANDOVER §S2.3.)
 - **AI Tier-A/B sweep + "Needs AI" queue** [scaffold M] — the trigger model (auto-on-new-ROVER +
   manual bulk + demand-driven), job wiring, queue UI. Gated off.
 - **Cross-source agreement / corroboration** [scaffold M] — ≥K independent authoritative sources

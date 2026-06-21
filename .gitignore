@@ -62,3 +62,6 @@ docs/RVD/_fetched/
 ops/n8n/secureconfig.local.txt
 ops/n8n/.rover-skeleton.jsonl
 ops/n8n/.rover-skeleton-status.json
+ops/n8n/.manual-discovery.jsonl
+ops/n8n/.manual-progress.log
+ops/n8n/.lovells.jsonl
