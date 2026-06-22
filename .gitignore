@@ -75,3 +75,5 @@ ops/n8n/.experiment-extracted.jsonl
 ops/n8n/.experiment.log
 ops/n8n/.experiments.log
 ops/n8n/.experiments.out
+ops/n8n/.vanpass.log
+ops/n8n/.vanpass.out

@@ -73,10 +73,53 @@ export const VMAP: Record<string, VMapEntry> = {
   'mitsubishi pajero sport': { make: 'Mitsubishi', slugs: ['pajero-sport'] },
 
   // ---- next tier: tow-capable vans ----
-  'ford transit': { make: 'Ford', slugs: ['transit'] },
+  'ford transit': { make: 'Ford', slugs: ['transit', 'transit-h-d-3'] },
   'mercedes-benz sprinter': {
     make: 'Mercedes-Benz',
     slugs: ['sprinter', '907-sprinter-hd'],
+  },
+
+  // ---- camper / motorhome BASE vans (axle-rich — vans publish GAWR; the load-on-the-van
+  //      CoG case is core to the differentiator). VW/Renault/LDV use ROVER platform codes;
+  //      candidate slugs are listed generously — GVM-matching in the land routes to the
+  //      right model/gen, so an over-broad slug list can't mis-land. ----
+  'fiat ducato': { make: 'Fiat', slugs: ['ducato', 'ducato-ii-series'] },
+  'peugeot boxer': { make: 'Peugeot', slugs: ['x250-boxer-hd'] },
+  'mercedes-benz vito': {
+    make: 'Mercedes-Benz',
+    slugs: ['vito', 'valente', '447n'],
+  },
+  'volkswagen crafter': {
+    make: 'Volkswagen',
+    slugs: ['type-sy1', 'type-sy2'],
+  },
+  'volkswagen transporter': {
+    make: 'Volkswagen',
+    slugs: [
+      'transporter',
+      'multivan',
+      'type-t1',
+      'type-nsn',
+      'type-cr',
+      'type-eb',
+      'type-ebn',
+    ],
+  },
+  'volkswagen caddy': {
+    make: 'Volkswagen',
+    slugs: ['type-sk', 'type-skn', 'type-5na', 'type-ct'],
+  },
+  'toyota granvia': { make: 'Toyota', slugs: ['granvia'] },
+  'hyundai imax': { make: 'Hyundai', slugs: ['imax'] },
+  'hyundai staria': { make: 'Hyundai', slugs: ['staria', 'us4'] },
+  'hyundai iload': { make: 'Hyundai', slugs: ['iload', 'i-load'] },
+  'renault trafic': { make: 'Renault', slugs: ['trafic', 'x82'] },
+  'renault master': { make: 'Renault', slugs: ['master', 'xdd'] },
+  'ldv g10': { make: 'LDV', slugs: ['g10', 'epx1a'] },
+  'ldv v80': { make: 'LDV', slugs: ['v80'] },
+  'ldv deliver 9': {
+    make: 'LDV',
+    slugs: ['deliver-9', 'sv63d', 'ev65d', 'sk8c'],
   },
 };
 

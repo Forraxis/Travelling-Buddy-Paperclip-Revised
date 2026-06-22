@@ -51,6 +51,11 @@ const SUSPENSION_SITES = [
   'lovellsadelaide.com.au',
   'tyrant4x4.com.au',
   'powertune4x4.com.au',
+  // motorhome / van GVM-upgrade specialists (publish factory van axle to baseline upgrades)
+  'lovellssprings.com.au',
+  'vansport.com.au',
+  'caravanandmotorhomebooks.com',
+  'sumosprings.com.au',
 ];
 // ── Angle B: stubborn passenger-SUVs — try the GAWR term + global docs ──
 const GAWR_VEHICLES = [

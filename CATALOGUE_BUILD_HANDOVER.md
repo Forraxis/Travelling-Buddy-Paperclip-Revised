@@ -384,3 +384,20 @@ plus the first real coverage of GCM / tow-ball / overhangs.
   out of range, e.g. LandCruiser 300 gvm 4205, D-Max RG1 gvm 3695) — land once those gens exist.
 - **Overhang yield is thin (69/132)** — spec sheets rarely tabulate the F/R split; plate-verify
   + manual deep-dive are the realistic path to fuller CoG geometry.
+
+## S3.4 VAN PASS — camper / motorhome base vehicles (`ops/van-pass.sh`)
+Vans are the camper-conversion fleet (Ducato is *the* AU motorhome base) and the load-on-the-
+van axle/CoG case is core to the differentiator. Crucially vans **publish factory GAWR** (sold as
+load-carriers), so this converts far better than passenger SUVs. Added 17 van nameplates to
+`brave-vmap.ts` — VW/Renault/LDV map to ROVER platform codes (`type-t1`=Transporter, `type-sy1`=
+Crafter, `type-sk/5na`=Caddy, `x82`=Trafic, `xdd`=Master); slug lists are deliberately broad
+because **GVM-matching in the land routes to the right model/gen** (a Crafter spec @4490 can't
+land on a Transporter @3350). 66 Brave calls.
+- **Axle 640 → 795 variants.** New van coverage: Sprinter 73/97 · 907-HD 45/54 · VW Transporter
+  (type-t1 26/28, type-nsn 14/19) · VW Caddy (type-sk 11/12, type-5na 10/10) · Ford Transit 16/19 ·
+  Renault Master 15/17 · iMax 5/5 · LDV sv63d 9/21. By make now: Toyota 153 · Mercedes 118 · **VW 93**
+  · Nissan 89 · Ford 82 · Mitsubishi 58 · Isuzu 49 · Mazda 48 · LDV 21 · Renault 17.
+- **Overhangs ~tripled** (front 69→225, rear 132→275) — vans tabulate dimensions richly, so this
+  was the big quiet win for the **CoG-beam geometry**.
+- Still thin: **Fiat Ducato 1/4** (axle stated oddly in its PDFs), Boxer 3/10, HiAce 5/19, Vito/
+  Granvia/iLoad still gap — worth a manual/vendor follow-up; Ducato especially (it's the #1 base).
