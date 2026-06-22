@@ -1,4 +1,10 @@
-import type { VehicleBodyType, FuelType, Market } from '@prisma/client';
+import type {
+  VehicleBodyType,
+  FuelType,
+  Market,
+  SpecProvenanceStatus,
+  SpecFieldConfidence,
+} from '@prisma/client';
 
 // --- Domain types (decoupled from Prisma) ---
 
@@ -74,6 +80,22 @@ export interface VehicleVariantWithModel extends VehicleVariantDto {
     cogFractionDelta: number | null;
     cogApplied: boolean;
   } | null;
+  /**
+   * Per-field spec provenance (one row per accepted field). Drives the verdict-
+   * honesty "Est." flag in the calculator AND carries the per-field badge
+   * metadata (status / confidence / citation / as-of) a later UI PR renders as a
+   * confidence badge + "help us verify" CTA. Only the selected columns are
+   * loaded — see `getVariantById`. Public CONFIRMED-only SEO pages do NOT use
+   * this relation (see confirmed-spec.queries.ts).
+   */
+  specProvenance?: {
+    field: string;
+    value: string | null;
+    status: SpecProvenanceStatus;
+    confidence: SpecFieldConfidence | null;
+    sourceUrl: string | null;
+    asOf: Date;
+  }[];
 }
 
 // --- Input types ---

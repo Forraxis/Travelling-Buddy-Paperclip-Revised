@@ -174,6 +174,19 @@ export function createVehicleService(prisma: PrismaClient) {
             cogApplied: true,
           },
         },
+        // Per-field provenance (status + confidence + citation + as-of) so the
+        // live calc can flag estimated/disputed limits AND carry the badge
+        // metadata per compliance limit for the UI. See VEHICLE_DATA_FETCH.md.
+        specProvenance: {
+          select: {
+            field: true,
+            value: true,
+            status: true,
+            confidence: true,
+            sourceUrl: true,
+            asOf: true,
+          },
+        },
       },
     });
   }

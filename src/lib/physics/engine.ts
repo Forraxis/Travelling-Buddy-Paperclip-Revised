@@ -655,6 +655,9 @@ export function calculate(input: PhysicsInput): PhysicsResult {
     // Advisory pass-through — flags estimated/unverified limits in the UI. Does
     // not affect any status above.
     estimatedLimits: vehicle.estimatedLimits,
+    // Advisory pass-through — per-limit source metadata for a confidence badge +
+    // "help us verify" CTA. Does not affect any status above.
+    limitProvenance: vehicle.limitProvenance,
   };
 
   // Collect all statuses to determine overall

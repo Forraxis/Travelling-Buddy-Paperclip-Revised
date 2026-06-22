@@ -3,6 +3,7 @@ import type {
   MountingLocation,
   CalibrationOverrides,
   ComplianceLimitKey,
+  LimitProvenance,
 } from '@/lib/physics/types';
 import {
   mergeModelCorrection,
@@ -44,12 +45,20 @@ const PROVENANCE_FIELD_TO_LIMIT: Record<string, ComplianceLimitKey> = {
 
 /**
  * One row of {@link VariantSpecProvenance} as the builder consumes it. A loaded
- * variant may carry these (relation `specProvenance`) so the "Est." flag can
- * narrow to the specific unverified fields. Only `field` + `status` are read.
+ * variant may carry these (relation `specProvenance`). `field` + `status` drive
+ * the "Est." flag ({@link deriveEstimatedLimits}); `confidence` / `sourceUrl` /
+ * `asOf` ride along into the per-limit provenance map ({@link deriveLimitProvenance})
+ * so a later UI PR can render a confidence badge + "help us verify" CTA. All but
+ * `field`/`status` are optional — older callers that select only those two still
+ * type-check.
  */
 export interface VariantProvenanceField {
   field: string;
   status: 'CONFIRMED' | 'ESTIMATE' | 'DISPUTED';
+  confidence?: 'HIGH' | 'MEDIUM' | 'LOW' | null;
+  sourceUrl?: string | null;
+  /** `Date` from Prisma, or an ISO string from a plain-object caller. */
+  asOf?: Date | string | null;
 }
 
 /**
@@ -89,6 +98,43 @@ function deriveEstimatedLimits(
   const isEstimated =
     status === 'COMMUNITY' || badge === 'community' || badge === 'estimated';
   return isEstimated ? [...ALL_COMPLIANCE_LIMITS] : undefined;
+}
+
+/**
+ * Build the per-compliance-limit provenance map (status + confidence + citation
+ * + as-of), keyed by {@link ComplianceLimitKey}. Purely additive metadata for a
+ * UI confidence badge + "help us verify" CTA — never read by the verdict math
+ * and entirely independent of {@link deriveEstimatedLimits} (which still owns the
+ * "Est." flag). Returns undefined when the variant carries no provenance, so the
+ * no-provenance path stays byte-identical (the field is simply absent).
+ *
+ * Only the six compliance-critical fields map to a limit; any other provenance
+ * row (kerb, wheelbase, Tier-B…) is ignored. The DISPUTED/ESTIMATE/CONFIRMED
+ * status is surfaced verbatim so the badge can distinguish a confirmed limit
+ * from an estimated or disputed one.
+ */
+function deriveLimitProvenance(
+  vehicle: AnyVariant,
+): Partial<Record<ComplianceLimitKey, LimitProvenance>> | undefined {
+  const provenance = vehicle.specProvenance;
+  if (!Array.isArray(provenance) || provenance.length === 0) return undefined;
+
+  const map: Partial<Record<ComplianceLimitKey, LimitProvenance>> = {};
+  for (const row of provenance as VariantProvenanceField[]) {
+    const limit = PROVENANCE_FIELD_TO_LIMIT[row.field];
+    if (!limit) continue;
+    const asOf =
+      row.asOf instanceof Date
+        ? row.asOf.toISOString()
+        : (row.asOf ?? undefined);
+    map[limit] = {
+      status: row.status,
+      ...(row.confidence ? { confidence: row.confidence } : {}),
+      ...(row.sourceUrl !== undefined ? { sourceUrl: row.sourceUrl } : {}),
+      ...(asOf ? { asOf } : {}),
+    };
+  }
+  return Object.keys(map).length > 0 ? map : undefined;
 }
 
 /**
@@ -239,6 +285,7 @@ export function buildPhysicsInput(
       fuelTankCapacityL: Number(vehicle.fuelTankCapacityL),
       fuelType: vehicle.fuelType as 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC',
       estimatedLimits: deriveEstimatedLimits(vehicle),
+      limitProvenance: deriveLimitProvenance(vehicle),
     },
     caravan: caravan
       ? {

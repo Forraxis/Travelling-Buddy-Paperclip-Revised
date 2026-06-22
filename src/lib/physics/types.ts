@@ -81,6 +81,21 @@ export type ComplianceLimitKey =
   | 'towBall'
   | 'towing';
 
+/**
+ * ADVISORY (verdict honesty / provenance): per-compliance-limit source metadata,
+ * carried alongside {@link VehicleInput.estimatedLimits} so the UI can render a
+ * confidence badge + "help us verify" CTA next to each metric. Purely additive
+ * and never read by the pass/fail math. `asOf` is an ISO date string (the
+ * "current as of [date]" stamp). Mirrors a `VariantSpecProvenance` row narrowed
+ * to a compliance limit.
+ */
+export interface LimitProvenance {
+  status: 'CONFIRMED' | 'ESTIMATE' | 'DISPUTED';
+  confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
+  sourceUrl?: string | null;
+  asOf?: string;
+}
+
 export interface VehicleInput {
   gvmKg: number;
   gcmKg: number;
@@ -103,6 +118,13 @@ export interface VehicleInput {
    * plate" next to an otherwise-confident PASS. Empty/undefined = all verified.
    */
   estimatedLimits?: ComplianceLimitKey[];
+  /**
+   * ADVISORY (verdict honesty): per-limit source metadata (status / confidence /
+   * citation / as-of), keyed by {@link ComplianceLimitKey}. Carried forward for a
+   * UI confidence badge + "help us verify" CTA. Optional and never read by the
+   * verdict math — absent when no provenance is loaded.
+   */
+  limitProvenance?: Partial<Record<ComplianceLimitKey, LimitProvenance>>;
 }
 
 export interface CaravanInput {
@@ -296,6 +318,12 @@ export interface VehicleResult {
    * The UI flags these so an estimated limit never reads as a confident PASS.
    */
   estimatedLimits?: ComplianceLimitKey[];
+  /**
+   * ADVISORY (verdict honesty): per-limit source metadata. Pass-through of
+   * {@link VehicleInput.limitProvenance}. Lets the UI render a confidence badge +
+   * "help us verify" CTA per metric. Does not affect any status above.
+   */
+  limitProvenance?: Partial<Record<ComplianceLimitKey, LimitProvenance>>;
 }
 
 export interface CaravanAxleResult {
