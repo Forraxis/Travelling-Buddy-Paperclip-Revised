@@ -79,3 +79,17 @@ ops/n8n/.vanpass.log
 ops/n8n/.vanpass.out
 ops/n8n/.jayco-caravans.jsonl
 ops/n8n/.jayco-harvest.log
+ops/n8n/.caravan-atm-candidates.jsonl
+ops/n8n/.caravan-makes.jsonl
+ops/n8n/.caravan-listings-candidates.jsonl
+ops/caravan-scan-log.md
+ops/n8n/.caravan-urls.txt
+ops/n8n/.caravan-fullscan.out
+ops/n8n/.letsgo-manufacturer-urls.txt
+ops/n8n/.letsgo-manufacturers.jsonl
+ops/letsgo-manufacturers.md
+ops/n8n/.letsgo.out
+ops/n8n/.caravan-makes-merged.jsonl
+ops/caravan-makes-spine.md
+ops/n8n/.caravan-catalogue-candidates.jsonl
+ops/caravan-catalogue-candidates.md

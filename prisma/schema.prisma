@@ -392,11 +392,38 @@ model CaravanVariant {
   caravanSubmissions   CaravanSubmission[]
   accessorySubmissions AccessorySubmission[]
   positionSubmissions  FitmentPositionSubmission[]
+  specProvenance       CaravanVariantSpecProvenance[]
 
   @@unique([modelId, slug])
   @@index([slug])
   @@index([modelId])
   @@index([status, communitySubmitterId])
+}
+
+/// Per-field provenance for a CaravanVariant spec value — the caravan mirror of
+/// VariantSpecProvenance. ATM/GTM/tare/ball etc. carry source + status + confidence so the
+/// catalogue can grade + cite each value (CONFIRMED via >=K agreeing listings, ESTIMATE
+/// single-source, plate=VERIFIED later) and drive the same "help us verify" UX as vehicles.
+model CaravanVariantSpecProvenance {
+  id                 String               @id @default(cuid())
+  variantId          String
+  field              String
+  value              String?
+  source             SpecProvenanceSource
+  status             SpecProvenanceStatus @default(ESTIMATE)
+  confidence         SpecFieldConfidence?
+  sourceUrl          String?
+  corroboratingCount Int                  @default(0)
+  asOf               DateTime             @default(now())
+  notes              String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  variant            CaravanVariant       @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, field])
+  @@index([variantId])
+  @@index([field])
+  @@index([status])
 }
 
 model AccessoryBrand {
