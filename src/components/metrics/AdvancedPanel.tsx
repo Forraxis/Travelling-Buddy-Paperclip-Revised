@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import type { PhysicsResult } from '@/lib/physics/types';
+import type {
+  PhysicsResult,
+  ComplianceLimitKey,
+  LimitProvenance,
+} from '@/lib/physics/types';
+import { ConfidenceBadge } from './ConfidenceBadge';
 
 // Itemised weight breakdown, raw axle loads + distribution, and per-axle caravan
 // loads — the spec §7.4 "advanced" surface. Everything here is derived from the
@@ -15,16 +20,30 @@ function Row({
   label,
   value,
   strong = false,
+  limitKey,
+  provenance,
 }: {
   label: string;
   value: string;
   strong?: boolean;
+  /** When set, render a confidence badge next to the label (display only). */
+  limitKey?: ComplianceLimitKey;
+  provenance?: LimitProvenance;
 }) {
   return (
     <div
       className={`flex items-center justify-between py-1 text-xs ${strong ? 'font-semibold text-gray-800' : 'text-gray-600'}`}
     >
-      <span>{label}</span>
+      <span className="flex items-center gap-1.5">
+        {label}
+        {limitKey && (
+          <ConfidenceBadge
+            provenance={provenance}
+            limitKey={limitKey}
+            showCta={false}
+          />
+        )}
+      </span>
       <span className="tabular-nums">{value}</span>
     </div>
   );
@@ -105,13 +124,22 @@ export default function AdvancedPanel({ result }: { result: PhysicsResult }) {
             <Row
               label="Front axle"
               value={`${kg(v.frontAxleKg)} (${Math.round(frontPct)}%) / ${kg(v.frontAxleLimitKg)}`}
+              limitKey="frontAxle"
+              provenance={v.limitProvenance?.frontAxle}
             />
             <Row
               label="Rear axle"
               value={`${kg(v.rearAxleKg)} (${Math.round(rearPct)}%) / ${kg(v.rearAxleLimitKg)}`}
+              limitKey="rearAxle"
+              provenance={v.limitProvenance?.rearAxle}
             />
             {v.gcmKg != null && v.gcmLimitKg != null && (
-              <Row label="GCM" value={`${kg(v.gcmKg)} / ${kg(v.gcmLimitKg)}`} />
+              <Row
+                label="GCM"
+                value={`${kg(v.gcmKg)} / ${kg(v.gcmLimitKg)}`}
+                limitKey="gcm"
+                provenance={v.limitProvenance?.gcm}
+              />
             )}
           </Section>
 

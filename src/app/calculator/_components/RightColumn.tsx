@@ -4,12 +4,14 @@ import type {
   PhysicsResult,
   MetricStatus,
   ComplianceLimitKey,
+  LimitProvenance,
 } from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import SchematicViewer from '@/components/schematic/SchematicViewer';
 import RigSchematic from '@/components/schematic/RigSchematic';
 import { useCalcMode } from '@/modules/calculator/calc-mode';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
+import { ConfidenceBadge } from '@/components/metrics/ConfidenceBadge';
 import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
 import { SetupVersionsPanel } from '@/components/versions/SetupVersionsPanel';
 
@@ -167,7 +169,14 @@ function GvmBar({ result }: { result: PhysicsResult }) {
     <div className="border-tb-neutral-200 mb-4 rounded-lg border bg-white p-4">
       <div className="mb-2 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-gray-700">GVM</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-semibold text-gray-700">GVM</p>
+            <ConfidenceBadge
+              provenance={result.vehicle.limitProvenance?.gvm}
+              limitKey="gvm"
+              showCta={false}
+            />
+          </div>
           <p className="text-[10px] text-gray-400">Gross Vehicle Mass</p>
         </div>
         <span
@@ -191,6 +200,12 @@ function GvmBar({ result }: { result: PhysicsResult }) {
           <EstimatedNote />
         </div>
       )}
+      <ConfidenceBadge
+        provenance={result.vehicle.limitProvenance?.gvm}
+        limitKey="gvm"
+        ctaOnly
+        className="mt-1.5 block"
+      />
     </div>
   );
 }
@@ -205,6 +220,9 @@ interface MetricRowProps {
   status: MetricStatus;
   /** Verdict honesty: limit comes from an unverified source — show a caveat. */
   estimated?: boolean;
+  /** Compliance limit this row checks against (for the confidence badge). */
+  limitKey: ComplianceLimitKey;
+  provenance?: LimitProvenance;
 }
 
 function MetricRow({
@@ -214,14 +232,29 @@ function MetricRow({
   limit,
   status,
   estimated,
+  limitKey,
+  provenance,
 }: MetricRowProps) {
   const pct = clampPct(actual, limit);
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="w-24 shrink-0">
-        <p className="text-xs font-semibold text-gray-700">{label}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-xs font-semibold text-gray-700">{label}</p>
+          <ConfidenceBadge
+            provenance={provenance}
+            limitKey={limitKey}
+            showCta={false}
+          />
+        </div>
         <p className="text-[10px] text-gray-400">{sublabel}</p>
         {estimated && <EstimatedNote />}
+        <ConfidenceBadge
+          provenance={provenance}
+          limitKey={limitKey}
+          ctaOnly
+          className="mt-0.5 block"
+        />
       </div>
       <div className="bg-tb-neutral-200 relative h-3 flex-1 overflow-hidden rounded-full">
         <div
@@ -265,6 +298,7 @@ function isLimitEstimated(
 
 function AxleGrid({ result }: { result: PhysicsResult }) {
   const v = result.vehicle;
+  const prov = v.limitProvenance;
   const rows: MetricRowProps[] = [
     {
       label: 'Rear Axle',
@@ -273,6 +307,8 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       limit: v.rearAxleLimitKg,
       status: v.rearAxleStatus,
       estimated: isLimitEstimated(result, 'rearAxle'),
+      limitKey: 'rearAxle',
+      provenance: prov?.rearAxle,
     },
     {
       label: 'Front Axle',
@@ -281,6 +317,8 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       limit: v.frontAxleLimitKg,
       status: v.frontAxleStatus,
       estimated: isLimitEstimated(result, 'frontAxle'),
+      limitKey: 'frontAxle',
+      provenance: prov?.frontAxle,
     },
   ];
   if (v.gcmKg != null && v.gcmLimitKg != null && v.gcmStatus != null) {
@@ -291,6 +329,8 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       limit: v.gcmLimitKg,
       status: v.gcmStatus,
       estimated: isLimitEstimated(result, 'gcm'),
+      limitKey: 'gcm',
+      provenance: prov?.gcm,
     });
   }
 
@@ -380,7 +420,14 @@ function TowBallCard({ result }: { result: PhysicsResult }) {
     <div className="border-tb-neutral-200 mb-4 rounded-lg border bg-white p-4">
       <div className="mb-2 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-gray-700">Tow Ball Load</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-semibold text-gray-700">Tow Ball Load</p>
+            <ConfidenceBadge
+              provenance={result.vehicle.limitProvenance?.towBall}
+              limitKey="towBall"
+              showCta={false}
+            />
+          </div>
           <p className="text-[10px] text-gray-400">Ball download force</p>
         </div>
         <div className="text-right">
@@ -406,6 +453,12 @@ function TowBallCard({ result }: { result: PhysicsResult }) {
         <span>{fmt(towBallDownloadKg)}</span>
         <span>limit {fmt(towBallDownloadLimitKg)}</span>
       </div>
+      <ConfidenceBadge
+        provenance={result.vehicle.limitProvenance?.towBall}
+        limitKey="towBall"
+        ctaOnly
+        className="mt-1.5 block"
+      />
     </div>
   );
 }

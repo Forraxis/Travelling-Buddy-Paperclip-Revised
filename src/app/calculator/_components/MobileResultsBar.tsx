@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import type { PhysicsResult, MetricStatus } from '@/lib/physics/types';
+import type {
+  PhysicsResult,
+  MetricStatus,
+  ComplianceLimitKey,
+  LimitProvenance,
+} from '@/lib/physics/types';
 import type { SchematicModel } from '@/components/schematic/model';
 import SchematicViewer from '@/components/schematic/SchematicViewer';
 import RigSchematic from '@/components/schematic/RigSchematic';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
+import { ConfidenceBadge } from '@/components/metrics/ConfidenceBadge';
 import { useCalcMode } from '@/modules/calculator/calc-mode';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -75,7 +81,14 @@ function GvmBar({ result }: { result: PhysicsResult }) {
     <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
       <div className="mb-2 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-gray-700">GVM</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-semibold text-gray-700">GVM</p>
+            <ConfidenceBadge
+              provenance={result.vehicle.limitProvenance?.gvm}
+              limitKey="gvm"
+              showCta={false}
+            />
+          </div>
           <p className="text-[10px] text-gray-400">Gross Vehicle Mass</p>
         </div>
         <span className="text-xs text-gray-500 tabular-nums">
@@ -92,6 +105,12 @@ function GvmBar({ result }: { result: PhysicsResult }) {
         <span>{fmt(totalWeightKg)}</span>
         <span>limit {fmt(gvmLimitKg)}</span>
       </div>
+      <ConfidenceBadge
+        provenance={result.vehicle.limitProvenance?.gvm}
+        limitKey="gvm"
+        ctaOnly
+        className="mt-1.5 block"
+      />
     </div>
   );
 }
@@ -164,7 +183,14 @@ function TowBallCard({ result }: { result: PhysicsResult }) {
     <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
       <div className="mb-2 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-gray-700">Tow Ball Load</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-semibold text-gray-700">Tow Ball Load</p>
+            <ConfidenceBadge
+              provenance={result.vehicle.limitProvenance?.towBall}
+              limitKey="towBall"
+              showCta={false}
+            />
+          </div>
           <p className="text-[10px] text-gray-400">Ball download force</p>
         </div>
         <div className="text-right">
@@ -190,6 +216,12 @@ function TowBallCard({ result }: { result: PhysicsResult }) {
         <span>{fmt(towBallDownloadKg)}</span>
         <span>limit {fmt(towBallDownloadLimitKg)}</span>
       </div>
+      <ConfidenceBadge
+        provenance={result.vehicle.limitProvenance?.towBall}
+        limitKey="towBall"
+        ctaOnly
+        className="mt-1.5 block"
+      />
     </div>
   );
 }
@@ -200,15 +232,39 @@ interface MetricRowProps {
   actual: number;
   limit: number;
   status: MetricStatus;
+  /** Compliance limit this row checks against (for the confidence badge). */
+  limitKey: ComplianceLimitKey;
+  provenance?: LimitProvenance;
 }
 
-function MetricRow({ label, sublabel, actual, limit, status }: MetricRowProps) {
+function MetricRow({
+  label,
+  sublabel,
+  actual,
+  limit,
+  status,
+  limitKey,
+  provenance,
+}: MetricRowProps) {
   const pct = clampPct(actual, limit);
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="w-24 shrink-0">
-        <p className="text-xs font-semibold text-gray-700">{label}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-xs font-semibold text-gray-700">{label}</p>
+          <ConfidenceBadge
+            provenance={provenance}
+            limitKey={limitKey}
+            showCta={false}
+          />
+        </div>
         <p className="text-[10px] text-gray-400">{sublabel}</p>
+        <ConfidenceBadge
+          provenance={provenance}
+          limitKey={limitKey}
+          ctaOnly
+          className="mt-0.5 block"
+        />
       </div>
       <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
         <div
@@ -226,6 +282,7 @@ function MetricRow({ label, sublabel, actual, limit, status }: MetricRowProps) {
 
 function AxleGrid({ result }: { result: PhysicsResult }) {
   const v = result.vehicle;
+  const prov = v.limitProvenance;
   const rows: MetricRowProps[] = [
     {
       label: 'Rear Axle',
@@ -233,6 +290,8 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       actual: v.rearAxleKg,
       limit: v.rearAxleLimitKg,
       status: v.rearAxleStatus,
+      limitKey: 'rearAxle',
+      provenance: prov?.rearAxle,
     },
     {
       label: 'Front Axle',
@@ -240,6 +299,8 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       actual: v.frontAxleKg,
       limit: v.frontAxleLimitKg,
       status: v.frontAxleStatus,
+      limitKey: 'frontAxle',
+      provenance: prov?.frontAxle,
     },
   ];
   if (v.gcmKg != null && v.gcmLimitKg != null && v.gcmStatus != null) {
@@ -249,6 +310,8 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       actual: v.gcmKg,
       limit: v.gcmLimitKg,
       status: v.gcmStatus,
+      limitKey: 'gcm',
+      provenance: prov?.gcm,
     });
   }
 
