@@ -77,3 +77,5 @@ ops/n8n/.experiments.log
 ops/n8n/.experiments.out
 ops/n8n/.vanpass.log
 ops/n8n/.vanpass.out
+ops/n8n/.jayco-caravans.jsonl
+ops/n8n/.jayco-harvest.log
