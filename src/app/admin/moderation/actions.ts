@@ -5,6 +5,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getAdminUser } from '@/modules/admin/lib/auth';
 import { handleModerationDecision } from '@/lib/moderation';
+import { writeSpecProvenanceForSubmission } from '@/lib/contributions/write-spec-provenance';
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -48,6 +49,10 @@ export async function approveSubmission(
           submittedData: true,
           status: true,
           resultingVariantId: true,
+          compliancePlatePhotoUrl: true,
+          vlmExtractionResult: true,
+          vlmGatekeeperResult: true,
+          submitter: { select: { trustTier: true } },
         },
       });
       if (sub.status !== 'PENDING') {
@@ -70,6 +75,18 @@ export async function approveSubmission(
           await tx.vehicleVariant.update({
             where: { id: resultingVariantId },
             data: { status: 'CATALOGUE' },
+          });
+          // P3a: close the plate→catalogue loop. Run the confirmed limit fields
+          // through the confirmation ladder + write VariantSpecProvenance. The
+          // submission is now APPROVED, so it counts as a vote for itself.
+          await writeSpecProvenanceForSubmission(tx, {
+            submissionId: id,
+            variantId: resultingVariantId,
+            submitterId: sub.submitterId,
+            contributorTier: sub.submitter.trustTier,
+            vlmExtractionResult: sub.vlmExtractionResult,
+            vlmGatekeeperResult: sub.vlmGatekeeperResult,
+            isPlate: !!sub.compliancePlatePhotoUrl,
           });
         }
         await tx.moderationAction.create({

@@ -7,6 +7,7 @@ import {
   analyseAccessorySubmission,
 } from '@/lib/vlm';
 import { promoteUserTrustTier } from '@/lib/trust-tier';
+import { writeSpecProvenanceForSubmission } from '@/lib/contributions/write-spec-provenance';
 import type { TrustTier } from '@prisma/client';
 
 export interface SubmissionVlmJobData {
@@ -91,9 +92,21 @@ export function createSubmissionVlmWorker(): Worker<SubmissionVlmJobData> {
           if (autoApprove) {
             // Promote entity to canonical tier (COMMUNITY → CATALOGUE)
             if (submission.resultingVariantId) {
+              const variantId = submission.resultingVariantId;
               await prisma.vehicleVariant.update({
-                where: { id: submission.resultingVariantId },
+                where: { id: variantId },
                 data: { status: 'CATALOGUE' },
+              });
+              // P3a: a trusted/expert authentic plate auto-confirms the limit
+              // fields directly (the ladder's trusted-auto-approve branch).
+              await writeSpecProvenanceForSubmission(prisma, {
+                submissionId,
+                variantId,
+                submitterId: submission.submitterId,
+                contributorTier: submission.submitter.trustTier,
+                vlmExtractionResult: analysis.extraction,
+                vlmGatekeeperResult: analysis.gatekeeper,
+                isPlate: !!submission.compliancePlatePhotoUrl,
               });
             }
             await promoteUserTrustTier(submission.submitterId);
