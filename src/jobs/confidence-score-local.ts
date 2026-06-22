@@ -27,8 +27,74 @@
 import { readFileSync, existsSync } from 'node:fs';
 import type { SpecFieldConfidence } from '@prisma/client';
 import { prisma } from '../lib/db';
+import { VMAP } from '../lib/spec-fetch/brave-vmap';
 
 const WRITE = process.argv.includes('--write');
+
+/** Normalise a make to a comparable token (handles VW/Merc/Land-Rover spellings). */
+const MAKE_ALIAS: Record<string, string> = {
+  vw: 'volkswagen',
+  merc: 'mercedesbenz',
+  mercedes: 'mercedesbenz',
+  benz: 'mercedesbenz',
+  chevy: 'chevrolet',
+};
+function normMake(s: string): string {
+  const k = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return MAKE_ALIAS[k] ?? k;
+}
+const KNOWN_MAKES = new Set(
+  [
+    'toyota',
+    'nissan',
+    'ford',
+    'mazda',
+    'mitsubishi',
+    'holden',
+    'isuzu',
+    'subaru',
+    'honda',
+    'hyundai',
+    'kia',
+    'volkswagen',
+    'mercedesbenz',
+    'fiat',
+    'peugeot',
+    'renault',
+    'ldv',
+    'gwm',
+    'ssangyong',
+    'jeep',
+    'dodge',
+    'ram',
+    'chevrolet',
+    'landrover',
+    'suzuki',
+    'mahindra',
+  ].map(normMake),
+);
+
+/** Best-effort make for a scratch entry: VMAP mapping, else first recognised token. */
+function deriveMake(entry: { vehicle?: string; name?: string }): string {
+  if (entry.vehicle && VMAP[entry.vehicle])
+    return normMake(VMAP[entry.vehicle].make);
+  for (const s of [entry.name, entry.vehicle]) {
+    if (!s) continue;
+    const toks = String(s)
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(Boolean);
+    for (let i = 0; i < toks.length; i++) {
+      const single = normMake(toks[i]);
+      if (KNOWN_MAKES.has(single)) return single;
+      if (i + 1 < toks.length) {
+        const pair = normMake(toks[i] + toks[i + 1]);
+        if (KNOWN_MAKES.has(pair)) return pair; // "mercedes benz", "land rover"
+      }
+    }
+  }
+  return '';
+}
 
 /** Manufacturer official domains (any market — it's the OEM's own GAWR, GVM-validated). */
 const OEM = [
@@ -105,7 +171,9 @@ function authorityOf(host: string): Authority {
   return 'foreign';
 }
 
-/** field|value|gvmBucket → set of hosts that reported it (recovered from scratch files). */
+/** make|field|value|gvmBucket → set of hosts that reported it (recovered from scratch).
+ * The make scoping stops a Ford and a VW that share a round GCM from being counted as
+ * "two sources agreeing" — corroboration now only counts WITHIN the same make. */
 function loadCorroboration(): Map<string, Set<string>> {
   const map = new Map<string, Set<string>>();
   const add = (key: string, host: string) => {
@@ -117,37 +185,46 @@ function loadCorroboration(): Map<string, Set<string>> {
   ]) {
     if (!existsSync(f)) continue;
     for (const line of readFileSync(f, 'utf8').split('\n').filter(Boolean)) {
-      let d: { host?: string; specs?: Record<string, number | null> };
+      let d: {
+        host?: string;
+        vehicle?: string;
+        name?: string;
+        specs?: Record<string, number | null>;
+      };
       try {
         d = JSON.parse(line);
       } catch {
         continue;
       }
+      const make = deriveMake(d);
+      if (!make) continue; // can't scope by make → don't index (conservative)
       const host = (d.host ?? '').replace(/^www\./, '');
       const specs = d.specs ?? {};
       const gvm = specs.gvmKg;
       const bucket = gvm ? Math.round(gvm / 100) : NaN;
       for (const [field, val] of Object.entries(specs)) {
         if (val == null || field === 'gvmKg') continue;
-        add(`${field}|${val}|${bucket}`, host);
+        add(`${make}|${field}|${val}|${bucket}`, host);
       }
     }
   }
   return map;
 }
 
-/** distinct hosts agreeing on this field+value at this variant's GVM (±1 bucket). */
+/** distinct hosts (same make) agreeing on this field+value at this variant's GVM (±1 bucket). */
 function corroboration(
   corr: Map<string, Set<string>>,
+  make: string,
   field: string,
   value: string,
   gvm: number | null,
 ): number {
-  if (gvm == null) return 0;
+  if (gvm == null || !make) return 0;
   const b = Math.round(gvm / 100);
   const hosts = new Set<string>();
   for (const db of [b - 1, b, b + 1])
-    for (const h of corr.get(`${field}|${value}|${db}`) ?? []) hosts.add(h);
+    for (const h of corr.get(`${make}|${field}|${value}|${db}`) ?? [])
+      hosts.add(h);
   return hosts.size;
 }
 
@@ -174,7 +251,12 @@ async function main() {
       value: true,
       source: true,
       sourceUrl: true,
-      variant: { select: { gvmKg: true } },
+      variant: {
+        select: {
+          gvmKg: true,
+          model: { select: { make: { select: { name: true } } } },
+        },
+      },
     },
   });
 
@@ -191,7 +273,14 @@ async function main() {
   for (const r of rows) {
     const host = hostOf(r.sourceUrl);
     const auth = authorityOf(host);
-    const c = corroboration(corr, r.field, r.value ?? '', r.variant.gvmKg);
+    const vMake = normMake(r.variant.model.make.name);
+    const c = corroboration(
+      corr,
+      vMake,
+      r.field,
+      r.value ?? '',
+      r.variant.gvmKg,
+    );
     const t = tier(auth, c);
     if (c >= 2 && auth !== 'oem' && auth !== 'cert') corrobBumps += 1;
     dist[t] += 1;
