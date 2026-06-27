@@ -5,6 +5,14 @@ marked **⚠ REVIEW** below need Tim's sign-off on the math before they're trust
 
 Re-run the catalogue validation any time: `npx jiti scripts/physics-harden.ts`
 
+> ⚠️ **Awaiting sign-off — scraped caravan dataset (2026-06-24).** A large caravan catalogue was
+> landed from scraped listings (caravanking + dealers + CCS): **1,194 variants, 1,039 with
+> ATM/GTM**, graded RedBook (manufacturer DB) = `CONFIRMED` and dealer-corroborated =
+> `ESTIMATE`/`DISPUTED`. **All flagged pending Rule-11 but LIVE in the calculator now**
+> (HIGH/MEDIUM promoted to columns). A reviewer needs to know this ESTIMATE-tier body exists.
+> Caveat (`CARAVAN_DATA_SOURCES.md §11`): granularity is **model+year, not floorplan** — different
+> layouts of one model are merged to a median, directly relevant to the per-axle / TBM notes below.
+
 ---
 
 ## ⚠ REVIEW — changes that need your sign-off

@@ -93,3 +93,27 @@ ops/n8n/.caravan-makes-merged.jsonl
 ops/caravan-makes-spine.md
 ops/n8n/.caravan-catalogue-candidates.jsonl
 ops/caravan-catalogue-candidates.md
+ops/n8n/.caravan-sweep-candidates.jsonl
+ops/caravan-sweep-log.md
+ops/n8n/.caravan-sweep.out
+ops/n8n/.caravan-ccs-candidates.jsonl
+ops/caravan-ccs-log.md
+ops/n8n/.caravan-ccs-raw.jsonl
+ops/n8n/.caravan-ccs-detail-urls.txt
+ops/n8n/.caravan-ccs-taxo-raw.jsonl
+ops/n8n/.caravan-ccs-makes.jsonl
+ops/n8n/.caravan-ccs-taxonomy.jsonl
+ops/n8n/.caravan-ccs-raw-html/
+ops/n8n/.caravan-ccs-taxo-raw-html/
+ops/n8n/.caravan-listings-raw-html/
+ops/n8n/.caravan-sweep-raw-html/
+ops/n8n/.carsales-identity-raw-html/
+ops/n8n/.carsales-identity-raw.jsonl
+ops/n8n/.carsales-makes.jsonl
+ops/n8n/.carsales-identity.jsonl
+
+# ops/ local artifacts — raw crawl dumps, intermediate data, python cache (never commit)
+ops/__pycache__/
+ops/n8n/.*.jsonl
+ops/n8n/.*.out
+ops/n8n/.*-raw-html/
