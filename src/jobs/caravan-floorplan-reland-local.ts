@@ -1,28 +1,31 @@
 /**
- * Land the aggregated caravan-listing candidates into the catalogue + provenance. [caravan ATM/GTM]
+ * Land per-FLOORPLAN caravan variants (CATALOGUE_GRANULARITY_PLAN.md milestone 3).
  *
- * Reads ops/n8n/.caravan-catalogue-candidates.jsonl (from caravan-listings-aggregate.py —
- * caravanking + dealers + CCS combined) and writes CaravanMake / CaravanModel / CaravanVariant
- * rows plus CaravanVariantSpecProvenance rows. Now lands the FULL rich field set and the
- * two-source weight model:
+ * Reads ops/n8n/.caravan-catalogue-fp-candidates.jsonl (from caravan-floorplan-recluster.py —
+ * the SAME held listings re-keyed on (make, model, year, floorplan)) and lands a CaravanVariant
+ * per floorplan, so layouts with materially different weights (e.g. a 4-berth vs 6-berth, or the
+ * 17'6"/18'6"/21'6" length variants) stop being merged to one median.
  *
- *   WEIGHTS (atm/gtm/tare/ball→tbm), per field:
- *     - RedBook value present → status=CONFIRMED, confidence=HIGH (manufacturer DB figure,
- *       authoritative from one capture) → promote to column.
- *     - else dealer value → graded by cross-listing corroboration (dealerConfidence):
- *       HIGH→CONFIRMED, MEDIUM→ESTIMATE (both promote); DISPUTED/LOW→provenance-only.
- *   RICH physical fields (bodyLength / overallLength / fresh+grey water / gas / axle): not
- *     compliance-gated — written to the variant columns (non-clobbering) + an ESTIMATE
- *     provenance row for traceability.
+ * SCOPE / SAFETY (Tim's call, 2026-06-25):
+ *   • ADDITIVE — never deletes or mutates the existing merged (model-year) variants. New rows use
+ *     slug = `${modelSlug}-${year}-${floorplanSlug}`, which can't collide with the old
+ *     `${modelSlug}-${year}`. The old merged rows stay until we're happy with the split, then a
+ *     separate supersede/cleanup pass removes the ones now covered per-floorplan.
+ *   • SPLIT-ONLY (default) — only lands per-floorplan rows for a (make,model,year) that actually
+ *     has ≥2 distinct floorplans. Single-floorplan model-years are already correct as the merged
+ *     variant, so we don't create redundant duplicates. Lengths ARE distinct floorplans (Tim:
+ *     176/186/216 = 17'6"/18'6"/21'6", each with its own weights) → they land separately. Pass
+ *     --all to land every floorplan regardless of group size.
+ *   • Weight/rich/provenance handling is identical to caravan-listings-land-local.ts (RedBook→
+ *     CONFIRMED, dealer corroboration-graded, rich→ESTIMATE). floorplan + berths land to the new
+ *     columns + an ESTIMATE provenance row. ALL flagged pending Tim's Rule-11 sign-off.
  *
- * Column promotion never overwrites a column already set (e.g. the Jayco manufacturer seed),
- * and — same safety policy as vehicles — a weak/conflicting compliance weight stays an estimate
- * that drives "help us verify", it never silently feeds the verdict. All caravan weights remain
- * gated behind Tim's Rule-11 sign-off regardless of tier.
+ * IDEMPOTENT: variant by (modelId, slug); provenance by (variantId, field).
  *
  * Usage:
- *   DATABASE_URL=… npx tsx src/jobs/caravan-listings-land-local.ts          # dry-run
- *   DATABASE_URL=… npx tsx src/jobs/caravan-listings-land-local.ts --write  # land
+ *   DATABASE_URL=… npx tsx src/jobs/caravan-floorplan-reland-local.ts          # dry-run
+ *   DATABASE_URL=… npx tsx src/jobs/caravan-floorplan-reland-local.ts --write  # land
+ *   …                                                              --all       # every floorplan, not just splits
  */
 import { readFileSync, existsSync } from 'node:fs';
 import type {
@@ -34,7 +37,8 @@ import type {
 import { prisma } from '../lib/db';
 
 const WRITE = process.argv.includes('--write');
-const DATA = 'ops/n8n/.caravan-catalogue-candidates.jsonl';
+const ALL = process.argv.includes('--all');
+const DATA = 'ops/n8n/.caravan-catalogue-fp-candidates.jsonl';
 
 type Quad = {
   atmKg: number | null;
@@ -47,6 +51,8 @@ interface Cand {
   make: string;
   model: string;
   year: number;
+  floorplan: string | null;
+  berths: number | null;
   bodyType: string;
   redbook: Quad;
   dealer: Quad;
@@ -69,15 +75,13 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-/** weight field → (provenance field name = CaravanVariant column). */
 const WEIGHTS: { key: keyof Quad; col: string }[] = [
   { key: 'atmKg', col: 'atmKg' },
   { key: 'gtmKg', col: 'gtmKg' },
   { key: 'tareKg', col: 'tareKg' },
-  { key: 'ballKg', col: 'tbmKg' }, // tow-ball mass column
+  { key: 'ballKg', col: 'tbmKg' },
 ];
 
-/** rich physical field → CaravanVariant column (not compliance-gated). */
 const RICH: { key: keyof Cand; col: string }[] = [
   { key: 'bodyLengthMm', col: 'bodyLengthMm' },
   { key: 'overallLengthMm', col: 'overallLengthMm' },
@@ -86,7 +90,6 @@ const RICH: { key: keyof Cand; col: string }[] = [
   { key: 'gasBottleConfig', col: 'gasBottleConfig' },
 ];
 
-/** dealer corroboration grade → (provenance status, confidence, promote-to-column?). */
 function dealerGrade(c: Cand['dealerConfidence']): {
   status: SpecProvenanceStatus;
   confidence: SpecFieldConfidence | null;
@@ -110,45 +113,56 @@ const VALID_AXLE = new Set([
 
 async function main() {
   if (!existsSync(DATA))
-    throw new Error(`${DATA} not found — run the aggregate first.`);
-  const cands = readFileSync(DATA, 'utf8')
+    throw new Error(
+      `${DATA} not found — run ops/caravan-floorplan-recluster.py first.`,
+    );
+  const all = readFileSync(DATA, 'utf8')
     .split('\n')
     .filter(Boolean)
     .map((l) => JSON.parse(l) as Cand)
     .filter((c) => c.model && c.model !== '(unknown)');
 
+  // Which (make,model,year) groups actually split into ≥2 distinct floorplans?
+  const groupFps = new Map<string, Set<string | null>>();
+  for (const c of all) {
+    const k = `${c.make}|${c.model}|${c.year}`;
+    if (!groupFps.has(k)) groupFps.set(k, new Set());
+    groupFps.get(k)!.add(c.floorplan);
+  }
+  const isSplitGroup = (c: Cand) =>
+    (groupFps.get(`${c.make}|${c.model}|${c.year}`)?.size ?? 0) >= 2;
+
+  // Land only floorplan-bearing candidates (the null bucket = the existing merged variant).
+  // Default: only members of a split group. --all: every floorplan-bearing candidate.
+  const cands = all.filter(
+    (c) => c.floorplan != null && (ALL || isSplitGroup(c)),
+  );
+
   const withRb = cands.filter((c) =>
     Object.values(c.redbook).some((v) => v != null),
   ).length;
   console.log(
-    `\n=== CARAVAN LISTINGS LAND (${WRITE ? 'WRITE' : 'dry-run'}) · ${cands.length} candidates ===`,
+    `\n=== CARAVAN FLOORPLAN RE-LAND (${WRITE ? 'WRITE' : 'dry-run'}, ${ALL ? 'ALL floorplans' : 'split-groups only'}) ===`,
   );
   console.log(
-    `  ${withRb} carry a RedBook (manufacturer) weight · rest dealer-corroborated\n`,
+    `  ${all.length} fp-candidates · ${cands.length} to land as per-floorplan variants · ${withRb} carry a RedBook weight`,
+  );
+  console.log(
+    `  (additive — existing merged model-year variants are left untouched)\n`,
   );
 
-  let makes = 0,
-    models = 0,
-    variants = 0,
+  let variants = 0,
     provRows = 0,
     promoted = 0;
-  const seenMake = new Set<string>();
-  const seenModel = new Set<string>();
 
   for (const c of cands) {
     if (!WRITE) continue;
-    // --- make ---
     const makeSlug = slugify(c.make);
     const make = await prisma.caravanMake.upsert({
       where: { slug: makeSlug },
       create: { name: c.make, slug: makeSlug, countryOfOrigin: 'Australia' },
       update: {},
     });
-    if (!seenMake.has(makeSlug)) {
-      seenMake.add(makeSlug);
-      makes += 1;
-    }
-    // --- model ---
     const modelSlug = slugify(c.model);
     const model = await prisma.caravanModel.upsert({
       where: { makeId_slug: { makeId: make.id, slug: modelSlug } },
@@ -160,12 +174,9 @@ async function main() {
       },
       update: {},
     });
-    if (!seenModel.has(`${makeSlug}/${modelSlug}`)) {
-      seenModel.add(`${makeSlug}/${modelSlug}`);
-      models += 1;
-    }
-    // --- variant (one per model-year) ---
-    const vSlug = `${modelSlug}-${c.year}`;
+
+    const fpSlug = slugify(c.floorplan!);
+    const vSlug = `${modelSlug}-${c.year}-${fpSlug}`;
     const primaryAtm = c.redbook.atmKg ?? c.dealer.atmKg ?? 0;
     const axle: AxleConfiguration =
       c.axleConfiguration && VALID_AXLE.has(c.axleConfiguration)
@@ -181,18 +192,18 @@ async function main() {
         yearFrom: c.year,
         yearTo: c.year,
         isCurrentProduction: c.year >= 2025,
-        name: `${c.model} ${c.year}`,
+        name: `${c.model} ${c.year} (${c.floorplan})`,
         slug: vSlug,
+        floorplan: c.floorplan,
+        berths: c.berths ?? undefined,
         axleConfiguration: axle,
         market: 'AU',
       },
-      update: {},
+      update: { floorplan: c.floorplan, berths: c.berths ?? undefined },
     });
     variants += 1;
 
     const colUpdate: Record<string, number | string> = {};
-
-    // helper: write a provenance row + (gated) promote a column if still null
     const land = async (
       field: string,
       value: number | string,
@@ -233,7 +244,6 @@ async function main() {
       }
     };
 
-    // --- WEIGHTS: RedBook (authoritative) preferred, else dealer (corroboration-graded) ---
     for (const { key, col } of WEIGHTS) {
       const rb = c.redbook[key];
       const de = c.dealer[key];
@@ -261,7 +271,6 @@ async function main() {
       }
     }
 
-    // --- RICH physical fields: column + ESTIMATE provenance (not compliance-gated) ---
     for (const { key, col } of RICH) {
       const v = c[key] as number | string | null;
       if (v == null) continue;
@@ -277,6 +286,27 @@ async function main() {
       );
     }
 
+    // facet provenance (floorplan parsed from the held CCS slug; berths from its leading token)
+    await land(
+      'floorplan',
+      c.floorplan!,
+      'ESTIMATE',
+      'MEDIUM',
+      c.listings,
+      'floorplan parsed from CCS slug',
+      false,
+    );
+    if (c.berths != null)
+      await land(
+        'berths',
+        c.berths,
+        'ESTIMATE',
+        c.listings >= 2 ? 'MEDIUM' : 'LOW',
+        c.listings,
+        'berths from floorplan/listing',
+        false,
+      );
+
     if (Object.keys(colUpdate).length) {
       await prisma.caravanVariant.update({
         where: { id: variant.id },
@@ -288,15 +318,22 @@ async function main() {
 
   if (WRITE) {
     console.log(
-      `✓ ${makes} makes · ${models} models · ${variants} variants · ${provRows} provenance rows · ${promoted} columns promoted`,
+      `✓ ${variants} per-floorplan variants · ${provRows} provenance rows · ${promoted} columns promoted`,
     );
   } else {
+    const splitGroups = [...groupFps.values()].filter(
+      (s) => s.size >= 2,
+    ).length;
     console.log(
-      `would create ~${new Set(cands.map((c) => slugify(c.make))).size} makes · ` +
-        `~${new Set(cands.map((c) => `${slugify(c.make)}/${slugify(c.model)}`)).size} models · ` +
-        `${cands.length} variants. ${withRb} land a CONFIRMED RedBook weight; the rest land ` +
-        `dealer weights graded by corroboration (HIGH/MEDIUM promote, DISPUTED/LOW stay provenance-only).`,
+      `would land ${cands.length} per-floorplan variants across ${splitGroups} split model-years ` +
+        `(${ALL ? 'plus single-floorplan groups via --all' : 'use --all to also re-land single-floorplan groups'}).`,
     );
+    console.log('sample:');
+    for (const c of cands.slice(0, 12))
+      console.log(
+        `  ${slugify(c.make)}-${slugify(c.model)}-${c.year}-${slugify(c.floorplan!)}  ` +
+          `ATM ${c.redbook.atmKg ?? c.dealer.atmKg ?? '-'} berths ${c.berths ?? '-'}`,
+      );
     console.log('(dry-run — pass --write to land)');
   }
   await prisma.$disconnect();

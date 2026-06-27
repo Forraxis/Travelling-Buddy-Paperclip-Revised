@@ -69,20 +69,32 @@ async function main() {
   );
 
   // Group by model (range+trim) → its body type + variant records.
-  const models = new Map<string, { name: string; bodyType: string; recs: Rec[] }>();
+  const models = new Map<
+    string,
+    { name: string; bodyType: string; recs: Rec[] }
+  >();
   for (const r of recs) {
     const key = r.model;
-    const e = models.get(key) ?? { name: r.model, bodyType: r.bodyType, recs: [] };
+    const e = models.get(key) ?? {
+      name: r.model,
+      bodyType: r.bodyType,
+      recs: [],
+    };
     e.recs.push(r);
     models.set(key, e);
   }
 
   const bodyTypeCount: Record<string, number> = {};
-  for (const r of recs) bodyTypeCount[r.bodyType] = (bodyTypeCount[r.bodyType] ?? 0) + 1;
+  for (const r of recs)
+    bodyTypeCount[r.bodyType] = (bodyTypeCount[r.bodyType] ?? 0) + 1;
 
-  console.log(`make: Jayco · models: ${models.size} · variants: ${recs.length}`);
   console.log(
-    `body types: ${Object.entries(bodyTypeCount).map(([b, n]) => `${b} ${n}`).join(' · ')}`,
+    `make: Jayco · models: ${models.size} · variants: ${recs.length}`,
+  );
+  console.log(
+    `body types: ${Object.entries(bodyTypeCount)
+      .map(([b, n]) => `${b} ${n}`)
+      .join(' · ')}`,
   );
   console.log(
     `atm/gtm/coupling: all null (next data step) · tare ${recs.filter((r) => r.tareKg).length}/${recs.length} · tbm ${recs.filter((r) => r.tbmKg).length}/${recs.length}\n`,

@@ -160,9 +160,48 @@ describe('provider registry', () => {
     );
   });
 
-  it('claude provider is a stub that refuses to run', async () => {
-    await expect(
-      new ClaudeSpecFetchProvider().fetchVehicleSpec(LC),
-    ).rejects.toThrow(/not implemented/);
+  it('claude provider runs against a stubbed client and records grounded fields', async () => {
+    // The grounded Claude path is implemented now (Opus + web_search + a record
+    // tool). With an injected client it never touches the network — same posture
+    // as the Qwen stub: null stays null, values normalise to strings.
+    const stubClient = {
+      messages: {
+        create: async () => ({
+          model: 'claude-opus-4-8',
+          stop_reason: 'tool_use',
+          usage: { input_tokens: 10, output_tokens: 5 },
+          content: [
+            {
+              type: 'tool_use',
+              name: 'record_vehicle_specs',
+              id: 'tu_1',
+              input: {
+                fields: {
+                  gvmKg: {
+                    value: 3260,
+                    confidence: 'HIGH',
+                    sourceUrl: 'https://x',
+                  },
+                  frontAxleLimitKg: {
+                    value: null,
+                    confidence: null,
+                    sourceUrl: null,
+                  },
+                },
+              },
+            },
+          ],
+        }),
+      },
+    };
+    const provider = new ClaudeSpecFetchProvider({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      client: stubClient as any,
+    });
+    const result = await provider.fetchVehicleSpec(LC);
+    expect(result.provider).toBe('CLAUDE');
+    const byKey = Object.fromEntries(result.fields.map((f) => [f.field, f]));
+    expect(byKey.gvmKg.value).toBe('3260');
+    expect(byKey.frontAxleLimitKg.value).toBeNull();
   });
 });

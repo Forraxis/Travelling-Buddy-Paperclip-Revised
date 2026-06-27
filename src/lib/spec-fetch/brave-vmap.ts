@@ -121,6 +121,27 @@ export const VMAP: Record<string, VMapEntry> = {
     make: 'LDV',
     slugs: ['deliver-9', 'sv63d', 'ev65d', 'sk8c'],
   },
+
+  // ---- carsales identity gap-fill (2026-06): current tow-relevant models the QLD-rego
+  // spine lagged on — mostly recent Chinese 4WDs + Mazda's new large-SUV line. Confirmed
+  // missing vs the catalogue; identity created on land, specs filled by grounding. ----
+  'gwm tank 300': { make: 'GWM', slugs: ['tank-300'] },
+  'gwm tank 500': { make: 'GWM', slugs: ['tank-500'] },
+  'gwm cannon alpha': { make: 'GWM', slugs: ['cannon-alpha'] },
+  'gwm haval h6': { make: 'GWM', slugs: ['haval-h6'] },
+  'gwm haval h7': { make: 'GWM', slugs: ['haval-h7'] },
+  'gwm haval jolion': { make: 'GWM', slugs: ['haval-jolion'] },
+  'mazda cx-60': { make: 'Mazda', slugs: ['cx-60'] },
+  'mazda cx-70': { make: 'Mazda', slugs: ['cx-70'] },
+  'mazda cx-80': { make: 'Mazda', slugs: ['cx-80'] },
+  'mazda cx-90': { make: 'Mazda', slugs: ['cx-90'] },
+  'ford bronco': { make: 'Ford', slugs: ['bronco'] },
+  'ford e-transit': { make: 'Ford', slugs: ['e-transit'] },
+  'jeep avenger': { make: 'Jeep', slugs: ['avenger'] },
+  'jeep renegade': { make: 'Jeep', slugs: ['renegade'] },
+  'volkswagen tayron': { make: 'Volkswagen', slugs: ['tayron'] },
+  'volkswagen id buzz': { make: 'Volkswagen', slugs: ['id-buzz'] },
+  'nissan ariya': { make: 'Nissan', slugs: ['ariya'] },
 };
 
 /** The vehicle strings to dork (every VMAP key). */

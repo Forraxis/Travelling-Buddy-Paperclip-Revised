@@ -122,6 +122,25 @@ enum VehicleBodyType {
   OTHER
 }
 
+// Catalogue-granularity facet — cab configuration. The compliance-distinct cab
+// axis for utes (kerb/GVM swing), normalised across maker-specific names
+// (King/Extra/Space/Super → KING_CAB). See CATALOGUE_GRANULARITY_PLAN.md §4.
+enum CabType {
+  SINGLE_CAB
+  KING_CAB
+  DUAL_CAB
+  WAGON
+}
+
+// Catalogue-granularity facet — drivetrain. Highest number-impact facet
+// (kerb/GVM swing). DB labels keep the AU-ute convention (4x2/4x4) via @map so
+// derivations/slugs use those tokens. See CATALOGUE_GRANULARITY_PLAN.md §4–5.
+enum DriveType {
+  TWO_WHEEL_DRIVE  @map("4X2")
+  FOUR_WHEEL_DRIVE @map("4X4")
+  ALL_WHEEL_DRIVE  @map("AWD")
+}
+
 enum FuelType {
   DIESEL
   PETROL
@@ -230,6 +249,23 @@ model VehicleVariant {
   totalLengthMm            Int?
   maxTowBallDownloadKg     Int?
   maxRoofLoadKg            Int? // manufacturer dynamic roof-load limit — rooftop tents/racks eat GVM + raise CoG (source: manual/AI/plate, not QLD)
+  // Catalogue-granularity facets (CATALOGUE_GRANULARITY_PLAN.md §4). These pin a
+  // compliance-distinct configuration; the variant slug becomes the config
+  // fingerprint. All nullable — unfilled facets degrade gracefully to "not
+  // specified" and the plate path remains the precision mechanism.
+  generation               String? // e.g. D40, D23/NP300 — groups year spans (rule + ROVER baseModel)
+  cabType                  CabType? // SINGLE/KING/DUAL/WAGON (QLD body labels + ROVER)
+  driveType                DriveType? // 4x2/4x4/AWD — highest number-impact (ROVER; QLD doesn't carry it)
+  badge                    String? // e.g. ST, ST-X, Sahara (ROVER/brochure/AI/user)
+  engine                   String? // e.g. 2.5 dCi, V6 4.0 (ROVER/brochure)
+  transmission             String? // e.g. 6AT, 6MT
+  // Build source / country of manufacture (ISO-3166 alpha-2, e.g. ES, TH, JP).
+  // Some model-years ship from >1 plant with materially different GVM/axle/dims
+  // (e.g. D40 Navara: Barcelona vs Sriracha). Nullable + auto-hidden in the picker
+  // unless a model-year actually splits. VIN-derivable (WMI prefix → country) so
+  // the plate path can auto-select. Holds a country code today; could widen to a
+  // free build label later for non-country splits (CATALOGUE_GRANULARITY_PLAN.md §4).
+  buildOrigin              String?
   fuelTankCapacityL        Int?
   fuelType                 FuelType?
   market                   Market                        @default(AU)
@@ -361,13 +397,13 @@ model CaravanModel {
 }
 
 model CaravanVariant {
-  id                   String                      @id @default(cuid())
+  id                   String                         @id @default(cuid())
   modelId              String
-  status               CaravanVariantStatus        @default(CATALOGUE)
+  status               CaravanVariantStatus           @default(CATALOGUE)
   communitySubmitterId String?
   yearFrom             Int
   yearTo               Int
-  isCurrentProduction  Boolean                     @default(false)
+  isCurrentProduction  Boolean                        @default(false)
   name                 String
   slug                 String
   atmKg                Int?
@@ -382,11 +418,16 @@ model CaravanVariant {
   freshWaterCapacityL  Int?
   greyWaterCapacityL   Int?
   gasBottleConfig      String?
-  market               Market                      @default(AU)
-  createdAt            DateTime                    @default(now())
-  updatedAt            DateTime                    @updatedAt
-  model                CaravanModel                @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  communitySubmitter   User?                       @relation("CommunityCaravanVariants", fields: [communitySubmitterId], references: [id], onDelete: SetNull)
+  // Catalogue-granularity facets (CATALOGUE_GRANULARITY_PLAN.md §4). floorplan is
+  // the highest-impact caravan facet (ATM/Tare swing) and is re-clusterable from
+  // held CCS raw with no re-scrape. Variant slug carries it as the config fingerprint.
+  floorplan            String? // e.g. 19-65-2, "Rear Door", "6 berth" — parsed from held CCS slug/raw
+  berths               Int? // sleeping capacity — medium impact
+  market               Market                         @default(AU)
+  createdAt            DateTime                       @default(now())
+  updatedAt            DateTime                       @updatedAt
+  model                CaravanModel                   @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  communitySubmitter   User?                          @relation("CommunityCaravanVariants", fields: [communitySubmitterId], references: [id], onDelete: SetNull)
   fitments             AccessoryFitment[]
   setups               Setup[]
   caravanSubmissions   CaravanSubmission[]

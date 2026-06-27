@@ -268,6 +268,18 @@ absent (manuals / AI / plate). Do not un-gate.
 
 ## Open items
 
+- [x] **carsales gap-fill (2026-06-24)** — DONE. carsales (same network as CCS) = **identity-only**;
+      its detail pages are DataDome-blocked (HTTP 200 + 0 bytes), so no cheap RedBook spec scrape —
+      results/facet pages fetch fine though. Make gap = vintage/exotic (irrelevant); targeted check
+      found **17 genuinely-missing current tow models**, of which **16 seeded** (`src/jobs/carsales-seed-gapfill-local.ts`)
+      from Brave→docling/qwen PDF extract — GWM Tank 300/500, Cannon Alpha, Mazda CX-60/70/80/90,
+      Bronco, etc. (Jeep Renegade skipped — no clean GVM). These are `CLAUDE`/`ESTIMATE`, **live but
+      flagged pending Rule-11**, **single variant each (median-across-trims — no badge granularity)**.
+      **Bonus:** the same PDF extract added front+rear **axle-limit provenance to ~300 existing variants**
+      (owner's manuals yield axle splits web-grounding can't) — but **provenance-only, NOT promoted to
+      columns**, so it's captured/reviewable but **not yet feeding the calculator**. Full context:
+      memory `vehicle-carsales-gapfill`. To go deeper on carsales specs would need Scraping Browser
+      ($5/GB, beats DataDome) or RedBook licensing.
 - [x] **Promotion** (above) — QLD AUTO → variants (1,149) **DONE**; stale makes cleaned; 1/174 GVM_UPGRADE attached.
 - [~] **ROVER expansion via VPN** — IN PROGRESS. `rover-expand-bulk-local.ts` drives the n8n `rover-expand`
       webhook per UNFETCHED row (n8n fetches ROVER on the AU VPN → app `/api/rover/ingest`). Politeness: jitter

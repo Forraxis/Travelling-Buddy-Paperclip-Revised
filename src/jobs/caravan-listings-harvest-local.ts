@@ -108,7 +108,10 @@ interface Candidate {
 
 /** Strip HTML tags Brave wraps matched terms in (e.g. <strong>…</strong>). */
 function stripTags(s: string): string {
-  return s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return s
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** "3,395kg" / "3395 kg" / "3395" → 3395; sane caravan-weight range only (300–6000). */
@@ -152,7 +155,13 @@ function parseWeights(text: string): {
     atm: grab(['atm', 'aggregate trailer mass']),
     gtm: grab(['gtm', 'gross trailer mass']),
     // "Ball" before "Tare" doesn't matter — distinct labels. "ball weight"/"tow ball".
-    ball: grab(['ball\\s*weight', 'ball\\s*mass', 'ball', 'tbm', 'tow\\s*ball']),
+    ball: grab([
+      'ball\\s*weight',
+      'ball\\s*mass',
+      'ball',
+      'tbm',
+      'tow\\s*ball',
+    ]),
     tare: grab(['tare\\s*weight', 'tare\\s*mass', 'tare', 'kerb\\s*weight']),
   };
 }
@@ -351,7 +360,9 @@ async function main() {
       try {
         results = await braveSearch(key, dork);
       } catch (e) {
-        console.log(`  [${row.name}] "${tmpl}" → ERROR ${(e as Error).message}`);
+        console.log(
+          `  [${row.name}] "${tmpl}" → ERROR ${(e as Error).message}`,
+        );
         await sleep(1200);
         continue;
       }

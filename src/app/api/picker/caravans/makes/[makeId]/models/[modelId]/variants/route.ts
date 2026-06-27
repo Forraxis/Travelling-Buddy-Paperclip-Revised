@@ -19,6 +19,9 @@ const filterSchema = z.object({
       'TRIPLE_AXLE',
     ])
     .optional(),
+  // Catalogue-granularity facets (CATALOGUE_GRANULARITY_PLAN.md milestone 4).
+  floorplan: z.string().min(1).max(60).optional(),
+  berths: z.coerce.number().int().min(1).max(12).optional(),
 });
 
 export async function GET(
@@ -61,6 +64,8 @@ export async function GET(
         yearTo: true,
         axleConfiguration: true,
         isCurrentProduction: true,
+        floorplan: true,
+        berths: true,
       },
     });
 
@@ -68,6 +73,10 @@ export async function GET(
     const axleFacets = [
       ...new Set(allVariants.map((v) => v.axleConfiguration)),
     ].sort();
+    const distinct = <T>(xs: (T | null | undefined)[]): T[] =>
+      [...new Set(xs.filter((x): x is T => x != null))].sort();
+    const floorplanFacets = distinct(allVariants.map((v) => v.floorplan));
+    const berthFacets = distinct(allVariants.map((v) => v.berths));
     const yearMin = allVariants.length
       ? Math.min(...allVariants.map((v) => v.yearFrom))
       : null;
@@ -80,12 +89,14 @@ export async function GET(
       : null;
 
     // Apply filters
-    const { year, axleConfiguration } = parsed.data;
+    const { year, axleConfiguration, floorplan, berths } = parsed.data;
     const whereFilter: Record<string, unknown> = {
       modelId,
       ...communityFilter,
     };
     if (axleConfiguration) whereFilter.axleConfiguration = axleConfiguration;
+    if (floorplan) whereFilter.floorplan = floorplan;
+    if (berths) whereFilter.berths = berths;
     if (year) {
       whereFilter.yearFrom = { lte: year };
       whereFilter.OR = [
@@ -126,6 +137,8 @@ export async function GET(
           bodyType: v.model.bodyType,
           freshWaterCapacityL: v.freshWaterCapacityL,
           greyWaterCapacityL: v.greyWaterCapacityL,
+          floorplan: v.floorplan,
+          berths: v.berths,
         },
         confidenceBadge: (v.status === 'COMMUNITY'
           ? 'community'
@@ -140,6 +153,8 @@ export async function GET(
         yearMax,
         axleConfigurations: axleFacets,
         bodyType: model.bodyType,
+        floorplans: floorplanFacets,
+        berths: berthFacets,
       },
     });
   } catch (err) {

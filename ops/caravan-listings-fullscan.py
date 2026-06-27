@@ -24,11 +24,16 @@ import sys
 import time
 import urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from caravan_extract import extract, hold_raw  # noqa: E402
+
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 REFERER = "https://www.caravanking.com.au/caravan/"
 URLS_FILE = "ops/n8n/.caravan-urls.txt"
 OUT = "ops/n8n/.caravan-listings-candidates.jsonl"
+RAW = "ops/n8n/.caravan-listings-raw.jsonl"        # manifest (slug/year/hash/bytes)
+RAW_DIR = "ops/n8n/.caravan-listings-raw-html"     # full gzipped page HTML — re-parse anything
 MD = "ops/caravan-scan-log.md"
 DELAY_MIN, DELAY_MAX = 22, 38
 
@@ -81,8 +86,8 @@ def main():
         with open(MD, "w") as f:
             f.write("# Caravan Listings Scan — caravanking.com.au\n\n")
             f.write(f"{len(urls)} listings · 22–38s delays · CONFIRMED-tier (dealer-transcribed)\n\n")
-            f.write("| # | year | description | ATM | GTM | Tare | Ball | URL |\n")
-            f.write("|---|------|-------------|-----|-----|------|------|-----|\n")
+            f.write("| # | year | description | ATM | GTM | Tare | Ball | BodyL | OAL | Water | Axle | URL |\n")
+            f.write("|---|------|---|---|---|---|---|---|---|---|---|-----|\n")
 
     log(f"=== FULL SCAN · {len(todo)} to do ({len(done)} already done) of {len(urls)} ===")
     n = len(done)
@@ -101,15 +106,17 @@ def main():
                 log(f"  skip (HTTP {status}) {url}")
                 continue
         slug, year, fp, desc = ident(url)
+        hold_raw(html, RAW_DIR, RAW, {"slug": slug, "year": year})  # hold COMPLETE raw HTML
         rec = {"url": url, "slug": slug, "year": year, "floorplan": fp, "desc": desc,
-               "atmKg": num(html, "ATM"), "gtmKg": num(html, "GTM"),
-               "tareKg": num(html, "TARE"), "ballKg": num(html, r"Ball\s*Weight")}
+               **extract(html)}  # rich: weights + lengths + water + gas + axle + features
         with open(OUT, "a") as f:
             f.write(json.dumps(rec) + "\n")
         n += 1
         with open(MD, "a") as f:
-            f.write(f"| {n} | {year or '-'} | {desc[:46]} | {rec['atmKg'] or '-'} | "
-                    f"{rec['gtmKg'] or '-'} | {rec['tareKg'] or '-'} | {rec['ballKg'] or '-'} | {url} |\n")
+            f.write(f"| {n} | {year or '-'} | {desc[:40]} | {rec['atmKg'] or '-'} | "
+                    f"{rec['gtmKg'] or '-'} | {rec['tareKg'] or '-'} | {rec['ballKg'] or '-'} | "
+                    f"{rec.get('bodyLengthMm') or '-'} | {rec.get('overallLengthMm') or '-'} | "
+                    f"{rec.get('freshWaterL') or '-'} | {(rec.get('axleConfiguration') or '-')[:6]} | {url} |\n")
         ok += 1
         if ok % 10 == 0:
             log(f"  …{ok}/{len(todo)} (last: {year} {desc[:30]} ATM={rec['atmKg']})")

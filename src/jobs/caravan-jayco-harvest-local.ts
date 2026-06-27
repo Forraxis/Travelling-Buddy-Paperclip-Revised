@@ -113,7 +113,12 @@ function parseWaterLitres(title: string): number | null {
 /** Gas config like "Gas bottles - 2 x 9kg" → "2 x 9kg". */
 function parseGasConfig(title: string): string | null {
   const m = title.match(/(\d+\s*[x×]\s*\d+\s*kg)/i);
-  return m ? m[1].replace(/\s*[x×]\s*/i, ' x ').replace(/\s+/g, ' ').trim() : null;
+  return m
+    ? m[1]
+        .replace(/\s*[x×]\s*/i, ' x ')
+        .replace(/\s+/g, ' ')
+        .trim()
+    : null;
 }
 
 type CaravanBodyType =
@@ -483,7 +488,9 @@ async function main() {
         `  ${i + 1}/${targets.length} ${slug.padEnd(34)} → ${recs.length} floorplans [${trims}]`,
       );
     } catch (e) {
-      progress(`  ${i + 1}/${targets.length} ${slug} → ERROR ${(e as Error).message}`);
+      progress(
+        `  ${i + 1}/${targets.length} ${slug} → ERROR ${(e as Error).message}`,
+      );
     }
     await sleep(700); // pace politely
   }
