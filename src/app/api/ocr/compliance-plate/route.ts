@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createWorker } from 'tesseract.js';
+import { extractVin, vinToBuildOrigin } from '@/lib/catalogue/vin';
 
 export interface CompliancePlateOcrResult {
   rawText: string;
@@ -8,6 +9,11 @@ export interface CompliancePlateOcrResult {
     gcmKg?: number;
     make?: string;
     year?: number;
+    // VIN + the build origin (country of manufacture) derived from its WMI prefix.
+    // Lets the plate path auto-select the right build variant for models that
+    // ship from >1 plant (e.g. D40 Navara ES vs TH).
+    vin?: string;
+    buildOrigin?: string;
   };
   confidence: number;
 }
@@ -52,6 +58,15 @@ function extractFields(text: string): CompliancePlateOcrResult['extracted'] {
   if (yearMatch) {
     const yr = parseInt(yearMatch[1], 10);
     if (yr >= 1980 && yr <= new Date().getFullYear() + 1) extracted.year = yr;
+  }
+
+  // VIN + build origin (country of manufacture from the WMI prefix). Read from the
+  // ORIGINAL text — the cleanup above collapses the 17-char VIN with spaces.
+  const vin = extractVin(text);
+  if (vin) {
+    extracted.vin = vin;
+    const origin = vinToBuildOrigin(vin);
+    if (origin) extracted.buildOrigin = origin;
   }
 
   return extracted;

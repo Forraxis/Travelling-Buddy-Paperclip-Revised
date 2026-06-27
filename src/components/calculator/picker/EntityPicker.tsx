@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { PickerVariant, PickerConfig } from './types';
 import { useRecent } from './hooks/useRecent';
 import { PickerShell } from './PickerShell';
-import { SearchTab } from './SearchTab';
-import { BrowseTab } from './BrowseTab';
+import { PickerBody } from './PickerBody';
 import { CompactCard } from './CompactCard';
 
 interface EntityPickerProps {
@@ -24,7 +23,6 @@ export function EntityPicker({
 }: EntityPickerProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const [selected, setSelected] = useState<PickerVariant | null>(
     initialVariant ?? null,
   );
@@ -83,19 +81,13 @@ export function EntityPicker({
             isOpen={isOpen}
             onClose={closePicker}
             config={config}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
             onSubmitClick={handleSubmitClick}
           >
-            {activeTab === 'search' ? (
-              <SearchTab
-                config={config}
-                recent={recent}
-                onSelect={handleSelect}
-              />
-            ) : (
-              <BrowseTab config={config} onSelect={handleSelect} />
-            )}
+            <PickerBody
+              config={config}
+              recent={recent}
+              onSelect={handleSelect}
+            />
           </PickerShell>
         )}
       </>
@@ -113,19 +105,9 @@ export function EntityPicker({
           isOpen={isOpen}
           onClose={closePicker}
           config={config}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
           onSubmitClick={handleSubmitClick}
         >
-          {activeTab === 'search' ? (
-            <SearchTab
-              config={config}
-              recent={recent}
-              onSelect={handleSelect}
-            />
-          ) : (
-            <BrowseTab config={config} onSelect={handleSelect} />
-          )}
+          <PickerBody config={config} recent={recent} onSelect={handleSelect} />
         </PickerShell>
       )}
     </>

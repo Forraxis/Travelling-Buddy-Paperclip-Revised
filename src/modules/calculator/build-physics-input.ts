@@ -252,10 +252,35 @@ export function buildPhysicsInput(
     upgraded: number | null | undefined,
   ): number => (upgraded != null ? upgraded : factory);
 
+  // Compliance-plate confirmation (live mode only): the user's own plate is the
+  // authoritative figure for THIS exact vehicle, so it REPLACES the catalogue
+  // (often ESTIMATE) GVM/GCM in the verdict and marks the limit CONFIRMED. It is
+  // not the gated GVM-upgrade overlay — it's the manufacturer's stamped figure the
+  // user read + confirmed, i.e. the sanctioned "plate = truth" precision path.
+  const plate = mode === 'live' ? (state.plateConfirmed ?? null) : null;
+  const plateGvm = plate?.gvmKg ?? null;
+  const plateGcm = plate?.gcmKg ?? null;
+
+  let estimatedLimits = deriveEstimatedLimits(vehicle);
+  let limitProvenance = deriveLimitProvenance(vehicle);
+  const confirmed: ComplianceLimitKey[] = [];
+  if (plateGvm != null) confirmed.push('gvm');
+  if (plateGcm != null) confirmed.push('gcm');
+  if (confirmed.length > 0) {
+    estimatedLimits = estimatedLimits?.filter((k) => !confirmed.includes(k));
+    if (estimatedLimits && estimatedLimits.length === 0)
+      estimatedLimits = undefined;
+    const map = { ...(limitProvenance ?? {}) };
+    for (const k of confirmed) {
+      map[k] = { status: 'CONFIRMED', asOf: plate!.capturedAt };
+    }
+    limitProvenance = map;
+  }
+
   return {
     vehicle: {
-      gvmKg: overlay(Number(vehicle.gvmKg), upgrade?.gvmKg),
-      gcmKg: overlay(Number(vehicle.gcmKg), upgrade?.gcmKg),
+      gvmKg: plateGvm ?? overlay(Number(vehicle.gvmKg), upgrade?.gvmKg),
+      gcmKg: plateGcm ?? overlay(Number(vehicle.gcmKg), upgrade?.gcmKg),
       kerbWeightKg: Number(vehicle.kerbWeightKg),
       maxTowingCapacityKg: overlay(
         Number(vehicle.maxTowingCapacityKg),
@@ -284,8 +309,8 @@ export function buildPhysicsInput(
       ).trackWidthMm,
       fuelTankCapacityL: Number(vehicle.fuelTankCapacityL),
       fuelType: vehicle.fuelType as 'DIESEL' | 'PETROL' | 'HYBRID' | 'ELECTRIC',
-      estimatedLimits: deriveEstimatedLimits(vehicle),
-      limitProvenance: deriveLimitProvenance(vehicle),
+      estimatedLimits,
+      limitProvenance,
     },
     caravan: caravan
       ? {

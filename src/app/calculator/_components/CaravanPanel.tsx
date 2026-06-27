@@ -5,8 +5,7 @@ import { useCalculatorState } from '@/modules/calculator/context';
 import type { PickerVariant } from '@/components/calculator/picker';
 import { CompactCard, CARAVAN_CONFIG } from '@/components/calculator/picker';
 import { PickerShell } from '@/components/calculator/picker/PickerShell';
-import { SearchTab } from '@/components/calculator/picker/SearchTab';
-import { BrowseTab } from '@/components/calculator/picker/BrowseTab';
+import { PickerBody } from '@/components/calculator/picker/PickerBody';
 import { useRecent } from '@/components/calculator/picker/hooks/useRecent';
 import { AccessoryPicker } from '@/components/calculator/accessory-picker';
 import type { AccessoryItem } from '@/components/calculator/accessory-picker';
@@ -87,7 +86,6 @@ export function CaravanPanel() {
     null,
   );
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const { recent, addRecent } = useRecent('caravan');
   const { caravanAssumptions, journey } = state;
 
@@ -182,19 +180,13 @@ export function CaravanPanel() {
       isOpen={isOpen}
       onClose={closePicker}
       config={CARAVAN_CONFIG}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
       onSubmitClick={handleSubmitClick}
     >
-      {activeTab === 'search' ? (
-        <SearchTab
-          config={CARAVAN_CONFIG}
-          recent={recent}
-          onSelect={handleSelect}
-        />
-      ) : (
-        <BrowseTab config={CARAVAN_CONFIG} onSelect={handleSelect} />
-      )}
+      <PickerBody
+        config={CARAVAN_CONFIG}
+        recent={recent}
+        onSelect={handleSelect}
+      />
     </PickerShell>
   );
 

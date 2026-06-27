@@ -19,12 +19,21 @@ interface PickerSearchItem {
     maxTowingCapacityKg?: number;
     fuelType?: string;
     bodyType?: string;
+    generation?: string | null;
+    cabType?: string | null;
+    driveType?: string | null;
+    badge?: string | null;
+    transmission?: string | null;
+    buildOrigin?: string | null;
     atmKg?: number;
     gtmKg?: number;
     tbmKg?: number;
     axleConfiguration?: string;
     freshWaterCapacityL?: number;
     greyWaterCapacityL?: number;
+    bodyLengthMm?: number | null;
+    floorplan?: string | null;
+    berths?: number | null;
   };
   confidenceBadge: 'verified' | 'manufacturer_spec' | 'community' | 'estimated';
 }
@@ -55,12 +64,21 @@ function apiItemToPickerVariant(item: PickerSearchItem): PickerVariant {
     kerbWeightKg: item.specs.kerbWeightKg,
     maxTowingCapacityKg: item.specs.maxTowingCapacityKg,
     fuelType: item.specs.fuelType,
+    generation: item.specs.generation,
+    cabType: item.specs.cabType,
+    driveType: item.specs.driveType,
+    badge: item.specs.badge,
+    transmission: item.specs.transmission,
+    buildOrigin: item.specs.buildOrigin,
     atmKg: item.specs.atmKg,
     gtmKg: item.specs.gtmKg,
     tbmKg: item.specs.tbmKg,
     axleConfiguration: item.specs.axleConfiguration,
     freshWaterCapacityL: item.specs.freshWaterCapacityL,
     greyWaterCapacityL: item.specs.greyWaterCapacityL,
+    bodyLengthMm: item.specs.bodyLengthMm,
+    floorplan: item.specs.floorplan,
+    berths: item.specs.berths,
     confidenceBadge: item.confidenceBadge,
   };
 }

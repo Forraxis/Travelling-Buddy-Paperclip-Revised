@@ -39,6 +39,13 @@ export interface PickerVariant {
   kerbWeightKg?: number;
   maxTowingCapacityKg?: number;
   fuelType?: string;
+  // Vehicle granularity facets
+  generation?: string | null;
+  cabType?: string | null;
+  driveType?: string | null;
+  badge?: string | null;
+  transmission?: string | null;
+  buildOrigin?: string | null; // ISO-3166 alpha-2 country of manufacture
   // Caravan-specific
   atmKg?: number;
   gtmKg?: number;
@@ -46,6 +53,10 @@ export interface PickerVariant {
   axleConfiguration?: string;
   freshWaterCapacityL?: number;
   greyWaterCapacityL?: number;
+  bodyLengthMm?: number | null;
+  // Caravan granularity facets
+  floorplan?: string | null;
+  berths?: number | null;
 }
 
 export type BrowseStep = 'makes' | 'models' | 'variants';
@@ -60,6 +71,16 @@ export interface VariantFilters {
   bodyType?: string;
   fuelType?: string;
   axleConfiguration?: string;
+  // Vehicle granularity facets
+  generation?: string;
+  cabType?: string;
+  driveType?: string;
+  badge?: string;
+  buildOrigin?: string;
+  // Caravan granularity facets
+  floorplan?: string;
+  berths?: number;
+  lengthFt?: number;
 }
 
 export interface PickerConfig {

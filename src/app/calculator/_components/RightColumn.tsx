@@ -14,6 +14,7 @@ import AdvancedPanel from '@/components/metrics/AdvancedPanel';
 import { ConfidenceBadge } from '@/components/metrics/ConfidenceBadge';
 import { WeighbridgeCalibrationPanel } from '@/components/calibration/WeighbridgeCalibrationPanel';
 import { SetupVersionsPanel } from '@/components/versions/SetupVersionsPanel';
+import { PlateConfirmCTA } from './PlateConfirmCTA';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -638,6 +639,7 @@ function ResultsView({
   return (
     <>
       <VerdictBanner result={result} />
+      <PlateConfirmCTA result={result} />
       {/* Advanced gets the interactive schematic (positioning, customise, top-down);
           Simple gets a clean read-only side profile. */}
       {schematic &&

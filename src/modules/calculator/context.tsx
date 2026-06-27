@@ -16,6 +16,7 @@ import type {
   CaravanAssumptions,
   AccessorySelection,
   CustomLoad,
+  PlateConfirmedLimits,
 } from './types';
 import { calculatorReducer } from './types';
 import { paramsToState, stateToParams } from './url-params';
@@ -48,6 +49,8 @@ interface CalculatorContextValue {
   removeCustomLoad: (id: string) => void;
   setCustomLoadPosition: (id: string, cogXMm: number, cogYMm: number) => void;
   setCustomLoadHeight: (id: string, cogZMm: number) => void;
+  setPlateConfirmed: (plate: PlateConfirmedLimits) => void;
+  clearPlateConfirmed: () => void;
   reset: () => void;
   dispatch: (action: CalculatorAction) => void;
 }
@@ -266,6 +269,15 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
       dispatch({ type: 'SET_CUSTOM_LOAD_HEIGHT', id, cogZMm }),
     [],
   );
+  const setPlateConfirmed = useCallback(
+    (plate: PlateConfirmedLimits) =>
+      dispatch({ type: 'SET_PLATE_CONFIRMED', plate }),
+    [],
+  );
+  const clearPlateConfirmed = useCallback(
+    () => dispatch({ type: 'CLEAR_PLATE_CONFIRMED' }),
+    [],
+  );
   const reset = useCallback(() => dispatch({ type: 'RESET' }), []);
 
   return (
@@ -288,6 +300,8 @@ export function CalculatorProvider({ children, initialParams }: ProviderProps) {
         removeCustomLoad,
         setCustomLoadPosition,
         setCustomLoadHeight,
+        setPlateConfirmed,
+        clearPlateConfirmed,
         reset,
         dispatch,
       }}

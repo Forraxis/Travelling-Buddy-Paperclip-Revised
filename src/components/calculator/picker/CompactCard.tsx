@@ -1,12 +1,7 @@
 'use client';
 
 import type { PickerVariant, PickerConfig } from './types';
-
-function yearSpan(v: PickerVariant) {
-  return v.isCurrentProduction
-    ? `${v.yearFrom}–present`
-    : `${v.yearFrom}–${v.yearTo}`;
-}
+import { displayYearSpan, variantHeading } from './display';
 
 function specLine(v: PickerVariant) {
   if (v.entityType === 'vehicle') {
@@ -57,9 +52,9 @@ export function CompactCard({ variant, config, onChange }: CompactCardProps) {
       {/* Title + spec strip */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-gray-900">
-          {variant.makeName} {variant.modelName} {variant.name}
+          {variantHeading(variant)}
         </p>
-        <p className="text-xs text-gray-500">{yearSpan(variant)}</p>
+        <p className="text-xs text-gray-500">{displayYearSpan(variant)}</p>
         {specLine(variant) && (
           <p className="truncate text-xs text-gray-400">{specLine(variant)}</p>
         )}

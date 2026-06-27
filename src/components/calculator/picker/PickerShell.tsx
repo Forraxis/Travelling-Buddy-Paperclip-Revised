@@ -7,8 +7,6 @@ interface PickerShellProps {
   isOpen: boolean;
   onClose: () => void;
   config: PickerConfig;
-  activeTab: 'search' | 'browse';
-  onTabChange: (tab: 'search' | 'browse') => void;
   onSubmitClick: () => void;
   children: ReactNode;
 }
@@ -17,8 +15,6 @@ export function PickerShell({
   isOpen,
   onClose,
   config,
-  activeTab,
-  onTabChange,
   onSubmitClick,
   children,
 }: PickerShellProps) {
@@ -130,29 +126,8 @@ export function PickerShell({
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="border-tb-neutral-200 flex flex-none border-b">
-          {(['search', 'browse'] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => onTabChange(tab)}
-              className={[
-                'flex-1 py-2.5 text-sm font-medium transition-colors',
-                activeTab === tab
-                  ? 'border-tb-primary text-tb-primary border-b-2'
-                  : 'text-gray-500 hover:text-gray-700',
-              ].join(' ')}
-            >
-              {tab === 'search' ? 'Search' : 'Browse'}
-            </button>
-          ))}
-        </div>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain py-3">
-          {children}
-        </div>
+        {/* Body — persistent search bar + Browse (owns its own scroll) */}
+        <div className="min-h-0 flex-1">{children}</div>
 
         {/* Persistent footer CTA */}
         <div className="border-tb-neutral-200 flex flex-none items-center justify-between border-t bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">

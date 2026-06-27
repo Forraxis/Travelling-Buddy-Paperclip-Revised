@@ -13,6 +13,7 @@ import RigSchematic from '@/components/schematic/RigSchematic';
 import AdvancedPanel from '@/components/metrics/AdvancedPanel';
 import { ConfidenceBadge } from '@/components/metrics/ConfidenceBadge';
 import { useCalcMode } from '@/modules/calculator/calc-mode';
+import { PlateConfirmCTA } from './PlateConfirmCTA';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -456,6 +457,7 @@ function SheetResultsContent({
   return (
     <>
       <VerdictBanner result={result} />
+      <PlateConfirmCTA result={result} />
       {schematic &&
         (advanced ? (
           <SchematicViewer model={schematic} />

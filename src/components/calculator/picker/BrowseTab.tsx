@@ -1,32 +1,70 @@
 'use client';
 
-import type { PickerVariant, PickerConfig } from './types';
+import type { PickerConfig, PickerVariant } from './types';
 import { useBrowse } from './hooks/useBrowse';
-
-function yearSpan(v: PickerVariant) {
-  return v.isCurrentProduction
-    ? `${v.yearFrom}–present`
-    : `${v.yearFrom}–${v.yearTo}`;
-}
-
-// ── Filter chip helpers ────────────────────────────────────────────────────
-
-function uniqueNonEmpty<T>(arr: (T | undefined | null)[]): T[] {
-  return [...new Set(arr.filter((x): x is T => x != null && x !== ''))];
-}
+import { VariantNarrow } from './VariantNarrow';
+import { variantHeading, displayYearSpan } from './display';
 
 function labelCase(s: string) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────
+// ── Recent selections (shown above the makes grid) ───────────────────────────
 
-interface BackBreadcrumbProps {
-  parts: string[];
-  onBack: () => void;
+function RecentStrip({
+  recent,
+  onSelect,
+}: {
+  recent: PickerVariant[];
+  onSelect: (v: PickerVariant) => void;
+}) {
+  if (recent.length === 0) return null;
+  return (
+    <div className="mb-4 px-2">
+      <p className="px-2 pb-1 text-xs font-medium tracking-wide text-gray-400 uppercase">
+        Recent
+      </p>
+      {recent.map((v) => (
+        <button
+          key={v.id}
+          type="button"
+          onClick={() => onSelect(v)}
+          className="hover:bg-tb-neutral-50 flex w-full items-center gap-2 rounded-md px-3 py-2 text-left transition-colors"
+        >
+          <svg
+            className="h-3.5 w-3.5 flex-none text-gray-400"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              d="M8 4v4l3 3M14.5 8A6.5 6.5 0 1 1 1.5 8a6.5 6.5 0 0 1 13 0Z"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span className="truncate text-sm text-gray-700">
+            {variantHeading(v)}
+          </span>
+          <span className="ml-auto flex-none text-xs text-gray-400">
+            {displayYearSpan(v)}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
 }
 
-function BackBreadcrumb({ parts, onBack }: BackBreadcrumbProps) {
+// ── Back breadcrumb ──────────────────────────────────────────────────────────
+
+function BackBreadcrumb({
+  parts,
+  onBack,
+}: {
+  parts: string[];
+  onBack: () => void;
+}) {
   return (
     <div className="flex items-center gap-1 px-4 py-2">
       <button
@@ -63,13 +101,15 @@ function BackBreadcrumb({ parts, onBack }: BackBreadcrumbProps) {
 
 // ── Makes grid ─────────────────────────────────────────────────────────────
 
-interface MakesGridProps {
+function MakesGrid({
+  makes,
+  popularMakeNames,
+  onSelect,
+}: {
   makes: ReturnType<typeof useBrowse>['makes'];
   popularMakeNames: readonly string[];
   onSelect: (make: ReturnType<typeof useBrowse>['makes'][0]) => void;
-}
-
-function MakesGrid({ makes, popularMakeNames, onSelect }: MakesGridProps) {
+}) {
   const popular = makes.filter((m) => popularMakeNames.includes(m.name));
   const others = makes.filter((m) => !popularMakeNames.includes(m.name));
 
@@ -133,12 +173,13 @@ function MakesGrid({ makes, popularMakeNames, onSelect }: MakesGridProps) {
 
 // ── Models list ────────────────────────────────────────────────────────────
 
-interface ModelsListProps {
+function ModelsList({
+  models,
+  onSelect,
+}: {
   models: ReturnType<typeof useBrowse>['models'];
   onSelect: (model: ReturnType<typeof useBrowse>['models'][0]) => void;
-}
-
-function ModelsList({ models, onSelect }: ModelsListProps) {
+}) {
   return (
     <div className="divide-tb-neutral-200 divide-y px-2">
       {models.map((model) => (
@@ -173,183 +214,27 @@ function ModelsList({ models, onSelect }: ModelsListProps) {
   );
 }
 
-// ── Variants list ──────────────────────────────────────────────────────────
-
-interface VariantsListProps {
-  config: PickerConfig;
-  variants: PickerVariant[];
-  allVariants: PickerVariant[];
-  filters: ReturnType<typeof useBrowse>['filters'];
-  onFilter: (patch: Partial<ReturnType<typeof useBrowse>['filters']>) => void;
-  onSelect: (v: PickerVariant) => void;
-}
-
-function VariantsList({
-  config,
-  variants,
-  allVariants,
-  filters,
-  onFilter,
-  onSelect,
-}: VariantsListProps) {
-  // Derive non-empty filter options from allVariants
-  const bodyTypes = uniqueNonEmpty(allVariants.map((v) => v.bodyType));
-  const fuelTypes = uniqueNonEmpty(allVariants.map((v) => v.fuelType));
-  const axleConfigs = uniqueNonEmpty(
-    allVariants.map((v) => v.axleConfiguration),
-  );
-
-  function SpecStrip({ v }: { v: PickerVariant }) {
-    if (v.entityType === 'vehicle') {
-      return (
-        <p className="mt-0.5 text-xs text-gray-400">
-          {[
-            v.gvmKg && `GVM ${v.gvmKg.toLocaleString()} kg`,
-            v.maxTowingCapacityKg &&
-              `Tow ${v.maxTowingCapacityKg.toLocaleString()} kg`,
-            v.kerbWeightKg && `Kerb ${v.kerbWeightKg.toLocaleString()} kg`,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </p>
-      );
-    }
-    return (
-      <p className="mt-0.5 text-xs text-gray-400">
-        {[
-          v.atmKg && `ATM ${v.atmKg.toLocaleString()} kg`,
-          v.tbmKg && `TBM ${v.tbmKg} kg`,
-          v.axleConfiguration && labelCase(v.axleConfiguration),
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
-    );
-  }
-
-  return (
-    <div>
-      {/* Filter chips */}
-      {(bodyTypes.length > 1 ||
-        fuelTypes.length > 1 ||
-        axleConfigs.length > 1) && (
-        <div className="scrollbar-none flex gap-2 overflow-x-auto px-4 pt-1 pb-3">
-          {bodyTypes.length > 1 &&
-            bodyTypes.map((bt) => (
-              <button
-                key={bt}
-                type="button"
-                onClick={() =>
-                  onFilter({
-                    bodyType: filters.bodyType === bt ? undefined : bt,
-                  })
-                }
-                className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  filters.bodyType === bt
-                    ? 'border-tb-primary bg-tb-primary text-white'
-                    : 'border-tb-neutral-200 hover:border-tb-primary-light bg-white text-gray-600'
-                }`}
-              >
-                {labelCase(bt)}
-              </button>
-            ))}
-          {config.entityType === 'vehicle' &&
-            fuelTypes.length > 1 &&
-            fuelTypes.map((ft) => (
-              <button
-                key={ft}
-                type="button"
-                onClick={() =>
-                  onFilter({
-                    fuelType: filters.fuelType === ft ? undefined : ft,
-                  })
-                }
-                className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  filters.fuelType === ft
-                    ? 'border-tb-primary bg-tb-primary text-white'
-                    : 'border-tb-neutral-200 hover:border-tb-primary-light bg-white text-gray-600'
-                }`}
-              >
-                {labelCase(ft)}
-              </button>
-            ))}
-          {config.entityType === 'caravan' &&
-            axleConfigs.length > 1 &&
-            axleConfigs.map((ac) => (
-              <button
-                key={ac}
-                type="button"
-                onClick={() =>
-                  onFilter({
-                    axleConfiguration:
-                      filters.axleConfiguration === ac ? undefined : ac,
-                  })
-                }
-                className={`flex-none rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  filters.axleConfiguration === ac
-                    ? 'border-tb-primary bg-tb-primary text-white'
-                    : 'border-tb-neutral-200 hover:border-tb-primary-light bg-white text-gray-600'
-                }`}
-              >
-                {labelCase(ac)}
-              </button>
-            ))}
-        </div>
-      )}
-
-      {/* Variant rows */}
-      <div className="divide-tb-neutral-200 divide-y px-2">
-        {variants.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            onClick={() => onSelect(v)}
-            className="hover:bg-tb-neutral-50 flex w-full flex-col rounded px-3 py-3 text-left transition-colors"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <span className="text-sm font-medium text-gray-900">
-                {v.name}
-              </span>
-              <span className="flex-none text-xs text-gray-500">
-                {yearSpan(v)}
-              </span>
-            </div>
-            <SpecStrip v={v} />
-          </button>
-        ))}
-        {variants.length === 0 && (
-          <p className="px-3 py-6 text-center text-sm text-gray-400">
-            No variants match the selected filters.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Main export ────────────────────────────────────────────────────────────
 
 interface BrowseTabProps {
   config: PickerConfig;
+  recent?: PickerVariant[];
   onSelect: (v: PickerVariant) => void;
 }
 
-export function BrowseTab({ config, onSelect }: BrowseTabProps) {
+export function BrowseTab({ config, recent = [], onSelect }: BrowseTabProps) {
   const {
     step,
     makes,
     models,
-    variants,
     allVariants,
     selectedMake,
     selectedModel,
-    filters,
     isLoading,
     error,
     selectMake,
     selectModel,
     goBack,
-    updateFilter,
   } = useBrowse(config);
 
   const breadcrumbs =
@@ -361,12 +246,10 @@ export function BrowseTab({ config, onSelect }: BrowseTabProps) {
 
   return (
     <div className="flex flex-col">
-      {/* Breadcrumb nav */}
       {breadcrumbs.length > 0 && (
         <BackBreadcrumb parts={breadcrumbs} onBack={goBack} />
       )}
 
-      {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-8">
           <svg
@@ -391,31 +274,30 @@ export function BrowseTab({ config, onSelect }: BrowseTabProps) {
         </div>
       )}
 
-      {/* Error */}
       {error && !isLoading && (
         <p className="text-tb-danger px-4 py-4 text-sm">{error}</p>
       )}
 
-      {/* Step content */}
       {!isLoading && !error && (
         <>
           {step === 'makes' && (
-            <MakesGrid
-              makes={makes}
-              popularMakeNames={config.popularMakeNames}
-              onSelect={selectMake}
-            />
+            <>
+              <RecentStrip recent={recent} onSelect={onSelect} />
+              <MakesGrid
+                makes={makes}
+                popularMakeNames={config.popularMakeNames}
+                onSelect={selectMake}
+              />
+            </>
           )}
           {step === 'models' && (
             <ModelsList models={models} onSelect={selectModel} />
           )}
           {step === 'variants' && (
-            <VariantsList
-              config={config}
-              variants={variants}
-              allVariants={allVariants}
-              filters={filters}
-              onFilter={updateFilter}
+            <VariantNarrow
+              key={selectedModel?.id}
+              variants={allVariants}
+              entity={config.entityType}
               onSelect={onSelect}
             />
           )}

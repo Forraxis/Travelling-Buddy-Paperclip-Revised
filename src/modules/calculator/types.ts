@@ -78,6 +78,20 @@ export interface CalibrationState {
   notes: string[];
 }
 
+/**
+ * GVM/GCM the user confirmed from their vehicle's compliance plate (the precision
+ * mechanism — CATALOGUE_GRANULARITY_PLAN.md §6). Read off a plate photo via OCR,
+ * then reviewed/edited by the user before applying. When present these REPLACE the
+ * catalogue (often ESTIMATE) figure in the verdict and flip the limit to CONFIRMED.
+ * Per-rig + session-scoped; cleared when the vehicle changes.
+ */
+export interface PlateConfirmedLimits {
+  gvmKg?: number | null;
+  gcmKg?: number | null;
+  /** ISO timestamp of when the user confirmed it. */
+  capturedAt: string;
+}
+
 export interface CalculatorState {
   vehicleVariantId: string | null;
   caravanVariantId: string | null;
@@ -88,6 +102,8 @@ export interface CalculatorState {
   customLoads: CustomLoad[];
   /** Weighbridge calibration baseline, if the user has weighed this rig. */
   calibration?: CalibrationState | null;
+  /** GVM/GCM confirmed from the compliance plate, if the user has done so. */
+  plateConfirmed?: PlateConfirmedLimits | null;
 }
 
 export type CalculatorAction =
@@ -124,6 +140,8 @@ export type CalculatorAction =
   | { type: 'SET_CUSTOM_LOAD_HEIGHT'; id: string; cogZMm: number }
   | { type: 'SET_CALIBRATION'; calibration: CalibrationState }
   | { type: 'CLEAR_CALIBRATION' }
+  | { type: 'SET_PLATE_CONFIRMED'; plate: PlateConfirmedLimits }
+  | { type: 'CLEAR_PLATE_CONFIRMED' }
   | { type: 'LOAD_STATE'; state: CalculatorState }
   | { type: 'RESET' };
 
@@ -152,6 +170,7 @@ export const INITIAL_STATE: CalculatorState = {
   caravanAccessories: [],
   customLoads: [],
   calibration: null,
+  plateConfirmed: null,
 };
 
 export function calculatorReducer(
@@ -160,10 +179,21 @@ export function calculatorReducer(
 ): CalculatorState {
   switch (action.type) {
     case 'SET_VEHICLE_VARIANT':
+      // A different vehicle invalidates any plate confirmation for the old one.
       if (action.id === null) {
-        return { ...state, vehicleVariantId: null, accessories: [] };
+        return {
+          ...state,
+          vehicleVariantId: null,
+          accessories: [],
+          plateConfirmed: null,
+        };
       }
-      return { ...state, vehicleVariantId: action.id };
+      return {
+        ...state,
+        vehicleVariantId: action.id,
+        plateConfirmed:
+          action.id === state.vehicleVariantId ? state.plateConfirmed : null,
+      };
     case 'SET_CARAVAN_VARIANT':
       if (action.id === null) {
         return { ...state, caravanVariantId: null, caravanAccessories: [] };
@@ -297,6 +327,10 @@ export function calculatorReducer(
           : state.customLoads,
       };
     }
+    case 'SET_PLATE_CONFIRMED':
+      return { ...state, plateConfirmed: action.plate };
+    case 'CLEAR_PLATE_CONFIRMED':
+      return { ...state, plateConfirmed: null };
     case 'LOAD_STATE':
       // Full-state hydration from a saved DB setup (carries customLoads +
       // calibration, which the URL round-trip drops). Spread over the defaults

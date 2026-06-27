@@ -9,6 +9,7 @@ import type {
   BrowseStep,
   VariantFilters,
 } from '../types';
+import { bodyFeetHalf } from '@/lib/catalogue/facet-tokens';
 
 // ── Picker API response shapes ───────────────────────────────────────────────
 
@@ -47,6 +48,12 @@ interface ApiPickerItem {
     maxTowingCapacityKg?: number;
     fuelType?: string;
     bodyType?: string;
+    generation?: string | null;
+    cabType?: string | null;
+    driveType?: string | null;
+    badge?: string | null;
+    transmission?: string | null;
+    buildOrigin?: string | null;
     atmKg?: number;
     gtmKg?: number;
     tbmKg?: number;
@@ -54,6 +61,8 @@ interface ApiPickerItem {
     bodyLengthMm?: number;
     freshWaterCapacityL?: number;
     greyWaterCapacityL?: number;
+    floorplan?: string | null;
+    berths?: number | null;
   };
 }
 
@@ -64,6 +73,13 @@ interface ApiFacets {
   yearMin?: number | null;
   yearMax?: number | null;
   bodyType?: string;
+  generations?: string[];
+  cabTypes?: string[];
+  driveTypes?: string[];
+  badges?: string[];
+  buildOrigins?: string[];
+  floorplans?: string[];
+  berths?: number[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -94,12 +110,21 @@ function apiItemToPickerVariant(item: ApiPickerItem): PickerVariant {
     kerbWeightKg: item.specs.kerbWeightKg,
     maxTowingCapacityKg: item.specs.maxTowingCapacityKg,
     fuelType: item.specs.fuelType,
+    generation: item.specs.generation,
+    cabType: item.specs.cabType,
+    driveType: item.specs.driveType,
+    badge: item.specs.badge,
+    transmission: item.specs.transmission,
+    buildOrigin: item.specs.buildOrigin,
     atmKg: item.specs.atmKg,
     gtmKg: item.specs.gtmKg,
     tbmKg: item.specs.tbmKg,
     axleConfiguration: item.specs.axleConfiguration,
     freshWaterCapacityL: item.specs.freshWaterCapacityL,
     greyWaterCapacityL: item.specs.greyWaterCapacityL,
+    bodyLengthMm: item.specs.bodyLengthMm,
+    floorplan: item.specs.floorplan,
+    berths: item.specs.berths,
   };
 }
 
@@ -251,6 +276,19 @@ export function useBrowse(config: PickerConfig) {
     if (
       filters.axleConfiguration &&
       v.axleConfiguration !== filters.axleConfiguration
+    )
+      return false;
+    // granularity facets (vehicle)
+    if (filters.generation && v.generation !== filters.generation) return false;
+    if (filters.cabType && v.cabType !== filters.cabType) return false;
+    if (filters.driveType && v.driveType !== filters.driveType) return false;
+    if (filters.badge && v.badge !== filters.badge) return false;
+    // granularity facets (caravan)
+    if (filters.floorplan && v.floorplan !== filters.floorplan) return false;
+    if (filters.berths != null && v.berths !== filters.berths) return false;
+    if (
+      filters.lengthFt != null &&
+      bodyFeetHalf(v.bodyLengthMm) !== filters.lengthFt
     )
       return false;
     return true;
