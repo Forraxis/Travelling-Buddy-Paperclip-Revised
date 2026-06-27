@@ -26,6 +26,14 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, '');
 }
 
+// Build-source splits are concurrent (same name + years, different plant), so the
+// slug must carry the build origin to stay unique per model (e.g.
+// `st-x-dual-cab-4x4-es` vs `-th`). Non-split variants keep their plain slug.
+function variantSlug(name: string, buildOrigin?: string | null): string {
+  const base = slugify(name);
+  return buildOrigin ? `${base}-${buildOrigin.toLowerCase()}` : base;
+}
+
 async function writeAuditLog(
   entityType: string,
   entityId: string,
@@ -233,7 +241,7 @@ export async function createVariantAction(
   if (!user) return { success: false, error: 'Unauthorized' };
 
   try {
-    const slug = slugify(input.name);
+    const slug = variantSlug(input.name, input.buildOrigin);
     const variant = await vehicleService.createVariant({ ...input, slug });
     await writeAuditLog('VehicleVariant', variant.id, 'CREATE', user.id, {
       ...input,
@@ -263,7 +271,7 @@ export async function updateVariantAction(
 
   try {
     if (input.name && !input.slug) {
-      input.slug = slugify(input.name);
+      input.slug = variantSlug(input.name, input.buildOrigin);
     }
     const variant = await vehicleService.updateVariant(id, input);
     await writeAuditLog('VehicleVariant', id, 'UPDATE', user.id, input);

@@ -2,6 +2,8 @@ import type {
   VehicleBodyType,
   FuelType,
   Market,
+  CabType,
+  DriveType,
   SpecProvenanceStatus,
   SpecFieldConfidence,
 } from '@prisma/client';
@@ -63,6 +65,14 @@ export interface VehicleVariantDto {
   fuelTankCapacityL: number | null;
   fuelType: FuelType | null;
   market: Market;
+  // Catalogue-granularity facets (CATALOGUE_GRANULARITY_PLAN.md §4).
+  generation: string | null;
+  cabType: CabType | null;
+  driveType: DriveType | null;
+  badge: string | null;
+  engine: string | null;
+  transmission: string | null;
+  buildOrigin: string | null; // ISO-3166 alpha-2 country of manufacture
   createdAt: Date;
   updatedAt: Date;
 }
@@ -148,6 +158,14 @@ export interface CreateVehicleVariantInput {
   fuelTankCapacityL: number;
   fuelType: FuelType;
   market?: Market;
+  // Granularity facets (all optional — unfilled degrades to "not specified").
+  generation?: string | null;
+  cabType?: CabType | null;
+  driveType?: DriveType | null;
+  badge?: string | null;
+  engine?: string | null;
+  transmission?: string | null;
+  buildOrigin?: string | null;
 }
 
 export interface UpdateVehicleVariantInput {
@@ -170,6 +188,14 @@ export interface UpdateVehicleVariantInput {
   fuelTankCapacityL?: number;
   fuelType?: FuelType;
   market?: Market;
+  // Granularity facets.
+  generation?: string | null;
+  cabType?: CabType | null;
+  driveType?: DriveType | null;
+  badge?: string | null;
+  engine?: string | null;
+  transmission?: string | null;
+  buildOrigin?: string | null;
 }
 
 // --- Query types ---

@@ -13,7 +13,8 @@ import {
   updateVariantAction,
 } from '@/modules/catalogue/actions/vehicle.actions';
 import type { VehicleVariantDto } from '@/modules/catalogue/types/vehicle.types';
-import type { FuelType, Market } from '@prisma/client';
+import type { FuelType, Market, CabType, DriveType } from '@prisma/client';
+import { COUNTRY } from '@/lib/catalogue/facet-tokens';
 
 const FUEL_TYPES: { value: FuelType; label: string }[] = [
   { value: 'DIESEL', label: 'Diesel' },
@@ -21,6 +22,27 @@ const FUEL_TYPES: { value: FuelType; label: string }[] = [
   { value: 'HYBRID', label: 'Hybrid' },
   { value: 'ELECTRIC', label: 'Electric' },
 ];
+
+const CAB_TYPES: { value: CabType; label: string }[] = [
+  { value: 'SINGLE_CAB', label: 'Single Cab' },
+  { value: 'KING_CAB', label: 'King Cab' },
+  { value: 'DUAL_CAB', label: 'Dual Cab' },
+  { value: 'WAGON', label: 'Wagon' },
+];
+
+const DRIVE_TYPES: { value: DriveType; label: string }[] = [
+  { value: 'FOUR_WHEEL_DRIVE', label: '4x4' },
+  { value: 'TWO_WHEEL_DRIVE', label: '4x2' },
+  { value: 'ALL_WHEEL_DRIVE', label: 'AWD' },
+];
+
+// Country of manufacture options for build-source splits (e.g. D40 Navara ES/TH).
+const ORIGIN_OPTIONS = Object.entries(COUNTRY).map(
+  ([code, { flag, name }]) => ({
+    value: code,
+    label: `${flag} ${name}`,
+  }),
+);
 
 const MARKETS: { value: Market; label: string }[] = [
   { value: 'AU', label: 'Australia' },
@@ -83,6 +105,16 @@ export function VariantForm({ modelId, variant, backHref }: VariantFormProps) {
   const [fuelTankCapacityL, setFuelTankCapacityL] = useState(
     variant?.fuelTankCapacityL?.toString() ?? '',
   );
+  // Granularity facets (all optional).
+  const [generation, setGeneration] = useState(variant?.generation ?? '');
+  const [cabType, setCabType] = useState<CabType | ''>(variant?.cabType ?? '');
+  const [driveType, setDriveType] = useState<DriveType | ''>(
+    variant?.driveType ?? '',
+  );
+  const [badge, setBadge] = useState(variant?.badge ?? '');
+  const [engine, setEngine] = useState(variant?.engine ?? '');
+  const [transmission, setTransmission] = useState(variant?.transmission ?? '');
+  const [buildOrigin, setBuildOrigin] = useState(variant?.buildOrigin ?? '');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -151,6 +183,14 @@ export function VariantForm({ modelId, variant, backHref }: VariantFormProps) {
       totalLengthMm: totalLengthMm ? parseInt(totalLengthMm) : null,
       maxTowBallDownloadKg: parseInt(maxTowBallDownloadKg),
       fuelTankCapacityL: parseInt(fuelTankCapacityL),
+      // Granularity facets — empty → null (not specified).
+      generation: generation.trim() || null,
+      cabType: cabType || null,
+      driveType: driveType || null,
+      badge: badge.trim() || null,
+      engine: engine.trim() || null,
+      transmission: transmission.trim() || null,
+      buildOrigin: buildOrigin || null,
     };
 
     const result = isEdit
@@ -212,6 +252,107 @@ export function VariantForm({ modelId, variant, backHref }: VariantFormProps) {
                 </option>
               ))}
             </select>
+          </FormField>
+        </div>
+      </div>
+
+      <div className="border-tb-neutral-200 rounded-lg border bg-white p-6">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold tracking-wide text-gray-500 uppercase">
+            Configuration <span className="text-gray-400">(optional)</span>
+          </h3>
+          <p className="mt-1 text-xs text-gray-400">
+            Powers the picker&apos;s guided narrow-down. For a build-source
+            split (e.g. a Spanish vs Thai D40), add two variants with the same
+            name &amp; years but a different <strong>Origin</strong> — each with
+            its own weights/axle ratings.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <FormField label="Cab Type" name="cabType">
+            <select
+              id="cabType"
+              value={cabType}
+              onChange={(e) => setCabType(e.target.value as CabType | '')}
+              className={selectClassName}
+            >
+              <option value="">— not specified —</option>
+              {CAB_TYPES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Drive Type" name="driveType">
+            <select
+              id="driveType"
+              value={driveType}
+              onChange={(e) => setDriveType(e.target.value as DriveType | '')}
+              className={selectClassName}
+            >
+              <option value="">— not specified —</option>
+              {DRIVE_TYPES.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Origin (country of build)" name="buildOrigin">
+            <select
+              id="buildOrigin"
+              value={buildOrigin}
+              onChange={(e) => setBuildOrigin(e.target.value)}
+              className={selectClassName}
+            >
+              <option value="">— not specified —</option>
+              {ORIGIN_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Badge / Grade" name="badge">
+            <input
+              id="badge"
+              type="text"
+              value={badge}
+              onChange={(e) => setBadge(e.target.value)}
+              placeholder="e.g. ST-X, Sahara"
+              className={inputClassName}
+            />
+          </FormField>
+          <FormField label="Generation" name="generation">
+            <input
+              id="generation"
+              type="text"
+              value={generation}
+              onChange={(e) => setGeneration(e.target.value)}
+              placeholder="e.g. D40, N80"
+              className={inputClassName}
+            />
+          </FormField>
+          <FormField label="Engine" name="engine">
+            <input
+              id="engine"
+              type="text"
+              value={engine}
+              onChange={(e) => setEngine(e.target.value)}
+              placeholder="e.g. 2.5 dCi, V6 4.0"
+              className={inputClassName}
+            />
+          </FormField>
+          <FormField label="Transmission" name="transmission">
+            <input
+              id="transmission"
+              type="text"
+              value={transmission}
+              onChange={(e) => setTransmission(e.target.value)}
+              placeholder="e.g. Auto, Manual, 6AT"
+              className={inputClassName}
+            />
           </FormField>
         </div>
       </div>
