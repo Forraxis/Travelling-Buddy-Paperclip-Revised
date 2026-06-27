@@ -21,6 +21,24 @@ export interface FacetStep {
   valueOf: (v: PickerVariant) => string | null;
   /** Human label for an option value. */
   display: (val: string) => string;
+  /**
+   * Only offer this step when EVERY variant in the narrowed set carries a value.
+   * For build origin: if a model-year is only partly tagged, a forced choice
+   * would make the untagged variants unreachable — so instead we skip the step
+   * and let those variants fall to the leaf list (where the OriginTag pill
+   * disambiguates the tagged ones). The step appears only on a clean fork.
+   */
+  gateWhenIncomplete?: boolean;
+}
+
+/** A gated step is suppressed when any variant in the set lacks its value. */
+export function stepGatedOut(
+  step: FacetStep,
+  variants: PickerVariant[],
+): boolean {
+  return (
+    !!step.gateWhenIncomplete && variants.some((v) => step.valueOf(v) == null)
+  );
 }
 
 const CAB_LABEL: Record<string, string> = {
@@ -55,6 +73,7 @@ const VEHICLE_STEPS: FacetStep[] = [
     label: 'Origin',
     valueOf: (v) => v.buildOrigin ?? null,
     display: (val) => formatOrigin(val) ?? val,
+    gateWhenIncomplete: true,
   },
   {
     key: 'year',
@@ -166,6 +185,10 @@ export function computeFlow(
       resolved.push({ step, value: sel, label: step.display(sel) });
       continue;
     }
+    // A gated step (origin) only appears when the set is fully tagged — otherwise
+    // forcing the choice would hide the untagged variants. Skip → they fall to the
+    // leaf list with their flag pills intact.
+    if (stepGatedOut(step, filtered)) continue;
     if (opts.length >= 2) {
       activeStep = step;
       activeOptions = opts;

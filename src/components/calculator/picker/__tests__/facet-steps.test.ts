@@ -51,6 +51,22 @@ describe('build-origin facet step', () => {
     ]);
   });
 
+  it('skips Origin when the set is only partly tagged (mixed data)', () => {
+    // Two tagged ST-X builds + an untagged SL → forcing origin would hide the SL,
+    // so the Origin step is suppressed; all three remain reachable in the leaf.
+    const variants = [
+      v({ badge: 'ST-X', buildOrigin: 'ES' }),
+      v({ badge: 'ST-X', buildOrigin: 'TH' }),
+      v({ badge: 'SL', buildOrigin: null }),
+    ];
+    const flow = computeFlow(variants, STEPS, {
+      cab: 'DUAL_CAB',
+      drive: 'FOUR_WHEEL_DRIVE',
+    });
+    expect(flow.activeStep?.key).not.toBe('origin');
+    expect(flow.filtered).toHaveLength(3); // nothing hidden
+  });
+
   it('narrows to the chosen build', () => {
     const variants = [
       v({ badge: 'ST', buildOrigin: 'ES' }),

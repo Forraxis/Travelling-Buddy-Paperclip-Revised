@@ -10,6 +10,7 @@ import {
   optionsFor,
   applySelections,
   splitLeaf,
+  stepGatedOut,
   type Selections,
   type FacetStep,
 } from './facet-steps';
@@ -195,10 +196,11 @@ export function VariantNarrow({
             // Options valid given the OTHER selections (cascading).
             const rest = { ...selections };
             delete rest[step.key];
-            const opts = optionsFor(
-              step,
-              applySelections(variants, steps, rest),
-            );
+            const set = applySelections(variants, steps, rest);
+            // Gated step (origin) hides until the set is fully tagged — the leaf
+            // rows' flag pills disambiguate while data is still partial.
+            if (stepGatedOut(step, set)) return null;
+            const opts = optionsFor(step, set);
             if (opts.length === 0) return null;
             return (
               <label key={step.key} className="flex flex-col">
