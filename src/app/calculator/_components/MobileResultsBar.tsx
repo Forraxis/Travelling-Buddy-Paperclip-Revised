@@ -28,7 +28,8 @@ function clampPct(val: number, limit: number): number {
 }
 
 function fmt(kg: number): string {
-  return `${Math.round(kg).toLocaleString()} kg`;
+  // Uncomputable values (e.g. axle load with no wheelbase) show a dash, never "NaN".
+  return Number.isFinite(kg) ? `${Math.round(kg).toLocaleString()} kg` : '—';
 }
 
 // ── Sheet content ──────────────────────────────────────────────────────────────

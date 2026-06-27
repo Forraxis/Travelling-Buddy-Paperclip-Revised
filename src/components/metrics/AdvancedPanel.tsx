@@ -13,7 +13,8 @@ import { ConfidenceBadge } from './ConfidenceBadge';
 // PhysicsResult, so it stays in sync with the headline metrics automatically.
 
 function kg(n: number): string {
-  return `${Math.round(n).toLocaleString()} kg`;
+  // Uncomputable values (e.g. axle load with no wheelbase) show a dash, never "NaN".
+  return Number.isFinite(n) ? `${Math.round(n).toLocaleString()} kg` : '—';
 }
 
 function Row({

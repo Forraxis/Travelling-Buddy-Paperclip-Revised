@@ -31,11 +31,19 @@ function statusBadgeColor(status: MetricStatus): string {
 }
 
 function clampPct(val: number, limit: number): number {
-  return Math.min(100, (val / limit) * 100);
+  const pct = (val / limit) * 100;
+  return Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
 }
 
 function fmt(kg: number): string {
-  return `${Math.round(kg).toLocaleString()} kg`;
+  // Missing geometry (e.g. no wheelbase) makes an axle load uncomputable — show a
+  // clean dash, never "NaN".
+  return Number.isFinite(kg) ? `${Math.round(kg).toLocaleString()} kg` : '—';
+}
+
+/** A metric value we couldn't compute (non-finite) — e.g. axle load with no wheelbase. */
+function isUnavailable(v: number | null | undefined): boolean {
+  return v == null || !Number.isFinite(v);
 }
 
 // ── Empty state ────────────────────────────────────────────────────────────────
@@ -121,26 +129,39 @@ function LoadingState() {
 
 function VerdictBanner({ result }: { result: PhysicsResult }) {
   const { overallStatus } = result;
+  // Axle loads need wheelbase geometry; if the catalogue variant lacks it the
+  // split is uncomputable. Don't let the banner claim a confident "all pass"
+  // while the axle rows show "—".
+  const axleIncomplete =
+    isUnavailable(result.vehicle.frontAxleKg) ||
+    isUnavailable(result.vehicle.rearAxleKg);
+  const passWithGaps = overallStatus === 'pass' && axleIncomplete;
   const label =
     overallStatus === 'pass'
-      ? 'All checks pass'
+      ? passWithGaps
+        ? 'Within all checked limits'
+        : 'All checks pass'
       : overallStatus === 'warn'
         ? 'Approaching limits'
         : 'Over limit';
   const sub =
     overallStatus === 'pass'
-      ? 'Your rig is within all compliance limits.'
+      ? passWithGaps
+        ? 'Axle loads need this vehicle’s wheelbase to assess — add it to complete the check.'
+        : 'Your rig is within all compliance limits.'
       : overallStatus === 'warn'
         ? 'One or more metrics are approaching their limit.'
         : 'One or more limits are exceeded. Adjust your load.';
-  const dot =
-    overallStatus === 'pass'
+  const dot = passWithGaps
+    ? 'bg-tb-primary-light'
+    : overallStatus === 'pass'
       ? 'bg-green-500'
       : overallStatus === 'warn'
         ? 'bg-amber-400'
         : 'bg-red-500';
-  const bg =
-    overallStatus === 'pass'
+  const bg = passWithGaps
+    ? 'bg-tb-primary-lighter border-tb-neutral-200'
+    : overallStatus === 'pass'
       ? 'bg-green-50 border-green-200'
       : overallStatus === 'warn'
         ? 'bg-amber-50 border-amber-200'
@@ -196,17 +217,6 @@ function GvmBar({ result }: { result: PhysicsResult }) {
         <span>{fmt(totalWeightKg)}</span>
         <span>limit {fmt(gvmLimitKg)}</span>
       </div>
-      {isLimitEstimated(result, 'gvm') && (
-        <div className="mt-1">
-          <EstimatedNote />
-        </div>
-      )}
-      <ConfidenceBadge
-        provenance={result.vehicle.limitProvenance?.gvm}
-        limitKey="gvm"
-        ctaOnly
-        className="mt-1.5 block"
-      />
     </div>
   );
 }
@@ -232,58 +242,43 @@ function MetricRow({
   actual,
   limit,
   status,
-  estimated,
   limitKey,
   provenance,
 }: MetricRowProps) {
+  const unavailable = isUnavailable(actual);
   const pct = clampPct(actual, limit);
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="w-24 shrink-0">
         <div className="flex items-center gap-1">
           <p className="text-xs font-semibold text-gray-700">{label}</p>
-          <ConfidenceBadge
-            provenance={provenance}
-            limitKey={limitKey}
-            showCta={false}
-          />
+          {!unavailable && (
+            <ConfidenceBadge
+              provenance={provenance}
+              limitKey={limitKey}
+              showCta={false}
+            />
+          )}
         </div>
         <p className="text-[10px] text-gray-400">{sublabel}</p>
-        {estimated && <EstimatedNote />}
-        <ConfidenceBadge
-          provenance={provenance}
-          limitKey={limitKey}
-          ctaOnly
-          className="mt-0.5 block"
-        />
       </div>
-      <div className="bg-tb-neutral-200 relative h-3 flex-1 overflow-hidden rounded-full">
-        <div
-          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(status)}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      {unavailable ? (
+        <p className="flex-1 text-[11px] text-gray-400 italic">
+          Add this vehicle’s wheelbase to estimate the axle load.
+        </p>
+      ) : (
+        <div className="bg-tb-neutral-200 relative h-3 flex-1 overflow-hidden rounded-full">
+          <div
+            className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(status)}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
       <div className="w-20 shrink-0 text-right">
         <p className="text-xs text-gray-700 tabular-nums">{fmt(actual)}</p>
         <p className="text-[10px] text-gray-400">/ {fmt(limit)}</p>
       </div>
     </div>
-  );
-}
-
-/**
- * Verdict honesty caveat. Rendered next to any compliance limit drawn from an
- * unverified source (a COMMUNITY/AI-estimated variant) so an estimated figure
- * never reads as a confident PASS. See VehicleResult.estimatedLimits.
- */
-function EstimatedNote() {
-  return (
-    <p
-      className="mt-0.5 text-[10px] font-medium text-amber-600"
-      title="This limit is an estimate from an unverified spec. Confirm it against your vehicle's compliance plate."
-    >
-      Est. — confirm your plate
-    </p>
   );
 }
 
