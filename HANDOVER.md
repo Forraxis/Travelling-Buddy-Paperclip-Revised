@@ -1,6 +1,6 @@
 # Handover — catalogue granularity, picker redesign, build-source variants & calculator polish
 
-_Last updated: 2026-06-28. Branch: **`feature/vehicle-data-fetch`** (origin Forraxis), pushed & in sync through `97e7eae`._
+_Last updated: 2026-06-28. Branch: **`feature/vehicle-data-fetch`** (origin Forraxis), pushed & in sync. Last code commit `97e7eae`; this doc lives in the commits after it._
 
 This covers the work from the catalogue-granularity epic through the picker
 redesign, the **build-source-variants** sub-epic, and the calculator "feels
@@ -14,7 +14,8 @@ broken" fixes. Pick up from "Open / next steps".
 - **Picker redesign** (carsales-style: search-on-top, guided stepper on phone / filter-list on desktop) — **shipped**.
 - **Build-source variants** (country-of-manufacture splits, e.g. D40 Navara Spain vs Thailand) — **Phase 1 (mechanism) shipped, ships dark**. Phase 2 (seed real D40 numbers) + Phase 3 (auto-discovery) pending.
 - **Calculator usability** — fixed the `NaN` axle loads / false "All checks pass" / estimate-spam that made it read as broken. Display-layer only.
-- Health: `npm run type-check` clean · `npm run lint` 0 errors (48 pre-existing warnings) · `npm run test` **671 pass**. Working tree clean.
+- **Caravan floorplan re-cluster + supersede** — **DONE** (earlier in the epic): re-keyed on (make,model,year,floorplan), landed per-floorplan variants, and the supersede pass deleted the now-redundant merged rows (only those with no Setup/fitment refs). CaravanVariant = **1263**. Verified: Bruder Exp 2021 = `exp-2021-4` (ATM 1600) + `exp-2021-6` (3100); the misleading 2350-median merged row is gone.
+- Health: `npm run type-check` clean · `npm run lint` 0 errors (48 pre-existing warnings) · `npm run test` **671 pass**. Working tree clean. `VehicleVariant.buildOrigin` set on **0** rows in prod (ships dark, confirmed).
 
 ---
 
@@ -161,8 +162,18 @@ still lives in a collapsed bottom bar (`MobileResultsBar`) — surface it.
 **E. Build-source Phase 2 / Phase 3.** Seed the D40 split (A/admin); build the
 plate-evidence discovery flow.
 
+**Decisions pending for Tim (small, not blocking):**
+- **174 CLAUDE-sourced `VariantSpecProvenance` rows** (axle/gcm/dims/fuel, web-grounded
+  in the earlier axle pass — distinct from the AI *facet* rows, which were already deleted
+  in the pivot-away-from-AI). Keep or purge — your call. They sit at ESTIMATE.
+- **M4(c) slug-as-config-fingerprint** + `VariantSlugRedirect` — **deferred, not pre-launch**
+  (SEO-only; users already reach the right variant via the picker).
+- **Rego / plate fast-entry path** — considered (skip the deep picker for people who know
+  their rig) but **not chosen** this round. Parked idea, not built.
+
 **Pre-existing / unrelated:** PDF report (Puppeteer won't install in sandbox),
-dynamic OG images, ops/external (prod secrets, Search Console, AdSense, Resend).
+dynamic OG images, contributors-on-tap per metric, ops/external (prod secrets,
+Search Console + sitemap, AdSense approval, Resend domain verification).
 
 **Rule-11 pending (Tim):** P1 §3–7 + P3 §9.x sign-offs; caravan axle-split;
 vertical-CoG/SSF stability (advisory until signed off); the D40 build figures (B/E);
