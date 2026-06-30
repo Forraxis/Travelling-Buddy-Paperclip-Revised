@@ -291,6 +291,8 @@ interface MetricRowProps {
   /** Compliance limit this row checks against (for the confidence badge). */
   limitKey: ComplianceLimitKey;
   provenance?: LimitProvenance;
+  /** Shown when the value is uncomputable; defaults to the axle/wheelbase note. */
+  unavailableNote?: string;
 }
 
 function MetricRow({
@@ -301,6 +303,7 @@ function MetricRow({
   status,
   limitKey,
   provenance,
+  unavailableNote = 'Add this vehicle’s wheelbase to estimate the axle load.',
 }: MetricRowProps) {
   const unavailable = isUnavailable(actual);
   const pct = clampPct(actual, limit);
@@ -329,7 +332,7 @@ function MetricRow({
       </div>
       {unavailable ? (
         <p className="flex-1 text-[11px] text-gray-400 italic">
-          Add this vehicle’s wheelbase to estimate the axle load.
+          {unavailableNote}
         </p>
       ) : (
         <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
@@ -379,6 +382,8 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
       status: v.gcmStatus,
       limitKey: 'gcm',
       provenance: prov?.gcm,
+      unavailableNote:
+        'Add this vehicle’s kerb weight to estimate combined mass.',
     });
   }
 
@@ -398,13 +403,16 @@ function AxleGrid({ result }: { result: PhysicsResult }) {
 
 function RecommendationsPanel({ result }: { result: PhysicsResult }) {
   if (result.recommendations.length === 0) {
+    const gaps = hasUncheckedMetrics(result);
     return (
       <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
         <p className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
           Recommendations
         </p>
         <p className="text-sm text-gray-400">
-          No recommendations — rig looks good.
+          {gaps
+            ? 'No issues with the figures we could check — confirm the metrics marked “—” for the full picture.'
+            : 'No recommendations — rig looks good.'}
         </p>
       </div>
     );
