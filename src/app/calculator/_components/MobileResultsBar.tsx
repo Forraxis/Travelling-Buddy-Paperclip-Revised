@@ -24,7 +24,8 @@ function statusColor(status: MetricStatus): string {
 }
 
 function clampPct(val: number, limit: number): number {
-  return Math.min(100, (val / limit) * 100);
+  const pct = (val / limit) * 100;
+  return Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
 }
 
 function fmt(kg: number): string {
@@ -32,30 +33,65 @@ function fmt(kg: number): string {
   return Number.isFinite(kg) ? `${Math.round(kg).toLocaleString()} kg` : '—';
 }
 
+/** A metric value we couldn't compute (non-finite) — e.g. axle load with no wheelbase. */
+function isUnavailable(v: number | null | undefined): boolean {
+  return v == null || !Number.isFinite(v);
+}
+
+/** Percentage text that shows a clean dash when the underlying value is uncomputable. */
+function pctText(val: number, limit: number): string {
+  return isUnavailable(val) || isUnavailable(limit) || limit === 0
+    ? '—'
+    : `${Math.round(clampPct(val, limit))}%`;
+}
+
+/**
+ * Metrics that need catalogue data we may lack (wheelbase → axles, kerb → GVM
+ * total, caravan geometry → tow ball). A "pass" while any of these is "—" hasn't
+ * actually checked everything, so we soften the verdict rather than claim a
+ * confident green. Display-only — overallStatus is unchanged.
+ */
+function hasUncheckedMetrics(result: PhysicsResult): boolean {
+  const v = result.vehicle;
+  return (
+    isUnavailable(v.frontAxleKg) ||
+    isUnavailable(v.rearAxleKg) ||
+    isUnavailable(v.totalWeightKg) ||
+    (result.caravan != null && isUnavailable(v.towBallDownloadKg))
+  );
+}
+
 // ── Sheet content ──────────────────────────────────────────────────────────────
 
 function VerdictBanner({ result }: { result: PhysicsResult }) {
   const { overallStatus } = result;
+  const passWithGaps = overallStatus === 'pass' && hasUncheckedMetrics(result);
   const label =
     overallStatus === 'pass'
-      ? 'All checks pass'
+      ? passWithGaps
+        ? 'Within all checked limits'
+        : 'All checks pass'
       : overallStatus === 'warn'
         ? 'Approaching limits'
         : 'Over limit';
   const sub =
     overallStatus === 'pass'
-      ? 'Your rig is within all compliance limits.'
+      ? passWithGaps
+        ? 'Some limits couldn’t be checked — confirm the figures marked “—” to complete them.'
+        : 'Your rig is within all compliance limits.'
       : overallStatus === 'warn'
         ? 'One or more metrics are approaching their limit.'
         : 'One or more limits are exceeded. Adjust your load.';
-  const dot =
-    overallStatus === 'pass'
+  const dot = passWithGaps
+    ? 'bg-tb-primary-light'
+    : overallStatus === 'pass'
       ? 'bg-green-500'
       : overallStatus === 'warn'
         ? 'bg-amber-400'
         : 'bg-red-500';
-  const bg =
-    overallStatus === 'pass'
+  const bg = passWithGaps
+    ? 'bg-tb-primary-lighter border-gray-200'
+    : overallStatus === 'pass'
       ? 'bg-green-50 border-green-200'
       : overallStatus === 'warn'
         ? 'bg-amber-50 border-amber-200'
@@ -94,7 +130,7 @@ function GvmBar({ result }: { result: PhysicsResult }) {
           <p className="text-[10px] text-gray-400">Gross Vehicle Mass</p>
         </div>
         <span className="text-xs text-gray-500 tabular-nums">
-          {Math.round(pct)}%
+          {pctText(totalWeightKg, gvmLimitKg)}
         </span>
       </div>
       <div className="relative h-3 overflow-hidden rounded-full bg-gray-200">
@@ -128,6 +164,9 @@ function PayloadCard({ result }: { result: PhysicsResult }) {
     freshWaterMassKg,
     greyWaterMassKg,
   } = result.caravan;
+  // Without a known ATM we can't compute headroom — don't show a bogus negative
+  // payload against a 0 limit.
+  const atmUnknown = isUnavailable(atmLimitKg) || atmLimitKg <= 0;
   const usedKg = atmLimitKg - payloadRemainingKg;
   const pct = clampPct(usedKg, atmLimitKg);
 
@@ -140,26 +179,39 @@ function PayloadCard({ result }: { result: PhysicsResult }) {
           </p>
           <p className="text-[10px] text-gray-400">Caravan ATM headroom</p>
         </div>
-        <p
-          className={`text-sm font-bold tabular-nums ${payloadRemainingKg < 0 ? 'text-red-600' : 'text-green-600'}`}
-        >
-          {payloadRemainingKg >= 0 ? '+' : ''}
-          {Math.round(payloadRemainingKg)} kg
+        {atmUnknown ? (
+          <p className="text-sm font-bold text-gray-400 tabular-nums">—</p>
+        ) : (
+          <p
+            className={`text-sm font-bold tabular-nums ${payloadRemainingKg < 0 ? 'text-red-600' : 'text-green-600'}`}
+          >
+            {payloadRemainingKg >= 0 ? '+' : ''}
+            {Math.round(payloadRemainingKg)} kg
+          </p>
+        )}
+      </div>
+      {atmUnknown ? (
+        <p className="text-[11px] text-gray-400 italic">
+          Add this caravan’s ATM to check payload headroom.
         </p>
-      </div>
-      <div className="relative h-3 overflow-hidden rounded-full bg-gray-200">
-        <div
-          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(payloadStatus)}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="mt-2 flex justify-between text-[10px] text-gray-400">
-        <span>
-          Tare {fmt(effectiveTareKg)} + water{' '}
-          {fmt(freshWaterMassKg + greyWaterMassKg)} + acc {fmt(accessoryMassKg)}
-        </span>
-        <span>ATM {fmt(atmLimitKg)}</span>
-      </div>
+      ) : (
+        <>
+          <div className="relative h-3 overflow-hidden rounded-full bg-gray-200">
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(payloadStatus)}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="mt-2 flex justify-between text-[10px] text-gray-400">
+            <span>
+              Tare {fmt(effectiveTareKg)} + water{' '}
+              {fmt(freshWaterMassKg + greyWaterMassKg)} + acc{' '}
+              {fmt(accessoryMassKg)}
+            </span>
+            <span>ATM {fmt(atmLimitKg)}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -199,13 +251,15 @@ function TowBallCard({ result }: { result: PhysicsResult }) {
           <p className="text-xs font-bold text-gray-800 tabular-nums">
             {fmt(towBallDownloadKg)}
           </p>
-          {towBallPctOfAtm != null && towBallPctStatus != null && (
-            <p
-              className={`text-[10px] font-semibold tabular-nums ${towBallPctStatus === 'fail' ? 'text-red-600' : towBallPctStatus === 'warn' ? 'text-amber-600' : 'text-green-600'}`}
-            >
-              {towBallPctOfAtm.toFixed(1)}% of ATM
-            </p>
-          )}
+          {towBallPctOfAtm != null &&
+            Number.isFinite(towBallPctOfAtm) &&
+            towBallPctStatus != null && (
+              <p
+                className={`text-[10px] font-semibold tabular-nums ${towBallPctStatus === 'fail' ? 'text-red-600' : towBallPctStatus === 'warn' ? 'text-amber-600' : 'text-green-600'}`}
+              >
+                {towBallPctOfAtm.toFixed(1)}% of ATM
+              </p>
+            )}
         </div>
       </div>
       <div className="relative h-3 overflow-hidden rounded-full bg-gray-200">
@@ -248,32 +302,43 @@ function MetricRow({
   limitKey,
   provenance,
 }: MetricRowProps) {
+  const unavailable = isUnavailable(actual);
   const pct = clampPct(actual, limit);
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="w-24 shrink-0">
         <div className="flex items-center gap-1">
           <p className="text-xs font-semibold text-gray-700">{label}</p>
+          {!unavailable && (
+            <ConfidenceBadge
+              provenance={provenance}
+              limitKey={limitKey}
+              showCta={false}
+            />
+          )}
+        </div>
+        <p className="text-[10px] text-gray-400">{sublabel}</p>
+        {!unavailable && (
           <ConfidenceBadge
             provenance={provenance}
             limitKey={limitKey}
-            showCta={false}
+            ctaOnly
+            className="mt-0.5 block"
+          />
+        )}
+      </div>
+      {unavailable ? (
+        <p className="flex-1 text-[11px] text-gray-400 italic">
+          Add this vehicle’s wheelbase to estimate the axle load.
+        </p>
+      ) : (
+        <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
+          <div
+            className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(status)}`}
+            style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="text-[10px] text-gray-400">{sublabel}</p>
-        <ConfidenceBadge
-          provenance={provenance}
-          limitKey={limitKey}
-          ctaOnly
-          className="mt-0.5 block"
-        />
-      </div>
-      <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
-        <div
-          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(status)}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      )}
       <div className="w-20 shrink-0 text-right">
         <p className="text-xs text-gray-700 tabular-nums">{fmt(actual)}</p>
         <p className="text-[10px] text-gray-400">/ {fmt(limit)}</p>
@@ -638,8 +703,11 @@ export function MobileResultsBar({
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const overallStatus = result?.overallStatus;
-  const dotColor =
-    overallStatus === 'pass'
+  const passWithGaps =
+    overallStatus === 'pass' && result != null && hasUncheckedMetrics(result);
+  const dotColor = passWithGaps
+    ? 'bg-tb-primary-light'
+    : overallStatus === 'pass'
       ? 'bg-green-500'
       : overallStatus === 'warn'
         ? 'bg-amber-400'
@@ -648,12 +716,23 @@ export function MobileResultsBar({
           : 'bg-gray-300';
   const barLabel =
     overallStatus === 'pass'
-      ? 'All checks pass'
+      ? passWithGaps
+        ? 'Within checked limits'
+        : 'All checks pass'
       : overallStatus === 'warn'
         ? 'Approaching limits'
         : overallStatus === 'fail'
           ? 'Over limit'
           : 'Tap to view results';
+
+  // Key metric for quick glance on the sticky bar — omitted when uncomputable.
+  const gvmRatio = result
+    ? (result.vehicle.totalWeightKg / result.vehicle.gvmLimitKg) * 100
+    : NaN;
+  const gvmPct =
+    result?.vehicle.gvmStatus && Number.isFinite(gvmRatio)
+      ? Math.round(gvmRatio)
+      : null;
 
   return (
     <>
@@ -665,24 +744,53 @@ export function MobileResultsBar({
         }`}
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
+        {/* Verdict banner strip — visible at a glance */}
+        <div
+          className={`border-t px-4 py-2 ${
+            passWithGaps
+              ? 'bg-tb-primary-lighter border-gray-200'
+              : overallStatus === 'pass'
+                ? 'border-green-200 bg-green-50'
+                : overallStatus === 'warn'
+                  ? 'border-amber-200 bg-amber-50'
+                  : overallStatus === 'fail'
+                    ? 'border-red-200 bg-red-50'
+                    : 'border-gray-200 bg-gray-50'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span
+                className={`h-3 w-3 rounded-full ${dotColor}`}
+                aria-hidden="true"
+              />
+              <span className="text-sm font-semibold text-gray-800">
+                {barLabel}
+              </span>
+            </div>
+            {gvmPct !== null && (
+              <span className="text-xs font-medium text-gray-600">
+                GVM {gvmPct}%
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Tap handle to open full sheet */}
         <button
           type="button"
           onClick={() => setSheetOpen(true)}
           className="flex w-full items-center justify-between border-t border-gray-200 bg-white px-4 shadow-[0_-2px_8px_rgba(0,0,0,0.08)]"
-          style={{ height: 60, minHeight: 44 }}
+          style={{ height: 52, minHeight: 44 }}
           aria-label="View results"
           aria-haspopup="dialog"
           aria-expanded={sheetOpen}
         >
-          <div className="flex items-center gap-2.5">
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${dotColor}`}
-              aria-hidden="true"
-            />
-            <span className="text-sm text-gray-700">{barLabel}</span>
-          </div>
+          <span className="text-xs text-gray-500">
+            Tap for axle loads, tow ball, details
+          </span>
           <svg
-            className="h-5 w-5 text-gray-400"
+            className="h-4 w-4 text-gray-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

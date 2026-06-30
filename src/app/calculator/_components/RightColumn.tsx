@@ -46,6 +46,21 @@ function isUnavailable(v: number | null | undefined): boolean {
   return v == null || !Number.isFinite(v);
 }
 
+/**
+ * Metrics that need catalogue data the variant may lack (wheelbase → axles, kerb
+ * → GVM total, caravan geometry → tow ball). Used to soften a "pass" that
+ * couldn't actually check everything. Display-only — overallStatus is unchanged.
+ */
+function hasUncheckedMetrics(result: PhysicsResult): boolean {
+  const v = result.vehicle;
+  return (
+    isUnavailable(v.frontAxleKg) ||
+    isUnavailable(v.rearAxleKg) ||
+    isUnavailable(v.totalWeightKg) ||
+    (result.caravan != null && isUnavailable(v.towBallDownloadKg))
+  );
+}
+
 // ── Empty state ────────────────────────────────────────────────────────────────
 
 function VehicleIcon() {
@@ -129,13 +144,10 @@ function LoadingState() {
 
 function VerdictBanner({ result }: { result: PhysicsResult }) {
   const { overallStatus } = result;
-  // Axle loads need wheelbase geometry; if the catalogue variant lacks it the
-  // split is uncomputable. Don't let the banner claim a confident "all pass"
-  // while the axle rows show "—".
-  const axleIncomplete =
-    isUnavailable(result.vehicle.frontAxleKg) ||
-    isUnavailable(result.vehicle.rearAxleKg);
-  const passWithGaps = overallStatus === 'pass' && axleIncomplete;
+  // Some metrics need catalogue data the variant may lack (wheelbase → axles,
+  // kerb → GVM total, caravan geometry → tow ball). Don't let the banner claim a
+  // confident "all pass" while those rows show "—".
+  const passWithGaps = overallStatus === 'pass' && hasUncheckedMetrics(result);
   const label =
     overallStatus === 'pass'
       ? passWithGaps
@@ -147,7 +159,7 @@ function VerdictBanner({ result }: { result: PhysicsResult }) {
   const sub =
     overallStatus === 'pass'
       ? passWithGaps
-        ? 'Axle loads need this vehicle’s wheelbase to assess — add it to complete the check.'
+        ? 'Some limits couldn’t be checked — confirm the figures marked “—” to complete them.'
         : 'Your rig is within all compliance limits.'
       : overallStatus === 'warn'
         ? 'One or more metrics are approaching their limit.'
@@ -204,7 +216,7 @@ function GvmBar({ result }: { result: PhysicsResult }) {
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusBadgeColor(gvmStatus)}`}
         >
-          {Math.round(pct)}%
+          {isUnavailable(totalWeightKg) ? '—' : `${Math.round(pct)}%`}
         </span>
       </div>
       <div className="bg-tb-neutral-200 relative h-3 overflow-hidden rounded-full">
@@ -357,6 +369,9 @@ function PayloadCard({ result }: { result: PhysicsResult }) {
     freshWaterMassKg,
     greyWaterMassKg,
   } = result.caravan;
+  // Without a known ATM we can't compute headroom — don't show a bogus negative
+  // payload against a 0 limit.
+  const atmUnknown = isUnavailable(atmLimitKg) || atmLimitKg <= 0;
   const usedKg = atmLimitKg - payloadRemainingKg;
   const pct = clampPct(usedKg, atmLimitKg);
 
@@ -369,26 +384,39 @@ function PayloadCard({ result }: { result: PhysicsResult }) {
           </p>
           <p className="text-[10px] text-gray-400">Caravan ATM headroom</p>
         </div>
-        <p
-          className={`text-sm font-bold tabular-nums ${payloadRemainingKg < 0 ? 'text-red-600' : 'text-green-600'}`}
-        >
-          {payloadRemainingKg >= 0 ? '+' : ''}
-          {Math.round(payloadRemainingKg)} kg
+        {atmUnknown ? (
+          <p className="text-sm font-bold text-gray-400 tabular-nums">—</p>
+        ) : (
+          <p
+            className={`text-sm font-bold tabular-nums ${payloadRemainingKg < 0 ? 'text-red-600' : 'text-green-600'}`}
+          >
+            {payloadRemainingKg >= 0 ? '+' : ''}
+            {Math.round(payloadRemainingKg)} kg
+          </p>
+        )}
+      </div>
+      {atmUnknown ? (
+        <p className="text-[11px] text-gray-400 italic">
+          Add this caravan’s ATM to check payload headroom.
         </p>
-      </div>
-      <div className="bg-tb-neutral-200 relative h-3 overflow-hidden rounded-full">
-        <div
-          className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(payloadStatus)}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="mt-2 flex justify-between text-[10px] text-gray-400">
-        <span>
-          Tare {fmt(effectiveTareKg)} + water{' '}
-          {fmt(freshWaterMassKg + greyWaterMassKg)} + acc {fmt(accessoryMassKg)}
-        </span>
-        <span>ATM {fmt(atmLimitKg)}</span>
-      </div>
+      ) : (
+        <>
+          <div className="bg-tb-neutral-200 relative h-3 overflow-hidden rounded-full">
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${statusColor(payloadStatus)}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="mt-2 flex justify-between text-[10px] text-gray-400">
+            <span>
+              Tare {fmt(effectiveTareKg)} + water{' '}
+              {fmt(freshWaterMassKg + greyWaterMassKg)} + acc{' '}
+              {fmt(accessoryMassKg)}
+            </span>
+            <span>ATM {fmt(atmLimitKg)}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -430,13 +458,15 @@ function TowBallCard({ result }: { result: PhysicsResult }) {
           <p className="text-xs font-bold text-gray-800 tabular-nums">
             {fmt(towBallDownloadKg)}
           </p>
-          {towBallPctOfAtm != null && towBallPctStatus != null && (
-            <p
-              className={`text-[10px] font-semibold tabular-nums ${towBallPctStatus === 'fail' ? 'text-red-600' : towBallPctStatus === 'warn' ? 'text-amber-600' : 'text-green-600'}`}
-            >
-              {towBallPctOfAtm.toFixed(1)}% of ATM
-            </p>
-          )}
+          {towBallPctOfAtm != null &&
+            Number.isFinite(towBallPctOfAtm) &&
+            towBallPctStatus != null && (
+              <p
+                className={`text-[10px] font-semibold tabular-nums ${towBallPctStatus === 'fail' ? 'text-red-600' : towBallPctStatus === 'warn' ? 'text-amber-600' : 'text-green-600'}`}
+              >
+                {towBallPctOfAtm.toFixed(1)}% of ATM
+              </p>
+            )}
         </div>
       </div>
       <div className="bg-tb-neutral-200 relative h-3 overflow-hidden rounded-full">
