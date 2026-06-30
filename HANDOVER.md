@@ -1,20 +1,18 @@
 # Handover — catalogue granularity, picker redesign, build-source variants & calculator polish
 
-_Last updated: 2026-06-30. Branch: **`feature/vehicle-data-fetch`** (origin Forraxis), pushed & in sync through `78d6835`. Last feature commit before this doc's tail: `78d6835`._
+_Last updated: 2026-06-30. Branch: **`feature/vehicle-data-fetch`** (origin Forraxis). **Merged to `main` 2026-06-30 (clean FF); branch and `main` are now in parity** — start the next session from `main` or the branch interchangeably._
 
 This covers the work from the catalogue-granularity epic through the picker
 redesign, the **build-source-variants** sub-epic, the calculator "feels broken"
 fixes, and the **2026-06-30 mobile-polish + display-honesty pass** (§9). Pick up
 from "Open / next steps".
 
-**Branch topology (checked 2026-06-30):** the whole **rig-layout epic is already
-merged into `main`** (Phase A–E commits are in main's history). `feature/rig-layout`
-is a stale pointer = main + 1 unrelated NextAuth fix (commit `1735031`), fully
-contained in this branch.
-This branch (`feature/vehicle-data-fetch`) is **48 commits ahead of main, 0 behind —
-a clean fast-forward**. So the only open promotion is **this branch → main** (FF, no
-conflicts); there is nothing to merge *into* it. `overnight/loose-ends` + `develop`
-are also stale (fully in main).
+**Branch topology (2026-06-30, post-merge):** the whole catalogue/picker/build-source/
+calc stretch (54 commits) was **fast-forward-merged into `main`** on 2026-06-30 — `main`
+and `feature/vehicle-data-fetch` now point at the same commit, 0 divergence. The
+rig-layout epic (Phase A–E) was already in main before that. `feature/rig-layout`,
+`overnight/loose-ends`, `develop` are stale pointers (fully contained in main). No open
+promotions remain.
 
 ---
 
