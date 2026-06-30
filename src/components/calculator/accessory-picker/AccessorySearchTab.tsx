@@ -105,7 +105,10 @@ export function AccessorySearchTab({
   );
 
   const showEmpty = !query.trim();
-  const showResults = !showEmpty && (items.length > 0 || isLoading || !!error);
+  // Once there's a query, always render the results region — it owns the
+  // loading, empty ("No results") and populated states. Gating it on
+  // items.length made the "No results" message below unreachable (blank void).
+  const showResults = !showEmpty;
 
   return (
     <div className="flex flex-col">
