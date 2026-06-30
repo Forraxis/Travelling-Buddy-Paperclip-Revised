@@ -118,23 +118,25 @@ function MakesGrid({
       <button
         type="button"
         onClick={() => onSelect(make)}
-        className="border-tb-neutral-200 hover:border-tb-primary-light hover:bg-tb-primary-lighter flex flex-col items-center gap-1.5 rounded-lg border bg-white p-3 text-center transition-colors"
+        className="border-tb-neutral-200 hover:border-tb-primary-light hover:bg-tb-primary-lighter flex flex-col items-center gap-1 rounded-lg border bg-white p-2 text-center transition-colors"
       >
-        <div className="flex h-10 w-10 items-center justify-center">
+        <div className="flex h-7 w-7 items-center justify-center">
           {make.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={make.logoUrl}
               alt={make.name}
-              className="h-8 w-8 object-contain"
+              className="h-6 w-6 object-contain"
             />
           ) : (
-            <span className="text-tb-primary text-base font-bold">
+            <span className="text-tb-primary text-sm font-bold">
               {make.name.slice(0, 2)}
             </span>
           )}
         </div>
-        <span className="text-xs font-medium text-gray-700">{make.name}</span>
+        <span className="line-clamp-2 text-[11px] leading-tight font-medium text-gray-700">
+          {make.name}
+        </span>
       </button>
     );
   }
@@ -146,7 +148,7 @@ function MakesGrid({
           <p className="mb-2 text-xs font-medium tracking-wide text-gray-400 uppercase">
             Popular
           </p>
-          <div className="mb-4 grid grid-cols-4 gap-2">
+          <div className="mb-4 grid grid-cols-4 gap-1.5">
             {popular.map((m) => (
               <MakeCard key={m.id} make={m} />
             ))}
@@ -160,7 +162,7 @@ function MakesGrid({
               All makes
             </p>
           )}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-1.5">
             {others.map((m) => (
               <MakeCard key={m.id} make={m} />
             ))}
