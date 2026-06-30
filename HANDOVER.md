@@ -1,10 +1,20 @@
 # Handover — catalogue granularity, picker redesign, build-source variants & calculator polish
 
-_Last updated: 2026-06-28. Branch: **`feature/vehicle-data-fetch`** (origin Forraxis), pushed & in sync. Last code commit `97e7eae`; this doc lives in the commits after it._
+_Last updated: 2026-06-30. Branch: **`feature/vehicle-data-fetch`** (origin Forraxis), pushed & in sync through `78d6835`. Last feature commit before this doc's tail: `78d6835`._
 
 This covers the work from the catalogue-granularity epic through the picker
-redesign, the **build-source-variants** sub-epic, and the calculator "feels
-broken" fixes. Pick up from "Open / next steps".
+redesign, the **build-source-variants** sub-epic, the calculator "feels broken"
+fixes, and the **2026-06-30 mobile-polish + display-honesty pass** (§9). Pick up
+from "Open / next steps".
+
+**Branch topology (checked 2026-06-30):** the whole **rig-layout epic is already
+merged into `main`** (Phase A–E commits are in main's history). `feature/rig-layout`
+is a stale pointer = main + 1 unrelated NextAuth fix (commit `1735031`), fully
+contained in this branch.
+This branch (`feature/vehicle-data-fetch`) is **48 commits ahead of main, 0 behind —
+a clean fast-forward**. So the only open promotion is **this branch → main** (FF, no
+conflicts); there is nothing to merge *into* it. `overnight/loose-ends` + `develop`
+are also stale (fully in main).
 
 ---
 
@@ -13,7 +23,7 @@ broken" fixes. Pick up from "Open / next steps".
 - **Catalogue granularity** (structured facets + free-text pg_trgm search + plate-confirm) — **shipped**.
 - **Picker redesign** (carsales-style: search-on-top, guided stepper on phone / filter-list on desktop) — **shipped**.
 - **Build-source variants** (country-of-manufacture splits, e.g. D40 Navara Spain vs Thailand) — **Phase 1 (mechanism) shipped, ships dark**. Phase 2 (seed real D40 numbers) + Phase 3 (auto-discovery) pending.
-- **Calculator usability** — fixed the `NaN` axle loads / false "All checks pass" / estimate-spam that made it read as broken. Display-layer only.
+- **Calculator usability** — fixed the `NaN` axle loads / false "All checks pass" / estimate-spam that made it read as broken. Display-layer only. **Extended 2026-06-30 (§9):** the same NaN/honesty guards are now at full parity across `MobileResultsBar` + `RightColumn`, plus mobile-polish (§7-D done) and an accessory-picker bug fix.
 - **Caravan floorplan re-cluster + supersede** — **DONE** (earlier in the epic): re-keyed on (make,model,year,floorplan), landed per-floorplan variants, and the supersede pass deleted the now-redundant merged rows (only those with no Setup/fitment refs). CaravanVariant = **1263**. Verified: Bruder Exp 2021 = `exp-2021-4` (ATM 1600) + `exp-2021-6` (3100); the misleading 2350-median merged row is gone.
 - Health: `npm run type-check` clean · `npm run lint` 0 errors (48 pre-existing warnings) · `npm run test` **671 pass**. Working tree clean. `VehicleVariant.buildOrigin` set on **0** rows in prod (ships dark, confirmed).
 
@@ -23,6 +33,11 @@ broken" fixes. Pick up from "Open / next steps".
 
 | Commit | What |
 |---|---|
+| `78d6835` | fix(accessory-picker): show "No results" instead of a blank void (2026-06-30) |
+| `9115ccf` | polish(picker): tighten make-grid tile density (~100px→~64px tiles) |
+| `3fa4575` | fix(calculator): correct uncomputable-metric copy (GCM kerb note, recommendations) |
+| `e781bc2` | fix(calculator): kill NaN% leaks + honest verdict on mobile; CompactCard grows/wraps |
+| `5c2b487` / `54ec48f` | docs: prior handover + caravan-supersede record |
 | `97e7eae` | fix(calculator): never render NaN axle loads; honest verdict + less estimate noise |
 | `e4f7146` | feat(picker): gate the Origin step until a model-year is fully build-tagged |
 | `6b22a64` | feat(admin): variant facets + build-origin manual entry + concurrent-split constraint |
@@ -154,13 +169,24 @@ clean as the data.
 `'unknown'` MetricStatus when wheelbase is missing (instead of NaN), so the verdict
 math is honest at the core, not just the display. `overallStatus` should treat
 `unknown` as not-pass-not-fail. Touches `engine.ts`, `regulations.ts:weightStatus`,
-`physics/types.ts`, the verdict aggregation — **Tim's sign-off.**
+`physics/types.ts`, the verdict aggregation — **Tim's sign-off.** _Live symptom
+(2026-06-30): a rig where every metric is uncomputable (e.g. caravan missing ATM →
+negative payload → `fail`) still shows a red "Over limit" — the inverse of the old
+false-green. The §9 display pass softens the green side but can't honestly fix the
+red side without this engine change._
 
-**D. Mobile polish.** Selected-vehicle card still truncates on phone; the verdict
-still lives in a collapsed bottom bar (`MobileResultsBar`) — surface it.
+**D. Mobile polish — DONE (2026-06-30, §9).** Selected-vehicle card grows on phone
+instead of truncating; the verdict is surfaced on the sticky bar. Picker make-grid
+density tightened. (Desktop CompactCard keeps `md:truncate` by design.)
 
 **E. Build-source Phase 2 / Phase 3.** Seed the D40 split (A/admin); build the
 plate-evidence discovery flow.
+
+**F. Accessory picker consistency (new, needs Tim's nod).** The accessory picker
+(`AccessoryPicker` + `AccessorySearchTab`) still uses the old **Search/Browse tabs**,
+inconsistent with the vehicle picker's single-surface search-on-top redesign (§4).
+Aligning it touches the deliberate picker redesign → discuss before building. (The
+"No results" blank-void bug in it was fixed in `78d6835`.)
 
 **Decisions pending for Tim (small, not blocking):**
 - **174 CLAUDE-sourced `VariantSpecProvenance` rows** (axle/gcm/dims/fuel, web-grounded
@@ -189,7 +215,52 @@ the engine 'unknown'-status verdict change (C).
   `DATABASE_URL=… npx prisma migrate deploy`. **Never `migrate reset`** the shared DB
   — additive migrations only.
 - `trailingSlash: true` — API calls take a 308 hop.
+- Redis isn't running in the sandbox → the dev log shows `ECONNREFUSED :6379` from
+  the BullMQ worker. **Non-fatal** — the calculator UI serves fine (200).
 - Verification used Playwright against :3070 (browser-walk the real picker/calculator).
   Temp data was seeded via `pg` then deleted; admin pages are behind ADMIN/MODERATOR
   auth so they were verified via the data path + type-check, not a logged-in walk.
 - Commit only when asked; this stretch is committed + pushed.
+
+---
+
+## 9. Mobile-polish + display-honesty pass (2026-06-30)
+
+**Why:** the calculator "felt clunky / broken" on a phone for any rig with a data
+gap. Root cause: `MobileResultsBar` never received the §6 display guards that
+landed in `RightColumn`, so NaN leaked straight through. All fixes are
+**display-layer only — no physics, Rule 11 untouched** (`overallStatus` is never
+changed; the verdict math gap is item C).
+
+**What shipped (commits `e781bc2`, `3fa4575`, `9115ccf`, `78d6835`):**
+- **NaN% killed** everywhere it leaked: `MobileResultsBar.clampPct` had no finite
+  guard ("GVM NaN%"); tow-ball "% of ATM" only guarded `!= null` not `isFinite`
+  ("NaN% of ATM"); the new sticky-bar GVM% chip was unguarded. Guarded all → `—`.
+  Same unguarded "% of ATM" existed in `RightColumn` (desktop) — fixed for parity.
+- **Payload card** shows `—` + "Add this caravan's ATM…" when ATM is missing/0,
+  instead of a bogus negative against a 0 limit.
+- **Honest verdict:** new `hasUncheckedMetrics(result)` (axles **+ GVM total +
+  tow-ball**) softens a "pass" that couldn't check everything → "Within all checked
+  limits" + "confirm the figures marked '—'". Mirrored in both surfaces (RightColumn's
+  prior version only checked axles).
+- **Per-metric copy:** `MetricRow` gained a per-row `unavailableNote`. GCM (which
+  shares MetricRow) no longer says "add wheelbase to estimate the axle load" — it
+  says "add this vehicle's kerb weight to estimate combined mass". Recommendations no
+  longer claim "rig looks good" when metrics are uncomputable.
+- **CompactCard:** `min-h-20` so the card grows on a phone (was clipping at fixed
+  `h-20`); spec chips use **non-breaking spaces** so "1,945 kg" wraps as a unit, not
+  mid-figure. Desktop keeps `md:h-20` + `md:truncate`.
+- **Picker make-grid** tiles compacted ~100px→~64px (still > 44px touch target).
+- **Accessory search** "No results" message was unreachable (gated behind
+  `items.length > 0`) → blank void; now shows on an empty result set.
+
+**Touched files:** `_components/MobileResultsBar.tsx`, `_components/RightColumn.tsx`,
+`picker/CompactCard.tsx`, `picker/BrowseTab.tsx`, `accessory-picker/AccessorySearchTab.tsx`.
+Note: `clampPct`/`fmt`/`isUnavailable`/`hasUncheckedMetrics` are **duplicated** in
+MobileResultsBar + RightColumn (matching the files' existing local-helper convention);
+a future tidy could extract them to a shared `results-display` util.
+
+**Not done / deferred:** item C (engine `unknown` status — the red-when-uncomputable
+verdict), item F (accessory picker still on Search/Browse tabs). No unit tests added
+for the new display predicates (they're un-exported component helpers); 671 existing
+tests still pass.
