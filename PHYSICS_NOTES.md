@@ -10,8 +10,11 @@ Re-run the catalogue validation any time: `npx jiti scripts/physics-harden.ts`
 > ATM/GTM**, graded RedBook (manufacturer DB) = `CONFIRMED` and dealer-corroborated =
 > `ESTIMATE`/`DISPUTED`. **All flagged pending Rule-11 but LIVE in the calculator now**
 > (HIGH/MEDIUM promoted to columns). A reviewer needs to know this ESTIMATE-tier body exists.
-> Caveat (`CARAVAN_DATA_SOURCES.md §11`): granularity is **model+year, not floorplan** — different
-> layouts of one model are merged to a median, directly relevant to the per-axle / TBM notes below.
+> Caveat (`CARAVAN_DATA_SOURCES.md §11`): agreed target granularity is **model + year + length**
+> (floorplan/berths beneath). The floorplan/berths re-cluster is done, but **length is not yet a
+> clustering dimension** and `bodyLengthMm` covers only **433/1263 (34%)** of variants — so
+> different-length vans of one model/year can still merge to a median (directly relevant to the
+> per-axle / TBM notes below). Closing it needs a `bodyLengthMm` backfill — Rule 11.
 
 ---
 

@@ -202,12 +202,18 @@ ops/n8n/.caravan-ccs-detail-urls.txt    discovery URL list (transient, gitignore
 
 ## 11. Known limitations / holes (things that can bite)
 
-1. **Floorplan blur.** Variant granularity is **model + year**, not floorplan. AU caravan weight
-   varies a lot by layout — different floorplans of one model/year get **merged to a median**.
-   32 clusters have listings disagreeing on ATM by >300 kg (e.g. Bruder Exp 2021: 1850–3500).
-   The `DISPUTED` gate (spread >250 kg → not promoted to column) catches the worst, but the
-   median is still landed as provenance. The old aggregate captured a `floorplan` field; **v2
-   dropped it** — re-add if per-floorplan accuracy is needed.
+1. **Length is the granularity axis (not floorplan).** Agreed target granularity is
+   **model + year + length**, with floorplan/berths as finer sub-facets beneath it — length is
+   what actually swings AU caravan weight, and the data's "floorplan" labels are mostly
+   berth/layout codes (`exp-2021-4` vs `(6)`, `16-49`, `5-4fb`). The floorplan/berths re-cluster
+   + supersede is **DONE** (Bruder Exp 2021 now splits `exp-2021-4` ATM 1600 / `exp-2021-6` 3100;
+   the misleading median row is gone — see `HANDOVER.md`). **Open blocker:** length is **not yet a
+   variant-identity dimension** and `bodyLengthMm` is populated on only **433/1263 (34%)** of
+   variants, so different-length vans of one model/year can still collapse to a median. Making
+   length a real clustering key needs a `bodyLengthMm` backfill first (derive from
+   `overallLengthMm` where possible / re-parse held CCS raw) — **Rule 11** (feeds axle/TBM). The
+   `DISPUTED` gate (ATM spread >250 kg → not promoted to a column) still catches the worst merges
+   in the meantime.
 2. **~155 caravans are identity-only** (no extractable weight) — appear in the catalogue but
    can't compute. ~30 % of CCS dealer titles were unparseable (skipped; raw held → re-parseable).
 3. **No migration for `CaravanVariantSpecProvenance`** (see §8) — `db push` only; migrate drift.
